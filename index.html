@@ -2,7 +2,7 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>SyncChat Pro</title>
 
 <!-- Firebase SDKs -->
@@ -41,35 +41,30 @@ html, body {
   overflow: hidden;
   font-family: 'IBM Plex Sans Arabic', sans-serif;
   background-color: var(--bg);
-  background-image: 
-    radial-gradient(circle at 10% 20%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
-    radial-gradient(circle at 90% 80%, rgba(24, 128, 56, 0.02) 0%, transparent 50%);
   color: var(--text);
 }
 
 #app {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
 }
 
 .screen {
   width: 100%;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* يمنع الشاشة بالكامل من السكرول */
+  overflow: hidden;
 }
 
 .hidden { display: none !important; }
 
 /* LOGIN */
 #login-screen {
+  display: flex;
   align-items: center;
   justify-content: center;
   padding: 20px;
   overflow-y: auto;
+  height: 100%;
 }
 
 .login-card {
@@ -131,32 +126,32 @@ html, body {
 
 .error-msg { min-height: 18px; color: var(--danger); font-size: 12px; margin-bottom: 10px; }
 
-/* CHAT CONTAINER */
+/* CHAT SCREEN */
 #chat-screen { 
   max-width: 900px; 
   margin: 0 auto; 
   background: #ffffff; 
+  position: relative;
   height: 100%;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden; /* تأكيد عدم خروج أي عنصر */
 }
 
-/* التعديل الجديد: هيدر ثابت ومستقر تماماً في الأعلى */
+/* حل مشكلة الموبايل: الهيدر مثبت بشكل مطلق في أعلى الشاشة تماماً */
 .chat-header {
-  position: -webkit-sticky;
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  right: 0;
+  max-width: 900px;
+  margin: 0 auto;
   height: 70px;
-  min-height: 70px;
-  background: rgba(255, 255, 255, 0.98); /* زيادة العتامة لمنع شفافية الرسائل خلفه */
+  background: rgba(255, 255, 255, 0.98); 
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #f0f0f0;
   display: flex;
   align-items: center;
   gap: 10px;
   padding: 0 15px;
-  z-index: 100; /* طبقة عليا لضمان عدم اختفائه تحت الرسائل */
+  z-index: 1000; /* طبقة عليا جداً فوق كل شيء */
 }
 
 .avatar {
@@ -187,16 +182,37 @@ html, body {
 .btn-clear { background: #fef7e0; color: #b06000; margin-left: 5px; }
 .btn-leave { background: #fce8e6; color: var(--danger); }
 
-/* MESSAGES AREA - الجزء الوحيد المسموح له بالسكرول */
+/* مؤشر جاري الرفع مثبت تحت الهيدر مباشرة */
+.upload-status {
+  position: fixed;
+  top: 70px;
+  left: 0;
+  right: 0;
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 6px 15px;
+  font-size: 11px;
+  color: var(--accent);
+  background: #e8f0fe;
+  display: none;
+  text-align: center;
+  z-index: 999;
+}
+
+/* MESSAGES AREA - تعويض مساحة الهيدر الثابت ومساحة الـ Input */
 .messages-area {
-  flex: 1;
+  position: absolute;
+  top: 70px; /* يبدأ من تحت الهيدر */
+  bottom: 70px; /* ينتهي قبل صندوق الكتابة */
+  left: 0;
+  right: 0;
   overflow-y: auto;
   padding: 15px;
   display: flex;
   flex-direction: column;
   gap: 14px;
   background: #ffffff;
-  -webkit-overflow-scrolling: touch; /* سكرول ناعم وسلس على آيفون */
+  -webkit-overflow-scrolling: touch;
 }
 
 .msg-wrapper { display: flex; }
@@ -240,15 +256,23 @@ html, body {
 .system-msg { align-self: center; background: #f1f3f4; padding: 5px 14px; border-radius: 20px; color: var(--muted); font-size: 11px; }
 .empty-state { margin: auto; color: var(--muted); font-size: 14px; text-align: center; }
 
-/* INPUT AREA FIXED AT THE BOTTOM */
+/* INPUT AREA - مثبت في أسفل الشاشة تماماً */
 .input-area {
-  padding: 12px 15px;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  max-width: 900px;
+  margin: 0 auto;
+  height: 70px;
+  padding: 0 15px;
   display: flex;
   gap: 10px;
   background: #ffffff;
   align-items: center;
   border-top: 1px solid #f0f0f0;
-  padding-bottom: calc(12px + env(safe-area-inset-bottom));
+  z-index: 1000;
+  padding-bottom: env(safe-area-inset-bottom);
 }
 
 .msg-input {
@@ -256,12 +280,13 @@ html, body {
   background: var(--surface);
   border: 1px solid transparent;
   border-radius: 24px; 
-  padding: 12px 18px;
+  padding: 10px 18px;
   resize: none;
   color: var(--text);
   outline: none;
   font-size: 16px;
-  max-height: 120px;
+  height: 44px;
+  line-height: 22px;
 }
 .msg-input:focus { background: #ffffff; border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 
@@ -282,15 +307,7 @@ html, body {
 .btn-send { background: var(--surface); color: var(--accent); font-size: 16px; }
 .btn-action:hover, .btn-send:hover { background: var(--surface2); }
 
-.upload-status {
-  padding: 5px 15px;
-  font-size: 11px;
-  color: var(--accent);
-  background: #e8f0fe;
-  display: none;
-  text-align: center;
-}
-
+/* TOAST */
 .toast {
   position: fixed;
   bottom: 90px;
@@ -303,7 +320,7 @@ html, body {
   opacity: 0;
   transition: .3s;
   font-size: 14px;
-  z-index: 100;
+  z-index: 2000;
 }
 .toast.show { opacity: 1; }
 </style>
@@ -334,7 +351,8 @@ html, body {
 
   <!-- CHAT -->
   <div id="chat-screen" class="screen hidden">
-    <!-- هيدر ثابت -->
+    
+    <!-- المنيو العلوي الثابت إجبارياً -->
     <div class="chat-header">
       <div class="avatar" id="my-avatar">ME</div>
       <div class="header-info">
@@ -347,12 +365,12 @@ html, body {
 
     <div class="upload-status" id="upload-status">جاري رفع الملف... ⏳</div>
 
-    <!-- منطقة تمرير الرسائل المخصصة -->
+    <!-- منطقة الرسائل المستقلة تماماً -->
     <div class="messages-area" id="messages-area">
       <div class="empty-state" id="empty-state">ابدأ المحادثة الآن ✨</div>
     </div>
 
-    <!-- صندوق الإرسال السفلي -->
+    <!-- صندوق الإدخال السفلي الثابت إجبارياً -->
     <div class="input-area">
       <input type="file" id="file-chooser" class="hidden" onchange="handleFileSelect(this)">
       <button class="btn-action" onclick="$('file-chooser').click()">📎</button>
@@ -376,7 +394,7 @@ html, body {
 <script>
 /* FIREBASE CONFIG */
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+iU0n0G4AFSJQCLCO-wqip6sKwCz0",
   authDomain: "syncchat-6e22b.firebaseapp.com",
   databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "syncchat-6e22b",

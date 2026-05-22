@@ -2,7 +2,8 @@
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<!-- تحسين الـ viewport لمنع مشاكل الأبعاد والتكبير التلقائي عند الكتابة -->
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
 <title>SyncChat</title>
 
 <!-- Firebase -->
@@ -18,6 +19,7 @@
   margin:0;
   padding:0;
   box-sizing:border-box;
+  -webkit-tap-highlight-color: transparent;
 }
 
 :root{
@@ -34,379 +36,380 @@
   --success: #188038;
 }
 
-html,body{
-  width:100%;
-  height:100%;
-  overflow:hidden;
-  font-family:'IBM Plex Sans Arabic',sans-serif;
+html, body {
+  width: 100%;
+  /* استخدام dvh لحل مشكلة اختفاء الأجزاء السفلية في الموبايل */
+  height: 100vh;
+  height: 100dvh; 
+  overflow: hidden;
+  font-family: 'IBM Plex Sans Arabic', sans-serif;
   background-color: var(--bg);
   background-image: 
     radial-gradient(circle at 10% 20%, rgba(26, 115, 232, 0.03) 0%, transparent 50%),
     radial-gradient(circle at 90% 80%, rgba(24, 128, 56, 0.02) 0%, transparent 50%);
-  color:var(--text);
+  color: var(--text);
 }
 
-/* APP */
-#app{
-  width:100%;
-  height:100vh;
+/* APP CONTAINER */
+#app {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
 /* SCREENS */
-.screen{
-  width:100%;
-  height:100%;
+.screen {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-.hidden{
-  display:none !important;
+.hidden {
+  display: none !important;
 }
 
-/* LOGIN */
-#login-screen{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  padding:20px;
+/* LOGIN SCREEN */
+#login-screen {
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  overflow-y: auto;
 }
 
-.login-card{
-  width:100%;
-  max-width:400px;
+.login-card {
+  width: 100%;
+  max-width: 400px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius:24px;
-  padding:40px;
+  border-radius: 24px;
+  padding: 30px 20px;
   box-shadow:
     0 12px 30px rgba(0,0,0,0.04),
     0 1px 3px rgba(0,0,0,0.02);
 }
 
-.logo{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  gap:12px;
-  margin-bottom:10px;
+.logo {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 10px;
 }
 
-.logo-icon{
-  width:54px;
-  height:54px;
-  border-radius:16px;
+.logo-icon {
+  width: 50px;
+  height: 50px;
+  border-radius: 16px;
   background: linear-gradient(135deg, #1a73e8, #4285f4);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-size:24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
 }
 
-.logo-text{
-  font-size:28px;
-  font-weight:700;
+.logo-text {
+  font-size: 26px;
+  font-weight: 700;
   color: #1f1f1f;
 }
 
-.logo-text span{
+.logo-text span {
   color: var(--accent);
 }
 
-.login-sub{
-  text-align:center;
-  color:var(--muted);
-  margin-bottom:30px;
-  font-size:14px;
+.login-sub {
+  text-align: center;
+  color: var(--muted);
+  margin-bottom: 24px;
+  font-size: 13px;
 }
 
-.field{
-  margin-bottom:18px;
+.field {
+  margin-bottom: 16px;
 }
 
-.field label{
-  display:block;
-  margin-bottom:8px;
-  font-size:13px;
-  color:var(--muted);
+.field label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--muted);
   font-weight: 500;
 }
 
-.field input{
-  width:100%;
+.field input {
+  width: 100%;
   background: #ffffff;
   border: 1px solid var(--border);
-  border-radius:12px;
-  padding:14px;
+  border-radius: 12px;
+  padding: 14px;
   color: var(--text);
-  outline:none;
-  font-size:14px;
+  outline: none;
+  font-size: 16px; /* 16px تمنع متصفحات الموبايل من عمل تقريب تلقائي مزعج */
 }
 
-.field input:focus{
-  border-color:var(--accent);
-  box-shadow:0 0 0 3px rgba(26, 115, 232, 0.15);
+.field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.15);
 }
 
-.btn-primary{
-  width:100%;
-  border:none;
-  border-radius:12px;
-  padding:14px;
-  cursor:pointer;
-  color:white;
-  font-size:14px;
-  font-weight:600;
+.btn-primary {
+  width: 100%;
+  border: none;
+  border-radius: 12px;
+  padding: 14px;
+  cursor: pointer;
+  color: white;
+  font-size: 15px;
+  font-weight: 600;
   background: var(--accent);
-  transition:.2s;
+  transition: .2s;
 }
 
-.btn-primary:hover{
+.btn-primary:hover {
   background: #1557b0;
-  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
 }
 
-.error-msg{
-  min-height:18px;
-  color:var(--danger);
-  font-size:12px;
-  margin-bottom:10px;
+.error-msg {
+  min-height: 18px;
+  color: var(--danger);
+  font-size: 12px;
+  margin-bottom: 10px;
 }
 
-/* CHAT */
-#chat-screen{
-  width:100%;
-  height:100vh;
-  max-width:900px;
-  margin:auto;
-  display:flex;
-  flex-direction:column;
+/* CHAT SCREEN */
+#chat-screen {
+  max-width: 900px;
+  margin: 0 auto;
   background: #ffffff;
+  height: 100%;
 }
 
 /* HEADER */
-.chat-header{
-  height:74px;
+.chat-header {
+  height: 70px;
+  min-height: 70px; /* يمنع انضغاط الهيدر في الموبايل */
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
   border-bottom: 1px solid #f0f0f0;
-  display:flex;
-  align-items:center;
-  gap:14px;
-  padding:0 20px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 15px;
+  z-index: 10;
 }
 
-.avatar{
-  width:46px;
-  height:46px;
-  border-radius:50%;
+.avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
   background: var(--surface2);
   color: var(--accent);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  font-weight:700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
 }
 
-.header-info{
-  flex:1;
+.header-info {
+  flex: 1;
+  min-width: 0; /* يسمح للنصوص بالانكماش والنقاط عند الطول الزائد */
 }
 
-.header-room{
-  font-size:15px;
-  font-weight:600;
+.header-room {
+  font-size: 14px;
+  font-weight: 600;
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.header-sub{
-  font-size:12px;
-  color:var(--muted);
-  margin-top:2px;
+.header-sub {
+  font-size: 11px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.btn-clear,
-.btn-leave{
-  border:none;
-  padding:10px 14px;
-  border-radius:10px;
-  cursor:pointer;
-  font-size:12px;
-  font-weight:600;
-  transition:.2s;
+.btn-clear, .btn-leave {
+  border: none;
+  padding: 8px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.btn-clear{
+.btn-clear {
   background: #fef7e0;
   color: #b06000;
 }
 
-.btn-clear:hover{
-  background: #fdecc8;
-}
-
-.btn-leave{
+.btn-leave {
   background: #fce8e6;
   color: var(--danger);
 }
 
-.btn-leave:hover{
-  background: #fad2cf;
-}
-
 /* MESSAGES AREA */
-.messages-area{
-  flex:1;
-  overflow-y:auto;
-  padding:22px;
-  display:flex;
-  flex-direction:column;
-  gap:18px;
+.messages-area {
+  flex: 1; /* تأخذ كل المساحة المتاحة وتدفع صندوق المدخلات للأسفل بدقة */
+  overflow-y: auto;
+  padding: 15px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
   background: #ffffff;
+  -webkit-overflow-scrolling: touch; /* تمرير سلس جداً على هواتف iOS */
 }
 
-.messages-area::-webkit-scrollbar{
-  width:6px;
+.messages-area::-webkit-scrollbar {
+  width: 4px;
 }
 
-.messages-area::-webkit-scrollbar-thumb{
+.messages-area::-webkit-scrollbar-thumb {
   background: #e0e0e0;
-  border-radius:20px;
+  border-radius: 20px;
 }
 
-.msg-wrapper{
-  display:flex;
+.msg-wrapper {
+  display: flex;
 }
 
-.msg-wrapper.sent{
-  justify-content:flex-end;
+.msg-wrapper.sent {
+  justify-content: flex-end;
 }
 
-.msg-content{
-  max-width:80%;
+.msg-content {
+  max-width: 85%;
 }
 
-.msg-name{
-  font-size:11px;
-  color:var(--muted);
-  margin-bottom:4px;
+.msg-name {
+  font-size: 11px;
+  color: var(--muted);
+  margin-bottom: 3px;
   padding: 0 4px;
 }
 
-/* فقاعات الرسائل */
-.msg-bubble{
-  padding: 14px 18px;
+.msg-bubble {
+  padding: 12px 16px;
   border-radius: 20px;
-  line-height: 1.6;
+  line-height: 1.5;
   font-size: 14px;
-  word-break:break-word;
-  
-  /* التعديل الجديد: يدعم تعدد الأسطر والنزول لسطر جديد بشكل صحيح */
+  word-break: break-word;
   white-space: pre-wrap; 
 }
 
-/* رسائلك */
-.msg-bubble.sent{
+.msg-bubble.sent {
   background: var(--surface);
   color: var(--text);
   border-bottom-left-radius: 4px;
 }
 
-/* رسائل الطرف الآخر */
-.msg-bubble.recv{
+.msg-bubble.recv {
   background: #ffffff;
   color: var(--text);
   border: 1px solid #e3e8ec;
   border-bottom-right-radius: 4px;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.02);
 }
 
-.msg-time{
-  margin-top:5px;
-  display:block;
-  font-size:10px;
-  color:var(--muted);
+.msg-time {
+  margin-top: 4px;
+  display: block;
+  font-size: 10px;
+  color: var(--muted);
   padding: 0 4px;
 }
 
-.system-msg{
-  align-self:center;
+.system-msg {
+  align-self: center;
   background: #f1f3f4;
-  padding:6px 16px;
-  border-radius:20px;
-  color:var(--muted);
-  font-size:11px;
-  font-weight: 500;
+  padding: 5px 14px;
+  border-radius: 20px;
+  color: var(--muted);
+  font-size: 11px;
 }
 
-.empty-state{
-  margin:auto;
-  color:var(--muted);
-  font-size:14px;
+.empty-state {
+  margin: auto;
+  color: var(--muted);
+  font-size: 14px;
+  text-align: center;
 }
 
-/* INPUT AREA */
-.input-area{
-  padding: 16px 22px;
-  display:flex;
-  gap:12px;
+/* INPUT AREA FIXED AT THE BOTTOM */
+.input-area {
+  padding: 12px 15px;
+  display: flex;
+  gap: 10px;
   background: #ffffff;
   align-items: center;
+  border-top: 1px solid #f0f0f0; /* إضافة حد علوي بسيط ليعزل مكان الكتابة */
+  padding-bottom: calc(12px + env(safe-area-inset-bottom)); /* دعم الهواتف الحديثة بدون حواف (Safe Area) */
 }
 
-.msg-input{
-  flex:1;
+.msg-input {
+  flex: 1;
   background: var(--surface);
   border: 1px solid transparent;
   border-radius: 24px; 
-  padding: 14px 20px;
-  resize:none;
+  padding: 12px 18px;
+  resize: none;
   color: var(--text);
-  outline:none;
-  font-size:14px;
+  outline: none;
+  font-size: 16px; /* يمنع الزووم التلقائي عند الكتابة في أجهزة آبل وأندرويد */
+  max-height: 120px;
   transition: 0.2s;
 }
 
-.msg-input:focus{
+.msg-input:focus {
   background: #ffffff;
   border-color: var(--accent);
   box-shadow: 0 0 0 1px var(--accent);
 }
 
-.btn-send{
-  width:48px;
-  height: 48px;
-  border:none;
-  border-radius:50%; 
-  cursor:pointer;
+.btn-send {
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  border: none;
+  border-radius: 50%; 
+  cursor: pointer;
   background: var(--surface);
   color: var(--accent);
-  font-size:18px;
+  font-size: 16px;
   display: flex;
   align-items: center;
   justify-content: center;
   transition: 0.2s;
 }
 
-.btn-send:hover{
+.btn-send:hover {
   background: var(--surface2);
 }
 
 /* TOAST */
-.toast{
-  position:fixed;
-  bottom:100px;
-  left:50%;
-  transform:translateX(-50%);
+.toast {
+  position: fixed;
+  bottom: 90px;
+  left: 50%;
+  transform: translateX(-50%);
   background: #323232;
   color: white;
-  padding:12px 20px;
-  border-radius:8px;
-  opacity:0;
-  transition:.3s;
+  padding: 10px 18px;
+  border-radius: 8px;
+  opacity: 0;
+  transition: .3s;
   font-size: 14px;
-  box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+  z-index: 100;
 }
 
-.toast.show{
-  opacity:1;
+.toast.show {
+  opacity: 1;
 }
 
 </style>
@@ -424,10 +427,7 @@ html,body{
           Sync<span>Chat</span>
         </div>
       </div>
-
-      <div class="login-sub">
-        شات مباشر باستخدام Firebase
-      </div>
+      <div class="login-sub">شات مباشر باستخدام Firebase</div>
 
       <div class="field">
         <label>اسمك</label>
@@ -441,41 +441,24 @@ html,body{
 
       <div class="error-msg" id="login-error"></div>
 
-      <button class="btn-primary" onclick="joinRoom()">
-        دخول الغرفة
-      </button>
+      <button class="btn-primary" onclick="joinRoom()">دخول الغرفة</button>
     </div>
   </div>
 
   <!-- CHAT -->
   <div id="chat-screen" class="screen hidden">
     <div class="chat-header">
-      <div class="avatar" id="my-avatar">
-        ME
-      </div>
-
+      <div class="avatar" id="my-avatar">ME</div>
       <div class="header-info">
-        <div class="header-room" id="header-room-id">
-          Room
-        </div>
-        <div class="header-sub" id="peer-status">
-          في انتظار الطرف الآخر...
-        </div>
+        <div class="header-room" id="header-room-id">Room</div>
+        <div class="header-sub" id="peer-status">في انتظار الطرف الآخر...</div>
       </div>
-
-      <button class="btn-clear" onclick="clearChat()">
-        مسح الشات
-      </button>
-
-      <button class="btn-leave" onclick="leaveRoom()">
-        مغادرة
-      </button>
+      <button class="btn-clear" onclick="clearChat()">مسح</button>
+      <button class="btn-leave" onclick="leaveRoom()">مغادرة</button>
     </div>
 
     <div class="messages-area" id="messages-area">
-      <div class="empty-state" id="empty-state">
-        ابدأ المحادثة الآن ✨
-      </div>
+      <div class="empty-state" id="empty-state">ابدأ المحادثة الآن ✨</div>
     </div>
 
     <div class="input-area">
@@ -486,10 +469,7 @@ html,body{
         placeholder="اكتب رسالة..."
         onkeydown="handleKey(event)"
       ></textarea>
-
-      <button class="btn-send" onclick="sendMessage()">
-        ➤
-      </button>
+      <button class="btn-send" onclick="sendMessage()">➤</button>
     </div>
   </div>
 
@@ -500,7 +480,7 @@ html,body{
 <script>
 /* FIREBASE CONFIG */
 const FIREBASE_CONFIG = {
-    apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+  apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
   authDomain: "syncchat-6e22b.firebaseapp.com",
   databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "syncchat-6e22b",
@@ -519,7 +499,6 @@ let presenceRef;
 
 const $ = id => document.getElementById(id);
 
-/* INIT */
 function initFirebase(){
   if(!firebase.apps.length){
     firebase.initializeApp(FIREBASE_CONFIG);
@@ -527,7 +506,6 @@ function initFirebase(){
   db = firebase.database();
 }
 
-/* HELPERS */
 function genId(){
   return Math.random().toString(36).slice(2,10);
 }
@@ -552,7 +530,6 @@ function showToast(msg){
   },2500);
 }
 
-/* JOIN */
 async function joinRoom(){
   const name = $('name-input').value.trim();
   const room = $('room-input').value.trim();
@@ -593,7 +570,6 @@ async function joinRoom(){
   $('chat-screen').classList.remove('hidden');
 }
 
-/* LISTENERS */
 function setupListeners(){
   db.ref(`rooms/${roomId}/presence`)
     .on('value',snap=>{
@@ -622,7 +598,6 @@ function setupListeners(){
   });
 }
 
-/* APPEND MESSAGE */
 function appendMessage(msg){
   const area = $('messages-area');
   const empty = $('empty-state');
@@ -658,7 +633,6 @@ function appendMessage(msg){
   area.scrollTop = area.scrollHeight;
 }
 
-/* SEND */
 async function sendMessage(){
   const input = $('msg-input');
   const text = input.value.trim();
@@ -676,7 +650,6 @@ async function sendMessage(){
   });
 }
 
-/* ENTER */
 function handleKey(e){
   if(e.key === 'Enter' && !e.shiftKey){
     e.preventDefault();
@@ -684,7 +657,6 @@ function handleKey(e){
   }
 }
 
-/* CLEAR CHAT FOR EVERYONE */
 async function clearChat(){
   const ok = confirm('سيتم حذف كل الرسائل عند جميع المستخدمين داخل الغرفة.\n\nمتأكد؟');
   if(!ok) return;
@@ -704,7 +676,6 @@ async function clearChat(){
   }
 }
 
-/* LEAVE */
 async function leaveRoom(){
   try{
     await presenceRef.remove();
@@ -723,7 +694,6 @@ async function leaveRoom(){
   $('login-screen').classList.remove('hidden');
 }
 
-/* ESCAPE HTML */
 function escapeHtml(text){
   return text
     .replace(/&/g,'&amp;')

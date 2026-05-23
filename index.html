@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+ن<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
@@ -170,39 +170,64 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   flex-direction:column; 
   width: auto;
 }
-msg-bubble{
-  padding: 8px 12px 18px 12px;
-  border-radius: 14px;
+.msg-bubble{
+  padding: 7px 12px 18px 12px;
+  border-radius: 18px;
   font-size: 15px;
-  line-height: 1.35;
+  line-height: 1.3;
   word-break: break-word;
+  overflow-wrap:anywhere;
   white-space: pre-wrap;
   position: relative;
   display: inline-block;
   width: fit-content;
-  min-width: 60px;
+  max-width: 100%;
+  min-width: 48px;
+  transition: .2s ease;
 }
 
-
+/* رسالة المرسل */
 .msg-wrapper.sent .msg-bubble{
   background: #10a37f;
-  color:#ffffff;
-  border-bottom-left-radius: 2px; /* كسر الحافة من اليسار لأن الرسالة يسار الشاشة */
-}
-.msg-wrapper.recv .msg-bubble{
-  background: #f0f0f0;
-  color: #0d0d0d;
-  border-bottom-right-radius: 2px; /* كسر الحافة من اليمين لأن الرسالة يمين الشاشة */
+  color: #ffffff;
+
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-bottom-left-radius: 18px;
+  border-bottom-right-radius: 5px;
 }
 
-/* ضبط تمرير الوقت وعلامة الصح في الأسفل جهة اليسار دائماً */
+/* رسالة المستقبل */
+.msg-wrapper.recv .msg-bubble{
+  background: #f1f1f1;
+  color: #0d0d0d;
+
+  border-top-left-radius: 18px;
+  border-top-right-radius: 18px;
+  border-bottom-left-radius: 5px;
+  border-bottom-right-radius: 18px;
+}
+
+/* الوقت */
 .msg-meta{
-  bottom: 2px;
+  position: absolute;
+  bottom: 3px;
   left: 8px;
   font-size: 9px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.msg-wrapper.sent .msg-meta{ color: rgba(255, 255, 255, 0.7); }
-.msg-wrapper.recv .msg-meta{ color: #8e8e93; }
+
+.msg-wrapper.sent .msg-meta{
+  color: rgba(255,255,255,.72);
+}
+
+.msg-wrapper.recv .msg-meta{
+  color: #8e8e93;
+  }
 .check-icon{ font-size: 9px; }
 
 /* الصور والمرفقات بمقاسات منضبطة */

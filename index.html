@@ -13,7 +13,7 @@
 
 <style>
 /* ══════════════════════════════════════════
-   RESET & TOKENS — ChatGPT White Style Fixed
+   RESET & TOKENS — ChatGPT White Style
 ══════════════════════════════════════════ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
@@ -149,19 +149,19 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   align-self:center;background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;
 }
 
-/* ── تعديل هيكلة الحجم المرن للرسائل هنا ── */
+/* ── تعديل هيكلة الحجم المرن للرسائل ── */
 .msg-wrapper{
   display:flex;
   width: 100%;
   margin-bottom: 2px;
   animation:bubbleIn .18s ease;
 }
-.msg-wrapper.sent{justify-content: flex-start;} /* المرسل على اليمين */
-.msg-wrapper.recv{justify-content: flex-end;}   /* المستقبل على اليسار */
+.msg-wrapper.sent{justify-content: flex-start;} /* المرسل على اليمين في نمط RTL */
+.msg-wrapper.recv{justify-content: flex-end;}   /* المستقبل على اليسار في نمط RTL */
 
 .msg-row{
   display:flex;
-  max-width: 75%; /* أقصى عرض للفقاعة 75% من الشاشة */
+  max-width: 75%; 
   width: auto;
 }
 .msg-bubble-wrap{
@@ -171,7 +171,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 
 .msg-bubble{
-  padding: 8px 14px 8px 55px; /* مساحة يسار للوقت */
+  padding: 8px 14px 8px 55px; 
   border-radius: 14px;
   font-size: 15px;
   line-height: 1.4;
@@ -179,8 +179,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   white-space: pre-wrap;
   position: relative;
   display: inline-block;
-  width: fit-content; /* تجعل الفقاعة تأخذ حجم النص بالضبط */
-  min-width: 75px;    /* حد أدنى مناسب جداً */
+  width: fit-content; 
+  min-width: 75px;    
 }
 .msg-wrapper.sent .msg-bubble{
   background: #10a37f;
@@ -191,7 +191,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   background: #f0f0f0;
   color: #0d0d0d;
   border-bottom-left-radius: 2px;
-  padding: 8px 14px 8px 45px; /* مساحة أقل للمستقبل لعدم وجود علامة الصح */
+  padding: 8px 14px 8px 45px; 
 }
 
 /* ضبط تمرير الوقت وعلامة الصح في الأسفل */
@@ -360,6 +360,21 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 </div>
 
 <script>
+/* ══════════════════════════════════════════
+   🔥 FIREBASE CONFIG — ضع بياناتك هنا
+══════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+  authDomain: "syncchat-6e22b.firebaseapp.com",
+  databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "syncchat-6e22b",
+  storageBucket: "syncchat-6e22b.firebasestorage.app",
+  messagingSenderId: "692797381468",
+  appId: "1:692797381468:web:9faaed7bf44f0f527a3f99",
+  measurementId: "G-ZMN7S10M2R"
+};
+/* ══════════════════════════════════════════ */
+
 let db, storage;
 let myName, myId, roomId;
 let messagesRef, presenceRef, typingRef;
@@ -372,20 +387,6 @@ const initials = n => n.trim().slice(0,2).toUpperCase();
 const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
-/* ══════════════════════════════════════════
-   🔥 FIREBASE CONFIG — ضع بياناتك هنا
-══════════════════════════════════════════ */
-const FIREBASE_CONFIG = {
-apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
-  authDomain: "syncchat-6e22b.firebaseapp.com",
-  databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "syncchat-6e22b",
-  storageBucket: "syncchat-6e22b.firebasestorage.app",
-  messagingSenderId: "692797381468",
-  appId: "1:692797381468:web:9faaed7bf44f0f527a3f99",
-  measurementId: "G-ZMN7S10M2R"
-};
-/* ══════════════════════════════════════════ */
 
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -598,6 +599,6 @@ async function leaveRoom(){
   $('chat-screen').classList.add('hidden');
   $('login-screen').classList.remove('hidden');
 }
-</style>
-</head>
-<body>
+</script>
+</body>
+</html>

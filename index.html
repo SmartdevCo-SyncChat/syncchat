@@ -1,4 +1,4 @@
-ن<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
@@ -140,8 +140,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   width: 100%;
   height: 100%;
   overflow-y:auto;
-  padding: 2px;
-  display:flex;flex-direction:column;gap:8px;
+  padding: 16px;
+  display:flex;flex-direction:column;gap:12px;
   -webkit-overflow-scrolling:touch;
 }
 
@@ -149,14 +149,15 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   align-self:center;background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;
 }
 
-/* ── تم التعديل هنا ليتناسب تماماً مع الـ RTL ── */
+/* ══════════════════════════════════════════
+   MESSAGES LAYOUT & BUBBLES
+══════════════════════════════════════════ */
 .msg-wrapper{
   display:flex;
   width: 100%;
-  margin-bottom: 2px;
   animation:bubbleIn .18s ease;
 }
-/* الـ sent (أنا) يذهب لليسار في الـ RTL والـ recv (المستقبل) يذهب لليمين */
+/* المحاذاة: المرسل يسار والمستقبل يمين في وضع الـ RTL */
 .msg-wrapper.sent{justify-content: flex-end;} 
 .msg-wrapper.recv{justify-content: flex-start;}   
 
@@ -170,64 +171,62 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   flex-direction:column; 
   width: auto;
 }
+
 .msg-bubble{
-  padding: 7px 12px 18px 12px;
-  border-radius: 18px;
+  padding: 10px 14px;
   font-size: 15px;
-  line-height: 1.3;
+  line-height: 1.4;
   word-break: break-word;
-  overflow-wrap:anywhere;
+  overflow-wrap: anywhere;
   white-space: pre-wrap;
-  position: relative;
-  display: inline-block;
+  display: flex;
+  flex-direction: column;
   width: fit-content;
   max-width: 100%;
-  min-width: 48px;
-  transition: .2s ease;
+  min-width: 80px;
 }
 
-/* رسالة المرسل */
+/* تخصيص الـ Radius والخلفية لـ الراسل (أنا) */
 .msg-wrapper.sent .msg-bubble{
   background: #10a37f;
   color: #ffffff;
-
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  border-bottom-left-radius: 18px;
-  border-bottom-right-radius: 5px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 4px; /* زاوية حادة جهة حافة الشاشة اليسرى */
+  border-bottom-right-radius: 16px;
 }
 
-/* رسالة المستقبل */
+/* تخصيص الـ Radius والخلفية لـ المستقبل (الزميل) */
 .msg-wrapper.recv .msg-bubble{
   background: #f1f1f1;
   color: #0d0d0d;
-
-  border-top-left-radius: 18px;
-  border-top-right-radius: 18px;
-  border-bottom-left-radius: 5px;
-  border-bottom-right-radius: 18px;
+  border-top-left-radius: 16px;
+  border-top-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 4px; /* زاوية حادة جهة حافة الشاشة اليمنى */
 }
 
-/* الوقت */
+/* إعدادات الميتا والوقت (أسفل الرسالة دائماً محاذي لليسار) */
 .msg-meta{
-  position: absolute;
-  bottom: 3px;
-  left: 8px;
-  font-size: 9px;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 3px;
+  font-size: 10px;
+  margin-top: 5px;
   white-space: nowrap;
   pointer-events: none;
+  align-self: flex-end;
+  width: 100%;
 }
 
 .msg-wrapper.sent .msg-meta{
-  color: rgba(255,255,255,.72);
+  color: rgba(255, 255, 255, 0.75);
 }
 
 .msg-wrapper.recv .msg-meta{
   color: #8e8e93;
-  }
+}
 .check-icon{ font-size: 9px; }
 
 /* الصور والمرفقات بمقاسات منضبطة */
@@ -381,10 +380,10 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 <script>
 /* ══════════════════════════════════════════
-   🔥 FIREBASE CONFIG — تأكد من استبدال هذه القيم ببياناتك الحقيقية
+   🔥 FIREBASE CONFIG
 ══════════════════════════════════════════ */
 const FIREBASE_CONFIG = {
- apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+  apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
   authDomain: "syncchat-6e22b.firebaseapp.com",
   databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
   projectId: "syncchat-6e22b",
@@ -531,7 +530,7 @@ function appendMessage(msg){
     div.innerHTML=`
       <div class="msg-row">
         <div class="msg-bubble-wrap">
-          <div class="msg-bubble ${sent?'sent':'recv'}">
+          <div class="msg-bubble">
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
             <span class="msg-meta">${fmt(msg.ts)}${sent?' <span class="check-icon">✓✓</span>':''}</span>

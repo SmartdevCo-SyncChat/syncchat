@@ -21,29 +21,29 @@
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
 :root{
-  --bg:            #212121;
-  --bg-chat:       #212121;
-  --surface:       #2f2f2f;
-  --surface2:      #3a3a3a;
-  --border:        #3f3f3f;
-  --border2:       #4a4a4a;
+  --bg:            #ffffff;
+  --bg-chat:       #ffffff;
+  --surface:       #f9f9f9;
+  --surface2:      #efefef;
+  --border:        #e5e5e5;
+  --border2:       #d9d9d9;
   --accent:        #10a37f;
   --accent-hover:  #0d8f6f;
-  --text:          #ececec;
-  --text-2:        #c5c5c5;
-  --muted:         #8e8ea0;
+  --text:          #0d0d0d;
+  --text-2:        #353535;
+  --muted:         #6e6e80;
   --danger:        #ef4444;
-  --sent-bg:       #2f2f2f;
-  --recv-bg:       #2f2f2f;
-  --header-bg:     #212121;
-  --input-bg:      #2f2f2f;
+  --sent-bg:       #10a37f;
+  --recv-bg:       #f4f4f4;
+  --header-bg:     #ffffff;
+  --input-bg:      #f4f4f4;
   --shadow-sm:     0 1px 3px rgba(0,0,0,.3);
   --shadow-md:     0 4px 16px rgba(0,0,0,.4);
   --shadow-lg:     0 12px 40px rgba(0,0,0,.5);
   --font:          'Cairo', sans-serif;
 }
 
-html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(--font);background:var(--bg);color:var(--text)}
+html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(--font);background:#ffffff;color:#0d0d0d}
 
 .chat-wallpaper{display:none}
 
@@ -56,7 +56,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 ══════════════════════════════════════════ */
 #login-screen{
   display:flex;align-items:center;justify-content:center;
-  background:#212121;padding:20px;overflow-y:auto;
+  background:#ffffff;padding:20px;overflow-y:auto;
 }
 
 .login-wrap{width:100%;max-width:380px;animation:loginIn .4s cubic-bezier(.22,1,.36,1)}
@@ -66,8 +66,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 
 .login-card{
-  background:#212121;
-  border:1px solid var(--border);
+  background:#ffffff;
+  border:1px solid #e5e5e5;
   border-radius:16px;
   padding:32px 28px 28px;
   box-shadow:none;
@@ -92,7 +92,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
 .field input{
   width:100%;
-  background:#2f2f2f;
+  background:#f4f4f4;
   border:1px solid var(--border);
   border-radius:10px;
   padding:11px 14px;
@@ -103,7 +103,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   transition:border-color .2s,box-shadow .2s;
 }
 .field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.15)}
-.field input::placeholder{color:#555}
+.field input::placeholder{color:#aaa}
 
 .field-hint{font-size:11px;color:var(--muted);margin-top:4px}
 
@@ -127,7 +127,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 #chat-screen{
   display:flex;flex-direction:column;
   height:100%;max-width:860px;margin:0 auto;
-  background:#212121;
+  background:#ffffff;
   position:relative;
 }
 
@@ -135,7 +135,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .chat-header{
   position:relative;z-index:100;
   background:var(--header-bg);
-  border-bottom:none;
+  border-bottom:1px solid #e5e5e5;
   height:56px;
   display:flex;align-items:center;gap:10px;
   padding:0 14px;
@@ -151,8 +151,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 .my-avatar-sm{
   width:28px;height:28px;border-radius:50%;
-  background:#2f2f2f;
-  border:1px solid var(--border2);
+  background:#f4f4f4;
+  border:1px solid #d9d9d9;
   display:flex;align-items:center;justify-content:center;
   font-size:10px;font-weight:700;color:var(--text-2);
   flex-shrink:0;
@@ -202,7 +202,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 /* date divider */
 .date-divider{
   align-self:center;
-  background:#212121;
+  background:#ffffff;
   border:1px solid var(--border);
   padding:3px 12px;border-radius:20px;
   font-size:11px;color:var(--muted);
@@ -260,40 +260,43 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 /* ── BUBBLE — WhatsApp compact ── */
 .msg-bubble{
-  padding:5px 10px 14px;   /* bottom يحجز مكان للوقت */
-  border-radius:8px;
+  padding:6px 10px 18px 10px;  /* bottom للوقت فقط */
+  border-radius:10px;
   font-size:14px;
-  line-height:1.45;
+  line-height:1.4;
   word-break:break-word;
   white-space:pre-wrap;
   position:relative;
   max-width:100%;
+  display:inline-block;        /* يأخذ حجم النص فقط */
+  min-width:60px;
 }
 .msg-bubble.sent{
-  background:#2a5298;      /* أزرق داكن للمرسل */
+  background:var(--sent-bg);
   color:#ffffff;
-  border-bottom-left-radius:2px;
+  border-bottom-right-radius:3px;
   border:none;
 }
 .msg-bubble.recv{
-  background:#212121;
-  color:var(--text);
-  border-bottom-right-radius:2px;
+  background:var(--recv-bg);
+  color:var(--text-2);
+  border-bottom-left-radius:3px;
   border:none;
 }
 
-/* time — absolute في الأسفل زي واتس بالظبط */
+/* time — absolute في أسفل اليمين زي واتس */
 .msg-meta{
   position:absolute;
-  bottom:3px;
-  left:8px;
+  bottom:4px;
+  right:8px;
   font-size:10px;
-  color:rgba(255,255,255,.55);
+  color:rgba(255,255,255,.7);
   display:flex;align-items:center;gap:3px;
   line-height:1;
+  white-space:nowrap;
 }
-.msg-wrapper.sent .msg-meta{left:auto;right:8px;color:rgba(255,255,255,.6)}
-.msg-wrapper.recv .msg-meta{color:var(--muted)}
+.msg-wrapper.sent .msg-meta{color:rgba(255,255,255,.75)}
+.msg-wrapper.recv .msg-meta{color:#6e6e80;right:8px;}
 .check-icon{font-size:10px}
 
 /* image */
@@ -321,7 +324,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 /* system message */
 .system-msg{
   align-self:center;
-  background:#212121;
+  background:#ffffff;
   border:1px solid var(--border);
   padding:4px 14px;border-radius:20px;
   color:var(--muted);font-size:11px;
@@ -370,12 +373,12 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 /* ── INPUT AREA — ChatGPT style ── */
 .input-area{
-  background:#212121;
+  background:#ffffff;
   padding:10px 16px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom));
   display:flex;gap:8px;align-items:flex-end;
   flex-shrink:0;
-  border-top:1px solid var(--border);
+  border-top:1px solid #e5e5e5;
 }
 
 .input-wrap{
@@ -384,7 +387,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   border-radius:14px;
   display:flex;align-items:flex-end;gap:4px;
   padding:8px 12px 8px 8px;
-  border:1px solid var(--border2);
+  border:1px solid #d9d9d9;
   transition:border-color .2s,box-shadow .2s;
   min-height:44px;
 }
@@ -411,7 +414,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   resize:none;line-height:1.5;
   max-height:120px;align-self:flex-end;padding:2px 0;
 }
-.msg-input::placeholder{color:#555}
+.msg-input::placeholder{color:#aaa}
 
 /* send button — ChatGPT style: square rounded */
 .btn-send{
@@ -431,8 +434,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .toast{
   position:fixed;bottom:80px;left:50%;
   transform:translateX(-50%) translateY(8px);
-  background:var(--surface2);color:var(--text);
-  border:1px solid var(--border2);
+  background:#0d0d0d;color:#ffffff;
+  border:none;
   padding:8px 18px;border-radius:10px;
   font-size:13px;font-weight:500;
   opacity:0;transition:.3s;
@@ -490,7 +493,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   <div class="error-msg" id="login-error"></div>
   <button class="btn-login" id="join-btn" onclick="joinRoom()">دخول الغرفة</button>
 </div>
-
 
   </div>
 </div>

@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
@@ -7,16 +6,14 @@
 <title>SyncChat Pro</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2 family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 /* ══════════════════════════════════════════
-   RESET & TOKENS — ChatGPT Dark Theme
+   RESET & TOKENS — ChatGPT White Style Fixed
 ══════════════════════════════════════════ */
 *,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
 
@@ -37,15 +34,10 @@
   --recv-bg:       #f4f4f4;
   --header-bg:     #ffffff;
   --input-bg:      #f4f4f4;
-  --shadow-sm:     0 1px 3px rgba(0,0,0,.3);
-  --shadow-md:     0 4px 16px rgba(0,0,0,.4);
-  --shadow-lg:     0 12px 40px rgba(0,0,0,.5);
   --font:          'Cairo', sans-serif;
 }
 
 html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(--font);background:#ffffff;color:#0d0d0d}
-
-.chat-wallpaper{display:none}
 
 #app{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
 .screen{width:100%;height:100%;overflow:hidden}
@@ -56,411 +48,229 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 ══════════════════════════════════════════ */
 #login-screen{
   display:flex;align-items:center;justify-content:center;
-  background:#ffffff;padding:20px;overflow-y:auto;
+  background:#ffffff;padding:20px;overflow-y:auto;height:100%;
 }
-
 .login-wrap{width:100%;max-width:380px;animation:loginIn .4s cubic-bezier(.22,1,.36,1)}
-@keyframes loginIn{
-  from{opacity:0;transform:translateY(20px)}
-  to{opacity:1;transform:translateY(0)}
-}
+@keyframes loginIn{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
 
-.login-card{
-  background:#ffffff;
-  border:1px solid #e5e5e5;
-  border-radius:16px;
-  padding:32px 28px 28px;
-  box-shadow:none;
-}
-
-/* Brand */
+.login-card{background:#ffffff;border:1px solid #e5e5e5;border-radius:16px;padding:32px 28px 28px;}
 .brand{text-align:center;margin-bottom:28px}
 .brand-icon{
-  width:64px;height:64px;margin:0 auto 12px;
-  background:var(--accent);
-  border-radius:16px;
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:0 6px 20px rgba(16,163,127,.3);
+  width:64px;height:64px;margin:0 auto 12px;background:var(--accent);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;box-shadow:0 6px 20px rgba(16,163,127,.3);
 }
 .brand-icon svg{width:32px;height:32px;fill:white}
 .brand-name{font-size:22px;font-weight:700;color:var(--text)}
 .brand-name span{color:var(--accent)}
 .brand-sub{font-size:12px;color:var(--muted);margin-top:3px}
 
-/* Fields */
 .field{margin-bottom:14px}
 .field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.5px;text-transform:uppercase}
 .field input{
-  width:100%;
-  background:#f4f4f4;
-  border:1px solid var(--border);
-  border-radius:10px;
-  padding:11px 14px;
-  color:var(--text);
-  font-size:14px;
-  font-family:var(--font);
-  outline:none;
-  transition:border-color .2s,box-shadow .2s;
+  width:100%;background:#f4f4f4;border:1px solid var(--border);border-radius:10px;
+  padding:11px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;
 }
 .field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.15)}
-.field input::placeholder{color:#aaa}
-
 .field-hint{font-size:11px;color:var(--muted);margin-top:4px}
 
 .btn-login{
-  width:100%;border:none;border-radius:10px;
-  padding:12px;margin-top:6px;
-  background:var(--accent);
-  color:white;font-size:14px;font-weight:700;
-  font-family:var(--font);cursor:pointer;
-  transition:background .2s,transform .15s;
+  width:100%;border:none;border-radius:10px;padding:12px;margin-top:6px;
+  background:var(--accent);color:white;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;
 }
 .btn-login:hover{background:var(--accent-hover)}
-.btn-login:active{transform:scale(.99)}
-.btn-login:disabled{opacity:.5;cursor:not-allowed}
-
 .error-msg{min-height:18px;color:var(--danger);font-size:12px;margin-bottom:8px;text-align:center;font-weight:500}
 
 /* ══════════════════════════════════════════
-   CHAT SCREEN
+   CHAT SCREEN — تم إصلاح الخلفيات والثبات هنا
 ══════════════════════════════════════════ */
-#chat-screen{
-  display:flex;flex-direction:column;
-  height:100%;max-width:860px;margin:0 auto;
-  background:#ffffff;
-  position:relative;
+#chat-screen {
+  max-width: 860px;
+  margin: 0 auto;
+  background: #ffffff; /* تم تعديل اللون الأبيض الفاتح النظيف */
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
 }
 
-/* ── HEADER ── */
+/* هيدر ثابت ومستقر علوياً */
 .chat-header{
-  position:relative;z-index:100;
-  background:var(--header-bg);
-  border-bottom:1px solid #e5e5e5;
-  height:56px;
-  display:flex;align-items:center;gap:10px;
-  padding:0 14px;
-  flex-shrink:0;
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  max-width: 860px; margin: 0 auto;
+  background: var(--header-bg);
+  border-bottom: 1px solid #e5e5e5;
+  height: 56px;
+  display: flex;align-items: center;gap: 10px;
+  padding: 0 14px;
+  z-index: 1000;
 }
 
 .peer-avatar{
-  width:36px;height:36px;border-radius:50%;
-  background:var(--accent);
-  display:flex;align-items:center;justify-content:center;
-  font-size:13px;font-weight:700;color:white;
-  flex-shrink:0;
+  width:36px;height:36px;border-radius:50%;background:var(--accent);
+  display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;
 }
 .my-avatar-sm{
-  width:28px;height:28px;border-radius:50%;
-  background:#f4f4f4;
-  border:1px solid #d9d9d9;
-  display:flex;align-items:center;justify-content:center;
-  font-size:10px;font-weight:700;color:var(--text-2);
-  flex-shrink:0;
+  width:28px;height:28px;border-radius:50%;background:#f4f4f4;border:1px solid #d9d9d9;
+  display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-2);flex-shrink:0;
 }
-
 .header-info{flex:1;min-width:0}
 .header-room{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-sub{font-size:11px;color:var(--muted);margin-top:1px;display:flex;align-items:center;gap:5px}
-.online-dot{
-  width:6px;height:6px;border-radius:50%;
-  background:var(--muted);flex-shrink:0;
-  transition:background .3s,box-shadow .3s;
-}
+.online-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
 .online-dot.on{background:#10a37f;box-shadow:0 0 5px rgba(16,163,127,.5)}
 
 .header-actions{display:flex;gap:5px}
 .btn-hdr{
-  border:1px solid var(--border);
-  border-radius:7px;
-  padding:5px 10px;
-  cursor:pointer;font-size:11px;font-weight:600;
-  font-family:var(--font);
-  background:transparent;
-  transition:all .2s;
+  border:1px solid var(--border);border-radius:7px;padding:5px 10px;
+  cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font);background:transparent;
 }
 .btn-hdr.clear{color:var(--muted)}
-.btn-hdr.clear:hover{border-color:var(--border2);color:var(--text)}
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
-.btn-hdr.leave:hover{background:rgba(239,68,68,.1)}
 
-/* ── MESSAGES WRAP ── */
-.messages-wrap{flex:1;position:relative;overflow:hidden;background:#ffffff}
+/* منطقة تمرير الرسائل المفتوحة والمحددة المساحة */
+.messages-wrap {
+  position: absolute;
+  top: 56px;
+  bottom: 74px; /* مساحة مناسبة تنتهي قبل صندوق الكتابة */
+  left: 0; right: 0;
+  background: #ffffff; /* إصلاح الخلفية السوداء المزعجة */
+  overflow: hidden;
+}
 
-/* ── MESSAGES ── */
 .messages-area{
-  position:absolute;inset:0;
+  width: 100%;
+  height: 100%;
   overflow-y:auto;
-  padding:16px 16px 8px;
-  display:flex;flex-direction:column;gap:3px;
+  padding: 16px;
+  display:flex;flex-direction:column;gap:8px;
   -webkit-overflow-scrolling:touch;
-  scroll-behavior:smooth;
 }
-.messages-area::-webkit-scrollbar{width:5px}
-.messages-area::-webkit-scrollbar-track{background:transparent}
-.messages-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:3px}
 
-/* date divider */
+/* تقسيمات التاريخ */
 .date-divider{
-  align-self:center;
-  background:#ffffff;
-  border:1px solid var(--border);
-  padding:3px 12px;border-radius:20px;
-  font-size:11px;color:var(--muted);
-  margin:10px 0 6px;
+  align-self:center;background:#ffffff;border:1px solid var(--border);
+  padding:3px 12px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;
 }
 
-/* bubble wrapper */
+/* تغليف صفوف المحادثة */
 .msg-wrapper{
   display:flex;
-  margin-bottom:2px;
-  animation:bubbleIn .22s ease;
-}
-@keyframes bubbleIn{
-  from{opacity:0;transform:translateY(6px) scale(.98)}
-  to{opacity:1;transform:translateY(0) scale(1)}
-}
-.msg-wrapper.sent{justify-content:flex-end}
-.msg-wrapper.recv{justify-content:flex-start}
-
-/* bubble */
-.msg-bubble-wrap{max-width:78%}
-
-.msg-name{
-  font-size:11px;font-weight:600;
-  color:var(--accent);
-  margin-bottom:3px;padding-right:4px;
-}
-.msg-wrapper.sent .msg-name{color:#53bdeb;text-align:left;padding-left:4px;padding-right:0}
-
-/* old bubble removed */
-
-/* ── MSG WRAPPERS ── */
-.msg-wrapper{
-  display:flex;
-  margin-bottom:2px;
+  width: 100%;
+  margin-bottom: 2px;
   animation:bubbleIn .18s ease;
-  padding:0 10px;
 }
-@keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 .msg-wrapper.sent{justify-content:flex-end}
 .msg-wrapper.recv{justify-content:flex-start}
 
-/* hide avatar & name — WhatsApp style */
-.msg-row{display:flex;max-width:78%}
-.msg-av{display:none}
-.msg-bubble-wrap{display:flex;flex-direction:column}
-.msg-wrapper.sent .msg-bubble-wrap{align-items:flex-end}
-.msg-name{display:none}  /* ← مخفي زي واتس */
+.msg-row{display:flex;max-width:82%; width: auto;}
+.msg-bubble-wrap{display:flex;flex-direction:column; width: 100%;}
 
-/* ── BUBBLE — WhatsApp compact ── */
+/* ── إصلاح الفقعات وحجم النصوص الطولية ── */
 .msg-bubble{
-  padding:7px 46px 7px 10px;  /* right padding للوقت */
-  border-radius:10px;
+  padding: 8px 14px 22px 14px; /* مساحة كافية للوقت في الأسفل */
+  border-radius:14px;
   font-size:14px;
-  line-height:1.4;
+  line-height:1.5;
   word-break:break-word;
   white-space:pre-wrap;
   position:relative;
   display:inline-block;
+  min-width: 65px; /* يمنع انكماش الفقاعة عند الكلمات القصيرة */
   max-width:100%;
-  min-width:0;
 }
 .msg-bubble.sent{
-  background:#10a37f;
+  background: #10a37f;
   color:#ffffff;
-  border-bottom-right-radius:3px;
-  border:none;
+  border-bottom-right-radius:4px;
 }
 .msg-bubble.recv{
   background:#f0f0f0;
   color:#0d0d0d;
-  border-bottom-left-radius:3px;
-  border:none;
+  border-bottom-left-radius:4px;
 }
 
-/* time — bottom-right زي واتس */
+/* الميتا والوقت أسفل الفقاعة */
 .msg-meta{
   position:absolute;
   bottom:4px;
-  left:8px;
-  font-size:10.5px;
-  color:rgba(255,255,255,.75);
+  left:10px;
+  font-size:10px;
   display:flex;align-items:center;gap:3px;
-  line-height:1;
   white-space:nowrap;
 }
-.msg-wrapper.sent .msg-meta{left:auto;right:8px;color:rgba(255,255,255,.8)}
+.msg-wrapper.sent .msg-meta{left:auto; right:10px; color:rgba(255,255,255,.75)}
 .msg-wrapper.recv .msg-meta{color:#6e6e80;}
 .check-icon{font-size:10px}
 
-/* image */
-.chat-image{
-  max-width:100%;max-height:200px;
-  border-radius:10px;display:block;
-  cursor:pointer;margin-bottom:3px;
-  transition:opacity .2s;
-}
-.chat-image:hover{opacity:.9}
-
-/* file attachment */
+/* الصور والمرفقات */
+.chat-image{max-width:100%;max-height:200px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;}
 .file-attachment{
-  display:flex;align-items:center;gap:8px;
-  background:rgba(255,255,255,.05);
-  padding:8px 10px;border-radius:10px;
-  text-decoration:none;color:var(--accent);
-  font-weight:600;font-size:12px;
-  border:1px solid var(--border);
-  margin-bottom:3px;transition:background .2s;
+  display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);
+  padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);
+  font-weight:600;font-size:12px;border:1px solid var(--border);margin-bottom:3px;
 }
-.file-attachment:hover{background:rgba(255,255,255,.08)}
-.file-icon{font-size:18px;flex-shrink:0}
-
-/* system message */
-.system-msg{
-  align-self:center;
-  background:#ffffff;
-  border:1px solid var(--border);
-  padding:4px 14px;border-radius:20px;
-  color:var(--muted);font-size:11px;
-  margin:8px 0;
-}
-
-/* empty state */
+.system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 .empty-state{margin:auto;text-align:center;color:var(--muted)}
-.empty-state .es-icon{font-size:40px;margin-bottom:8px;opacity:.35}
-.empty-state p{font-size:13px}
 
-/* ── TYPING ── */
+/* الـ Typing بار */
 .typing-bar{
-  padding:2px 16px 4px;
-  font-size:11px;color:var(--muted);
-  height:22px;display:flex;align-items:center;gap:6px;
-  flex-shrink:0;
+  position: fixed;
+  bottom: 64px; left: 0; right: 0;
+  max-width: 860px; margin: 0 auto;
+  padding:2px 16px;font-size:11px;color:var(--muted);
+  height:20px;display:flex;align-items:center;gap:6px;
+  z-index: 999; background: transparent;
 }
 .typing-dots{display:flex;gap:3px}
-.typing-dots span{
-  width:4px;height:4px;border-radius:50%;
-  background:var(--muted);animation:tdot 1.1s infinite;
-}
+.typing-dots span{width:4px;height:4px;border-radius:50%;background:var(--muted);animation:tdot 1.1s infinite;}
 .typing-dots span:nth-child(2){animation-delay:.18s}
 .typing-dots span:nth-child(3){animation-delay:.36s}
-@keyframes tdot{
-  0%,60%,100%{transform:translateY(0);opacity:.4}
-  30%{transform:translateY(-4px);opacity:1}
-}
+@keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
 
-/* ── UPLOAD BAR ── */
 .upload-bar{
-  background:rgba(16,163,127,.12);
-  border-top:1px solid rgba(16,163,127,.2);
-  padding:5px 16px;
-  font-size:11px;color:var(--accent);font-weight:600;
-  display:none;align-items:center;gap:8px;flex-shrink:0;
+  background:rgba(16,163,127,.12);padding:5px 16px;font-size:11px;color:var(--accent);font-weight:600;
+  display:none;align-items:center;gap:8px;
 }
 .upload-bar.show{display:flex}
-.upload-spin{
-  width:12px;height:12px;border-radius:50%;
-  border:2px solid var(--accent);border-top-color:transparent;
-  animation:spin .7s linear infinite;flex-shrink:0;
-}
-@keyframes spin{to{transform:rotate(360deg)}}
+.upload-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);border-top-color:transparent;animation:spin .7s linear infinite;}
 
-/* ── INPUT AREA — ChatGPT style ── */
+/* صندوق المدخلات الثابت في الأسفل */
 .input-area{
+  position: fixed;
+  bottom: 0; left: 0; right: 0;
+  max-width: 860px; margin: 0 auto;
   background:#ffffff;
   padding:10px 16px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom));
   display:flex;gap:8px;align-items:flex-end;
-  flex-shrink:0;
   border-top:1px solid #e5e5e5;
+  z-index: 1000;
 }
-
 .input-wrap{
-  flex:1;
-  background:var(--input-bg);
-  border-radius:14px;
-  display:flex;align-items:flex-end;gap:4px;
-  padding:8px 12px 8px 8px;
-  border:1px solid #d9d9d9;
-  transition:border-color .2s,box-shadow .2s;
-  min-height:44px;
+  flex:1;background:var(--input-bg);border-radius:14px;display:flex;align-items:flex-end;gap:4px;
+  padding:8px 12px;border:1px solid #d9d9d9;min-height:44px;
 }
-.input-wrap:focus-within{
-  border-color:var(--accent);
-  box-shadow:0 0 0 2px rgba(16,163,127,.12);
-}
+.btn-attach{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;width:30px;height:30px;}
+.msg-input{flex:1;border:none;outline:none;background:transparent;color:var(--text);font-size:14px;font-family:var(--font);resize:none;max-height:120px;}
 
-.btn-attach{
-  width:30px;height:30px;
-  border:none;background:transparent;
-  color:var(--muted);cursor:pointer;font-size:18px;
-  display:flex;align-items:center;justify-content:center;
-  border-radius:8px;flex-shrink:0;
-  transition:background .15s,color .15s;
-  align-self:flex-end;margin-bottom:1px;
-}
-.btn-attach:hover{background:var(--surface2);color:var(--text)}
-
-.msg-input{
-  flex:1;border:none;outline:none;
-  background:transparent;color:var(--text);
-  font-size:14px;font-family:var(--font);
-  resize:none;line-height:1.5;
-  max-height:120px;align-self:flex-end;padding:2px 0;
-}
-.msg-input::placeholder{color:#aaa}
-
-/* send button — ChatGPT style: square rounded */
 .btn-send{
-  width:36px;height:36px;
-  border:none;border-radius:9px;
-  background:var(--accent);
-  color:white;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-  flex-shrink:0;
-  transition:background .2s,transform .15s;
+  width:36px;height:36px;border:none;border-radius:9px;background:var(--accent);color:white;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0;
 }
-.btn-send:hover{background:var(--accent-hover)}
-.btn-send:active{transform:scale(.94)}
-.btn-send svg{width:16px;height:16px;fill:white;transform:rotate(180deg)}
+.btn-send svg{width:16px;height:16px;fill:white;}
 
-/* ── TOAST ── */
-.toast{
-  position:fixed;bottom:80px;left:50%;
-  transform:translateX(-50%) translateY(8px);
-  background:#0d0d0d;color:#ffffff;
-  border:none;
-  padding:8px 18px;border-radius:10px;
-  font-size:13px;font-weight:500;
-  opacity:0;transition:.3s;
-  pointer-events:none;white-space:nowrap;z-index:9999;
-  box-shadow:0 6px 20px rgba(0,0,0,.3);
-}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
-
-/* ── MODAL IMAGE ── */
-.img-modal{
-  position:fixed;inset:0;z-index:9000;
-  background:rgba(0,0,0,.88);
-  display:none;align-items:center;justify-content:center;
-  padding:20px;
-}
+/* التنبيهات والصور المكبرة */
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0d0d0d;color:#ffffff;padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:9999;}
+.toast.show{opacity:1}
+.img-modal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:20px;}
 .img-modal.open{display:flex}
-.img-modal img{max-width:100%;max-height:90vh;border-radius:8px;box-shadow:0 20px 60px rgba(0,0,0,.6)}
-.img-modal-close{
-  position:absolute;top:20px;right:20px;
-  width:36px;height:36px;border-radius:50%;
-  background:rgba(255,255,255,.15);border:none;
-  color:white;font-size:20px;cursor:pointer;
-  display:flex;align-items:center;justify-content:center;
-}
+.img-modal img{max-width:100%;max-height:90vh;border-radius:8px;}
+.img-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;font-size:20px;}
 </style>
-
 </head>
 <body>
 <div id="app">
-
-<!-- ══════ LOGIN ══════ -->
 
 <div id="login-screen" class="screen">
   <div class="login-wrap">
@@ -472,31 +282,22 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
         <div class="brand-name">Sync<span>Chat</span></div>
         <div class="brand-sub">محادثة فورية آمنة</div>
       </div>
-
-
-  <div class="field">
-    <label>الاسم</label>
-    <input type="text" id="name-input" placeholder="أدخل اسمك" maxlength="20" autocomplete="off">
-  </div>
-  <div class="field">
-    <label>رمز الغرفة</label>
-    <input type="text" id="room-input" placeholder="مثال: room2024" maxlength="30" autocomplete="off"
-      onkeydown="if(event.key==='Enter') joinRoom()">
-    <div class="field-hint">شارك نفس الرمز مع الشخص الآخر</div>
-  </div>
-
-  <div class="error-msg" id="login-error"></div>
-  <button class="btn-login" id="join-btn" onclick="joinRoom()">دخول الغرفة</button>
-</div>
-
-
+      <div class="field">
+        <label>الاسم</label>
+        <input type="text" id="name-input" placeholder="أدخل اسمك" maxlength="20" autocomplete="off">
+      </div>
+      <div class="field">
+        <label>رمز الغرفة</label>
+        <input type="text" id="room-input" placeholder="مثال: room2024" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter') joinRoom()">
+        <div class="field-hint">شارك نفس الرمز مع الشخص الآخر</div>
+      </div>
+      <div class="error-msg" id="login-error"></div>
+      <button class="btn-login" id="join-btn" onclick="joinRoom()">دخول الغرفة</button>
+    </div>
   </div>
 </div>
-
-<!-- ══════ CHAT ══════ -->
 
 <div id="chat-screen" class="screen hidden">
-
   <div class="chat-header">
     <div class="peer-avatar" id="peer-avatar">؟</div>
     <div class="header-info">
@@ -521,7 +322,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   </div>
 
   <div class="messages-wrap">
-    <div class="chat-wallpaper"></div>
     <div class="messages-area" id="messages-area">
       <div class="empty-state" id="empty-state">
         <div class="es-icon">💬</div>
@@ -535,18 +335,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   <div class="input-area">
     <input type="file" id="file-chooser" class="hidden" onchange="handleFileSelect(this)">
     <div class="input-wrap">
-      <button class="btn-attach" title="إرفاق ملف"
-        onclick="document.getElementById('file-chooser').click()">
-        📎
-      </button>
-      <textarea
-        id="msg-input"
-        class="msg-input"
-        rows="1"
-        placeholder="اكتب رسالة..."
-        onkeydown="handleKey(event)"
-        oninput="handleTyping(this)"
-      ></textarea>
+      <button class="btn-attach" title="إرفاق ملف" onclick="document.getElementById('file-chooser').click()">📎</button>
+      <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
     </div>
     <button class="btn-send" onclick="sendMessage()" title="إرسال">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
@@ -556,14 +346,12 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 <div class="toast" id="toast"></div>
 
-<!-- Image lightbox -->
-
 <div class="img-modal" id="img-modal" onclick="closeImgModal()">
   <button class="img-modal-close">✕</button>
   <img id="modal-img" src="" alt="">
 </div>
 
-</div><!-- /app -->
+</div>
 
 <script>
 /* ══════════════════════════════════════════
@@ -579,7 +367,6 @@ const FIREBASE_CONFIG = {
   appId: "1:692797381468:web:9faaed7bf44f0f527a3f99",
   measurementId: "G-ZMN7S10M2R"
 };
-/* ══════════════════════════════════════════ */
 
 let db, storage;
 let myName, myId, roomId;
@@ -594,26 +381,20 @@ const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
 
-/* ── toast ── */
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
   setTimeout(()=>t.classList.remove('show'),2800);
 }
 
-/* ── image modal ── */
 function openImgModal(src){$('modal-img').src=src;$('img-modal').classList.add('open')}
 function closeImgModal(){$('img-modal').classList.remove('open')}
 
-/* ── init firebase ── */
 function initFirebase(){
   if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
   db      = firebase.database();
   storage = firebase.storage();
 }
 
-/* ══════════════════════════════════════════
-   JOIN ROOM
-══════════════════════════════════════════ */
 async function joinRoom(){
   const name = $('name-input').value.trim();
   const room = $('room-input').value.trim().replace(/\s+/g,'');
@@ -651,11 +432,7 @@ async function joinRoom(){
   await messagesRef.push({ type:'system', text: myName+' انضم إلى المحادثة', ts:Date.now() });
 }
 
-/* ══════════════════════════════════════════
-   REALTIME LISTENERS
-══════════════════════════════════════════ */
 function setupListeners(){
-  /* Presence */
   db.ref(`rooms/${roomId}/presence`).on('value', snap=>{
     const data  = snap.val()||{};
     const peers = Object.entries(data).filter(([id])=>id!==myId);
@@ -670,7 +447,6 @@ function setupListeners(){
       if(peer.online){
         dot.classList.add('on');
         txt.textContent = peer.name+' متصل الآن';
-        /* typing for this peer */
         peerTypingListener = db.ref(`rooms/${roomId}/typing/${peerId}`).on('value', tSnap=>{
           const bar=$('typing-bar');
           if(tSnap.val()===true){
@@ -689,10 +465,8 @@ function setupListeners(){
     }
   });
 
-  /* Messages */
   messagesRef.on('child_added', snap=>{ appendMessage(snap.val()); });
 
-  /* Detect full clear */
   messagesRef.on('value', snap=>{
     if(!snap.exists()){
       $('messages-area').innerHTML=`<div class="empty-state" id="empty-state"><div class="es-icon">🗑️</div><p>تم مسح المحادثة</p></div>`;
@@ -700,9 +474,6 @@ function setupListeners(){
   });
 }
 
-/* ══════════════════════════════════════════
-   RENDER MESSAGE
-══════════════════════════════════════════ */
 function appendMessage(msg){
   const area=$('messages-area');
   const empty=$('empty-state');
@@ -732,9 +503,7 @@ function appendMessage(msg){
 
     div.innerHTML=`
       <div class="msg-row">
-        <div class="msg-av ${sent?'sent':'recv'}">${esc(initials(msg.senderName||myName||'?'))}</div>
         <div class="msg-bubble-wrap">
-          <div class="msg-name">${sent?'أنت':esc(msg.senderName||'')}</div>
           <div class="msg-bubble ${sent?'sent':'recv'}">
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
@@ -748,9 +517,6 @@ function appendMessage(msg){
   requestAnimationFrame(()=>{ area.scrollTop=area.scrollHeight; });
 }
 
-/* ══════════════════════════════════════════
-   SEND
-══════════════════════════════════════════ */
 async function sendMessage(){
   const input=$('msg-input');
   const text=input.value.trim();
@@ -764,9 +530,6 @@ async function sendMessage(){
   } catch(e){ showToast('فشل الإرسال ❌'); input.value=text; }
 }
 
-/* ══════════════════════════════════════════
-   FILE UPLOAD
-══════════════════════════════════════════ */
 async function handleFileSelect(input){
   const file=input.files[0]; if(!file) return;
   const bar=$('upload-bar'); bar.classList.add('show');
@@ -784,9 +547,6 @@ async function handleFileSelect(input){
   finally{ bar.classList.remove('show'); input.value=''; }
 }
 
-/* ══════════════════════════════════════════
-   TYPING
-══════════════════════════════════════════ */
 function handleTyping(el){
   el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,130)+'px';
@@ -804,9 +564,6 @@ function handleKey(e){
   if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); }
 }
 
-/* ══════════════════════════════════════════
-   CLEAR / LEAVE
-══════════════════════════════════════════ */
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
   try{ await db.ref(`rooms/${roomId}/messages`).remove(); showToast('تم مسح المحادثة 🗑️'); }
@@ -836,6 +593,5 @@ async function leaveRoom(){
   $('login-screen').classList.remove('hidden');
 }
 </script>
-
 </body>
 </html>

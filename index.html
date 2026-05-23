@@ -9,7 +9,7 @@
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
-<link href="https://fonts.googleapis.com/css2 family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
 /* ══════════════════════════════════════════
@@ -81,19 +81,18 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .error-msg{min-height:18px;color:var(--danger);font-size:12px;margin-bottom:8px;text-align:center;font-weight:500}
 
 /* ══════════════════════════════════════════
-   CHAT SCREEN — تم إصلاح الخلفيات والثبات هنا
+   CHAT SCREEN
 ══════════════════════════════════════════ */
 #chat-screen {
   max-width: 860px;
   margin: 0 auto;
-  background: #ffffff; /* تم تعديل اللون الأبيض الفاتح النظيف */
+  background: #ffffff;
   position: relative;
   height: 100%;
   display: flex;
   flex-direction: column;
 }
 
-/* هيدر ثابت ومستقر علوياً */
 .chat-header{
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -128,13 +127,12 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .btn-hdr.clear{color:var(--muted)}
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
 
-/* منطقة تمرير الرسائل المفتوحة والمحددة المساحة */
 .messages-wrap {
   position: absolute;
   top: 56px;
-  bottom: 74px; /* مساحة مناسبة تنتهي قبل صندوق الكتابة */
+  bottom: 74px;
   left: 0; right: 0;
-  background: #ffffff; /* إصلاح الخلفية السوداء المزعجة */
+  background: #ffffff;
   overflow: hidden;
 }
 
@@ -147,63 +145,72 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   -webkit-overflow-scrolling:touch;
 }
 
-/* تقسيمات التاريخ */
 .date-divider{
-  align-self:center;background:#ffffff;border:1px solid var(--border);
-  padding:3px 12px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;
+  align-self:center;background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;
 }
 
-/* تغليف صفوف المحادثة */
+/* ── تعديل هيكلة الحجم المرن للرسائل هنا ── */
 .msg-wrapper{
   display:flex;
   width: 100%;
   margin-bottom: 2px;
   animation:bubbleIn .18s ease;
 }
-.msg-wrapper.sent{justify-content:flex-end}
-.msg-wrapper.recv{justify-content:flex-start}
+.msg-wrapper.sent{justify-content: flex-start;} /* المرسل على اليمين */
+.msg-wrapper.recv{justify-content: flex-end;}   /* المستقبل على اليسار */
 
-.msg-row{display:flex;max-width:82%; width: auto;}
-.msg-bubble-wrap{display:flex;flex-direction:column; width: 100%;}
-
-/* ── إصلاح الفقعات وحجم النصوص الطولية ── */
-.msg-bubble{
-  padding: 8px 14px 22px 14px; /* مساحة كافية للوقت في الأسفل */
-  border-radius:14px;
-  font-size:14px;
-  line-height:1.5;
-  word-break:break-word;
-  white-space:pre-wrap;
-  position:relative;
-  display:inline-block;
-  min-width: 65px; /* يمنع انكماش الفقاعة عند الكلمات القصيرة */
-  max-width:100%;
+.msg-row{
+  display:flex;
+  max-width: 75%; /* أقصى عرض للفقاعة 75% من الشاشة */
+  width: auto;
 }
-.msg-bubble.sent{
+.msg-bubble-wrap{
+  display:flex;
+  flex-direction:column; 
+  width: auto;
+}
+
+.msg-bubble{
+  padding: 8px 14px 8px 55px; /* مساحة يسار للوقت */
+  border-radius: 14px;
+  font-size: 15px;
+  line-height: 1.4;
+  word-break: break-word;
+  white-space: pre-wrap;
+  position: relative;
+  display: inline-block;
+  width: fit-content; /* تجعل الفقاعة تأخذ حجم النص بالضبط */
+  min-width: 75px;    /* حد أدنى مناسب جداً */
+}
+.msg-wrapper.sent .msg-bubble{
   background: #10a37f;
   color:#ffffff;
-  border-bottom-right-radius:4px;
+  border-bottom-right-radius: 2px;
 }
-.msg-bubble.recv{
-  background:#f0f0f0;
-  color:#0d0d0d;
-  border-bottom-left-radius:4px;
+.msg-wrapper.recv .msg-bubble{
+  background: #f0f0f0;
+  color: #0d0d0d;
+  border-bottom-left-radius: 2px;
+  padding: 8px 14px 8px 45px; /* مساحة أقل للمستقبل لعدم وجود علامة الصح */
 }
 
-/* الميتا والوقت أسفل الفقاعة */
+/* ضبط تمرير الوقت وعلامة الصح في الأسفل */
 .msg-meta{
-  position:absolute;
-  bottom:4px;
-  left:10px;
-  font-size:10px;
-  display:flex;align-items:center;gap:3px;
-  white-space:nowrap;
+  position: absolute;
+  bottom: 4px;
+  left: 8px;
+  font-size: 10px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  white-space: nowrap;
+  pointer-events: none;
 }
-.msg-wrapper.sent .msg-meta{left:auto; right:10px; color:rgba(255,255,255,.75)}
-.msg-wrapper.recv .msg-meta{color:#6e6e80;}
-.check-icon{font-size:10px}
+.msg-wrapper.sent .msg-meta{ color: rgba(255, 255, 255, 0.7); }
+.msg-wrapper.recv .msg-meta{ color: #8e8e93; }
+.check-icon{ font-size: 9px; }
 
-/* الصور والمرفقات */
+/* الصور والمرفقات بمقاسات منضبطة */
 .chat-image{max-width:100%;max-height:200px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;}
 .file-attachment{
   display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);
@@ -260,7 +267,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 .btn-send svg{width:16px;height:16px;fill:white;}
 
-/* التنبيهات والصور المكبرة */
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0d0d0d;color:#ffffff;padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:9999;}
 .toast.show{opacity:1}
 .img-modal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:20px;}
@@ -354,20 +360,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 </div>
 
 <script>
-/* ══════════════════════════════════════════
-   🔥 FIREBASE CONFIG — ضع بياناتك هنا
-══════════════════════════════════════════ */
-const FIREBASE_CONFIG = {
- apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
-  authDomain: "syncchat-6e22b.firebaseapp.com",
-  databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
-  projectId: "syncchat-6e22b",
-  storageBucket: "syncchat-6e22b.firebasestorage.app",
-  messagingSenderId: "692797381468",
-  appId: "1:692797381468:web:9faaed7bf44f0f527a3f99",
-  measurementId: "G-ZMN7S10M2R"
-};
-
 let db, storage;
 let myName, myId, roomId;
 let messagesRef, presenceRef, typingRef;
@@ -380,6 +372,20 @@ const initials = n => n.trim().slice(0,2).toUpperCase();
 const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
+/* ══════════════════════════════════════════
+   🔥 FIREBASE CONFIG — ضع بياناتك هنا
+══════════════════════════════════════════ */
+const FIREBASE_CONFIG = {
+apiKey: "AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+  authDomain: "syncchat-6e22b.firebaseapp.com",
+  databaseURL: "https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "syncchat-6e22b",
+  storageBucket: "syncchat-6e22b.firebasestorage.app",
+  messagingSenderId: "692797381468",
+  appId: "1:692797381468:web:9faaed7bf44f0f527a3f99",
+  measurementId: "G-ZMN7S10M2R"
+};
+/* ══════════════════════════════════════════ */
 
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -592,6 +598,6 @@ async function leaveRoom(){
   $('chat-screen').classList.add('hidden');
   $('login-screen').classList.remove('hidden');
 }
-</script>
-</body>
-</html>
+</style>
+</head>
+<body>

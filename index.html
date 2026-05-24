@@ -102,8 +102,32 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .msg-row{display:flex;max-width:75%;width:auto;position:relative;}
 
 /* Reply button */
-/* reply button — مخفي، الـ trigger بالضغط على الفقاعة */
-.btn-msg-reply{ display:none; }
+/* Reply action button — يظهر عند hover على الـ row كله */
+.msg-reply-btn{
+  flex-shrink:0;
+  align-self:center;
+  width:30px;height:30px;
+  border-radius:50%;
+  border:1px solid #e5e5e5;
+  background:#ffffff;
+  color:#6e6e80;
+  font-size:14px;
+  cursor:pointer;
+  display:none;
+  align-items:center;
+  justify-content:center;
+  box-shadow:0 1px 4px rgba(0,0,0,.08);
+  transition:background .15s,color .15s;
+  flex-shrink:0;
+}
+.msg-reply-btn:hover{background:#f0f0f0;color:#0d0d0d;}
+
+/* يظهر لما الـ row يتهوفر */
+.msg-row:hover .msg-reply-btn{ display:flex; }
+
+/* sent: الزرار على اليسار | recv: على اليمين */
+.msg-wrapper.sent .msg-row{ flex-direction:row; gap:6px; }
+.msg-wrapper.recv .msg-row{ flex-direction:row-reverse; gap:6px; }
 
 /* highlight عند الضغط */
 .msg-bubble.tapped{
@@ -551,38 +575,42 @@ function appendMessage(msg, key){
       <div class="msg-row" data-key="${key}">
         <div class="msg-bubble-wrap">
           ${senderNameHtml}
-          <div class="msg-bubble" data-sender="${esc(msg.senderName||'')}" data-text="${esc((msg.text||'').slice(0,80))}">
+          <div class="msg-bubble">
             ${replyHtml}
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
             <span class="msg-meta">${fmt(msg.ts)}${sent?' <span class="check-icon">✓✓</span>':''}</span>
           </div>
         </div>
+        <button class="msg-reply-btn" title="رد">↩</button>
       </div>`;
 
     // bind image click
     const imgEl = div.querySelector('.chat-image');
     if (imgEl) imgEl.addEventListener('click', () => openImgModal(msg.fileUrl));
 
-    // ══ Long press (موبايل) + right-click (ديسكتوب) على الفقاعة ══
+    // ══ زرار الرد (ديسكتوب hover) ══
+    const replyBtn = div.querySelector('.msg-reply-btn');
+    if (replyBtn) {
+      replyBtn.addEventListener('click', e => {
+        e.stopPropagation();
+        initiateReply(msg.senderName, msg.text||'');
+      });
+    }
+
+    // ══ Long press على الفقاعة (موبايل) ══
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
       let pressTimer = null;
-
-      // موبايل: long press
       bubble.addEventListener('touchstart', e => {
         pressTimer = setTimeout(() => {
-          showReplyMenu(bubble, msg.senderName, msg.text||'', e.touches[0].clientX, e.touches[0].clientY);
+          initiateReply(msg.senderName, msg.text||'');
+          bubble.classList.add('tapped');
+          setTimeout(() => bubble.classList.remove('tapped'), 300);
         }, 500);
       }, {passive:true});
-      bubble.addEventListener('touchend',   () => clearTimeout(pressTimer), {passive:true});
-      bubble.addEventListener('touchmove',  () => clearTimeout(pressTimer), {passive:true});
-
-      // ديسكتوب: right-click
-      bubble.addEventListener('contextmenu', e => {
-        e.preventDefault();
-        showReplyMenu(bubble, msg.senderName, msg.text||'', e.clientX, e.clientY);
-      });
+      bubble.addEventListener('touchend',  () => clearTimeout(pressTimer), {passive:true});
+      bubble.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive:true});
     }
   }
 

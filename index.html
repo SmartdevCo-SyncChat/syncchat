@@ -158,7 +158,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   animation:bubbleIn .18s ease;
 }
 
-/* الراسل (أنا) يمين والمستقبل (الزميل) يسار */
 .msg-wrapper.sent{justify-content: flex-start;} 
 .msg-wrapper.recv{justify-content: flex-end;}   
 
@@ -187,7 +186,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   min-width: 80px;
 }
 
-/* تخصيص الـ Radius والخلفية لـ الراسل (أنا) - جهة اليمين */
 .msg-wrapper.sent .msg-bubble{
   background: #10a37f;
   color: #ffffff;
@@ -197,7 +195,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   border-bottom-right-radius: 4px;
 }
 
-/* تخصيص الـ Radius والخلفية لـ المستقبل (الزميل) - جهة اليسار */
 .msg-wrapper.recv .msg-bubble{
   background: #f1f1f1;
   color: #0d0d0d;
@@ -207,7 +204,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   border-bottom-right-radius: 16px;
 }
 
-/* إعدادات الميتا والوقت */
 .msg-meta{
   display: flex;
   align-items: center;
@@ -230,7 +226,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 .check-icon{ font-size: 9px; }
 
-/* الصور والمرفقات بمقاسات منضبطة */
 .chat-image{max-width:100%;max-height:200px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;}
 .file-attachment{
   display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);
@@ -240,7 +235,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 .empty-state{margin:auto;text-align:center;color:var(--muted)}
 
-/* الـ Typing بار */
 .typing-bar{
   position: fixed;
   bottom: 64px; left: 0; right: 0;
@@ -262,7 +256,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .upload-bar.show{display:flex}
 .upload-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);border-top-color:transparent;animation:spin .7s linear infinite;}
 
-/* صندوق المدخلات الثابت في الأسفل */
 .input-area{
   position: fixed;
   bottom: 0; left: 0; right: 0;
@@ -400,7 +393,11 @@ let myName, myId, roomId;
 let messagesRef, presenceRef, typingRef;
 let typingTimeout;
 let peerTypingListener;
-let isInitialLoad = true; // لمنع تشغيل نغمة الإشعار للرسائل القديمة عند تسجيل الدخول
+let isInitialLoad = true;
+
+// متغيرات خاصة بمراقبة الخمول والنشاط
+let inactivityTimeout;
+const INACTIVITY_LIMIT = 2 * 60 * 1000; // دقيقتان بالمللي ثانية
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -409,18 +406,21 @@ const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
 
-// دالة ذكية لتوليد صوت الإشعار بدون الحاجة لملفات خارجية
+// دالة توليد صوت الإشعار مع شرط فحص وضوح الصفحة
 function playNotificationSound() {
+  if (document.visibilityState === 'visible') {
+    return; 
+  }
+
   try {
     const AudioContext = window.AudioContext || window.webkitAudioContext;
     if (!AudioContext) return;
     const ctx = new AudioContext();
     
-    // النغمة الأولى
     const osc1 = ctx.createOscillator();
     const gain1 = ctx.createGain();
     osc1.type = 'sine';
-    osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 نغمة
+    osc1.frequency.setValueAtTime(587.33, ctx.currentTime);
     gain1.gain.setValueAtTime(0.1, ctx.currentTime);
     gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
     osc1.connect(gain1);
@@ -428,12 +428,11 @@ function playNotificationSound() {
     osc1.start();
     osc1.stop(ctx.currentTime + 0.15);
 
-    // النغمة الثانية المتناغمة بعدها مباشرة لتعطي صوت إشعار احترافي
     setTimeout(() => {
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(880, ctx.currentTime); // A5 نغمة أعلى
+      osc2.frequency.setValueAtTime(880, ctx.currentTime);
       gain2.gain.setValueAtTime(0.1, ctx.currentTime);
       gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
       osc2.connect(gain2);
@@ -443,9 +442,43 @@ function playNotificationSound() {
     }, 80);
 
   } catch (e) {
-    console.log("Audio Context is blocked or not supported yet.");
+    console.log("Audio Context blocked.");
   }
 }
+
+// ══════════════════════════════════════════
+// ⏱️ ميزة الخروج التلقائي عند الخمول
+// ══════════════════════════════════════════
+function startInactivityTimer() {
+  resetInactivityTimer();
+  // الاستماع لجميع أحداث الحركة والتفاعل لتصفير العداد
+  window.addEventListener('mousemove', resetInactivityTimer);
+  window.addEventListener('click', resetInactivityTimer);
+  window.addEventListener('keydown', resetInactivityTimer);
+  window.addEventListener('scroll', resetInactivityTimer, true);
+  window.addEventListener('touchstart', resetInactivityTimer);
+}
+
+function stopInactivityTimer() {
+  clearTimeout(inactivityTimeout);
+  window.removeEventListener('mousemove', resetInactivityTimer);
+  window.removeEventListener('click', resetInactivityTimer);
+  window.removeEventListener('keydown', resetInactivityTimer);
+  window.removeEventListener('scroll', resetInactivityTimer, true);
+  window.removeEventListener('touchstart', resetInactivityTimer);
+}
+
+function resetInactivityTimer() {
+  clearTimeout(inactivityTimeout);
+  // إذا كان المستخدم مسجل دخول بالفعل في الغرفة، يبدأ العد التنازلي للـ 2 دقيقة
+  if (roomId) {
+    inactivityTimeout = setTimeout(() => {
+      leaveRoom();
+      alert('تم تسجيل خروجك تلقائياً لعدم النشاط لمدة دقيقتين.');
+    }, INACTIVITY_LIMIT);
+  }
+}
+// ══════════════════════════════════════════
 
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -492,6 +525,7 @@ async function joinRoom(){
   $('header-room-id').textContent = 'غرفة: ' + roomId;
 
   setupListeners();
+  startInactivityTimer(); // تفعيل مراقبة النشاط عند دخول الغرفة
 
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
@@ -500,7 +534,6 @@ async function joinRoom(){
 }
 
 function setupListeners(){
-  // 1. مراقبة التواجد والاتصال (Presence)
   db.ref(`rooms/${roomId}/presence`).on('value', snap=>{
     const data  = snap.val()||{};
     const peers = Object.entries(data).filter(([id])=>id!==myId);
@@ -525,7 +558,6 @@ function setupListeners(){
     }
   });
 
-  // 2. مراقبة الـ Typing
   if(peerTypingListener) { db.ref(`rooms/${roomId}/typing`).off('value', peerTypingListener); }
   
   peerTypingListener = db.ref(`rooms/${roomId}/typing`).on('value', snap => {
@@ -545,17 +577,14 @@ function setupListeners(){
     }
   });
 
-  // التحكم بـ Load اللحظة الأولى للرسائل لمنع تشغيل الصوت دفعة واحدة للرسائل القديمة
   messagesRef.once('value', () => {
     isInitialLoad = false;
   });
 
-  // 3. استقبال الرسائل الجديدة
   messagesRef.on('child_added', snap=>{ 
     const msg = snap.val();
     appendMessage(msg); 
     
-    // تشغيل نغمة الإشعار إذا كانت الرسالة جديدة، وليست رسالة نظام، ومن شخص آخر
     if (!isInitialLoad && msg.type !== 'system' && msg.senderId !== myId) {
       playNotificationSound();
     }
@@ -665,6 +694,7 @@ async function clearChat(){
 }
 
 async function leaveRoom(){
+  stopInactivityTimer(); // إيقاف المؤقت عند الخمول أو تسجيل الخروج اليدوي
   clearTypingNow();
   try{
     if(messagesRef) await messagesRef.push({ type:'system', text:myName+' غادر المحادثة', ts:Date.now() });

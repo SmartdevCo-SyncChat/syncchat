@@ -1,4 +1,5 @@
 <!DOCTYPE html>
+
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
@@ -6,7 +7,9 @@
 <title>ChatBFT</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -270,6 +273,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .img-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;font-size:20px;cursor:pointer;}
 @keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 </style>
+
 </head>
 <body>
 <div id="app">
@@ -514,6 +518,17 @@ function setupListeners(){
     } else { bar.innerHTML = ''; }
   });
 
+  /* Clear Signal — يمسح الشات عند كل الأعضاء */
+  db.ref(`rooms/${roomId}/clearSignal`).on('value', snap => {
+    if (!snap.exists()) return;
+    const area = $('messages-area');
+    if (!area) return;
+    area.innerHTML = `<div class="empty-state" id="empty-state">
+      <div style="font-size:40px;margin-bottom:8px;opacity:.3">🗑️</div>
+      <p>تم مسح المحادثة</p>
+    </div>`;
+  });
+
   /* Messages */
   messagesRef.once('value', () => { isInitialLoad=false; });
   messagesRef.on('child_added', snap => {
@@ -700,8 +715,17 @@ function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sen
 
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
-  try { await db.ref(`rooms/${roomId}/messages`).remove(); showToast('تم مسح المحادثة 🗑️'); }
-  catch(e) { showToast('فشل الحذف ❌'); }
+  try {
+    // 1. إرسال إشارة مسح لكل الأعضاء
+    await db.ref(`rooms/${roomId}/clearSignal`).set({
+      by: myName,
+      ts: Date.now()
+    });
+    // 2. مسح الرسائل
+    await db.ref(`rooms/${roomId}/messages`).remove();
+    showToast('تم مسح المحادثة للجميع 🗑️');
+  }
+  catch(e){ showToast('فشل الحذف ❌'); }
 }
 
 async function leaveRoom(){
@@ -713,6 +737,7 @@ async function leaveRoom(){
     if(currentActivePeerRef){ currentActivePeerRef.off(); currentActivePeerRef=null; }
     if(roomPresenceGeneralRef) roomPresenceGeneralRef.off();
     db.ref(`rooms/${roomId}/typing`).off();
+    db.ref(`rooms/${roomId}/clearSignal`).off();
     if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener);
     messagesRef.off();
   } catch(e){}
@@ -727,5 +752,6 @@ async function leaveRoom(){
   $('chat-screen').classList.add('hidden'); $('login-screen').classList.remove('hidden');
 }
 </script>
+
 </body>
 </html>

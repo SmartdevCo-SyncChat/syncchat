@@ -102,16 +102,37 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .msg-row{display:flex;max-width:75%;width:auto;position:relative;}
 
 /* Reply button */
-.btn-msg-reply{
-  position:absolute;top:50%;transform:translateY(-50%);
-  background:var(--surface);border:1px solid var(--border);color:var(--muted);
-  border-radius:50%;width:26px;height:26px;font-size:11px;cursor:pointer;
-  display:none;align-items:center;justify-content:center;z-index:99;
-  box-shadow:0 1px 4px rgba(0,0,0,.08);pointer-events:auto;
+/* reply button — مخفي، الـ trigger بالضغط على الفقاعة */
+.btn-msg-reply{ display:none; }
+
+/* highlight عند الضغط */
+.msg-bubble.tapped{
+  filter:brightness(.92);
+  transition:filter .15s;
 }
-.msg-wrapper.sent .btn-msg-reply{left:-32px;}
-.msg-wrapper.recv .btn-msg-reply{right:-32px;}
-.msg-row:hover .btn-msg-reply{display:flex!important;}
+
+/* context menu للرد */
+.reply-ctx-menu{
+  position:fixed;
+  background:#ffffff;
+  border:1px solid #e5e5e5;
+  border-radius:12px;
+  box-shadow:0 8px 28px rgba(0,0,0,.14);
+  z-index:5000;
+  overflow:hidden;
+  min-width:140px;
+  animation:ctxIn .15s ease;
+}
+@keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
+.reply-ctx-menu button{
+  display:flex;align-items:center;gap:10px;
+  width:100%;padding:12px 16px;
+  background:transparent;border:none;
+  font-size:14px;font-family:var(--font);
+  color:#0d0d0d;cursor:pointer;text-align:right;
+}
+.reply-ctx-menu button:hover{background:#f5f5f5;}
+.reply-ctx-menu button .ctx-icon{font-size:16px;}
 
 .msg-bubble-wrap{display:flex;flex-direction:column;width:auto;}
 .msg-sender-name{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:2px;padding:0 4px;align-self:flex-start;}
@@ -528,10 +549,9 @@ function appendMessage(msg, key){
 
     div.innerHTML = `
       <div class="msg-row" data-key="${key}">
-        <button class="btn-msg-reply" title="رد">↩</button>
         <div class="msg-bubble-wrap">
           ${senderNameHtml}
-          <div class="msg-bubble">
+          <div class="msg-bubble" data-sender="${esc(msg.senderName||'')}" data-text="${esc((msg.text||'').slice(0,80))}">
             ${replyHtml}
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
@@ -544,16 +564,75 @@ function appendMessage(msg, key){
     const imgEl = div.querySelector('.chat-image');
     if (imgEl) imgEl.addEventListener('click', () => openImgModal(msg.fileUrl));
 
-    // bind reply button
-    const replyBtn = div.querySelector('.btn-msg-reply');
-    if (replyBtn) replyBtn.addEventListener('click', e => {
-      e.preventDefault(); e.stopPropagation();
-      initiateReply(msg.senderName, msg.text||'');
-    });
+    // ══ Long press (موبايل) + right-click (ديسكتوب) على الفقاعة ══
+    const bubble = div.querySelector('.msg-bubble');
+    if (bubble) {
+      let pressTimer = null;
+
+      // موبايل: long press
+      bubble.addEventListener('touchstart', e => {
+        pressTimer = setTimeout(() => {
+          showReplyMenu(bubble, msg.senderName, msg.text||'', e.touches[0].clientX, e.touches[0].clientY);
+        }, 500);
+      }, {passive:true});
+      bubble.addEventListener('touchend',   () => clearTimeout(pressTimer), {passive:true});
+      bubble.addEventListener('touchmove',  () => clearTimeout(pressTimer), {passive:true});
+
+      // ديسكتوب: right-click
+      bubble.addEventListener('contextmenu', e => {
+        e.preventDefault();
+        showReplyMenu(bubble, msg.senderName, msg.text||'', e.clientX, e.clientY);
+      });
+    }
   }
 
   area.appendChild(div);
   requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+}
+
+/* ══ Context Menu for Reply ══ */
+function showReplyMenu(bubble, senderName, text, x, y) {
+  closeReplyMenu();
+
+  // flash bubble
+  bubble.classList.add('tapped');
+  setTimeout(() => bubble.classList.remove('tapped'), 300);
+
+  const menu = document.createElement('div');
+  menu.className = 'reply-ctx-menu';
+  menu.id = 'reply-ctx-menu';
+
+  menu.innerHTML = `
+    <button id="ctx-reply-btn">
+      <span class="ctx-icon">↩️</span>
+      <span>رد على الرسالة</span>
+    </button>`;
+
+  document.body.appendChild(menu);
+
+  // position — تأكد ما يخرجش من الشاشة
+  const mw = 160, mh = 52;
+  let left = x, top = y + 6;
+  if (left + mw > window.innerWidth)  left = window.innerWidth  - mw - 10;
+  if (top  + mh > window.innerHeight) top  = y - mh - 6;
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+
+  menu.querySelector('#ctx-reply-btn').addEventListener('click', () => {
+    initiateReply(senderName, text);
+    closeReplyMenu();
+  });
+
+  // إغلاق عند الضغط خارج المنيو
+  setTimeout(() => {
+    document.addEventListener('click',     closeReplyMenu, {once:true});
+    document.addEventListener('touchstart',closeReplyMenu, {once:true, passive:true});
+  }, 50);
+}
+
+function closeReplyMenu() {
+  const m = document.getElementById('reply-ctx-menu');
+  if (m) m.remove();
 }
 
 /* Send */

@@ -157,9 +157,10 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   width: 100%;
   animation:bubbleIn .18s ease;
 }
-/* المحاذاة: المرسل يسار والمستقبل يمين في وضع الـ RTL */
-.msg-wrapper.sent{justify-content: flex-end;} 
-.msg-wrapper.recv{justify-content: flex-start;}   
+
+/* التعديل: الراسل (أنا) يمين والمستقبل (الزميل) يسار */
+.msg-wrapper.sent{justify-content: flex-start;} 
+.msg-wrapper.recv{justify-content: flex-end;}   
 
 .msg-row{
   display:flex;
@@ -186,24 +187,24 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   min-width: 80px;
 }
 
-/* تخصيص الـ Radius والخلفية لـ الراسل (أنا) */
+/* تخصيص الـ Radius والخلفية لـ الراسل (أنا) - جهة اليمين */
 .msg-wrapper.sent .msg-bubble{
   background: #10a37f;
   color: #ffffff;
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  border-bottom-left-radius: 4px; /* زاوية حادة جهة حافة الشاشة اليسرى */
-  border-bottom-right-radius: 16px;
+  border-bottom-left-radius: 16px;
+  border-bottom-right-radius: 4px; /* زاوية حادة مناسبة للحافة اليمنى */
 }
 
-/* تخصيص الـ Radius والخلفية لـ المستقبل (الزميل) */
+/* تخصيص الـ Radius والخلفية لـ المستقبل (الزميل) - جهة اليسار */
 .msg-wrapper.recv .msg-bubble{
   background: #f1f1f1;
   color: #0d0d0d;
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 4px; /* زاوية حادة جهة حافة الشاشة اليمنى */
+  border-bottom-left-radius: 4px; /* زاوية حادة مناسبة للحافة اليسرى */
+  border-bottom-right-radius: 16px;
 }
 
 /* إعدادات الميتا والوقت (أسفل الرسالة دائماً محاذي لليسار) */
@@ -459,12 +460,11 @@ async function joinRoom(){
 }
 
 function setupListeners(){
+  // 1. مراقبة التواجد والاتصال (Presence)
   db.ref(`rooms/${roomId}/presence`).on('value', snap=>{
     const data  = snap.val()||{};
     const peers = Object.entries(data).filter(([id])=>id!==myId);
     const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
-
-    if(peerTypingListener){ db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener); }
 
     if(peers.length>0){
       const [peerId, peer] = peers[peers.length-1];
@@ -473,12 +473,6 @@ function setupListeners(){
       if(peer.online){
         dot.classList.add('on');
         txt.textContent = peer.name+' متصل الآن';
-        peerTypingListener = db.ref(`rooms/${roomId}/typing/${peerId}`).on('value', tSnap=>{
-          const bar=$('typing-bar');
-          if(tSnap.val()===true){
-            bar.innerHTML=`<div class="typing-dots"><span></span><span></span><span></span></div><span>${esc(peer.name)} يكتب...</span>`;
-          } else { bar.innerHTML=''; }
-        });
       } else {
         dot.classList.remove('on');
         const last = peer.lastSeen ? fmtFull(peer.lastSeen) : '';
@@ -491,6 +485,29 @@ function setupListeners(){
     }
   });
 
+  // 2. إصلاح مراقبة الـ Typing لتكون مستقلة ومستقرة تماماً
+  if(peerTypingListener) { db.ref(`rooms/${roomId}/typing`).off('value', peerTypingListener); }
+  
+  peerTypingListener = db.ref(`rooms/${roomId}/typing`).on('value', snap => {
+    const data = snap.val() || {};
+    // جلب أي مستخدم آخر في الغرفة يقوم بالكتابة حالياً ومستبعداً المستخدم الحالي
+    const activeTypingPeer = Object.entries(data).find(([id, isTyping]) => id !== myId && isTyping === true);
+    const bar = $('typing-bar');
+    
+    if(activeTypingPeer) {
+      const peerId = activeTypingPeer[0];
+      // محاولة جلب الاسم من الـ presence إذا كان متاحاً أو استخدام الاسم الافتراضي للغرفة
+      db.ref(`rooms/${roomId}/presence/${peerId}`).once('value', pSnap => {
+        const pData = pSnap.val() || {};
+        const pName = pData.name || 'الطرف الآخر';
+        bar.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span>${esc(pName)} يكتب...</span>`;
+      });
+    } else {
+      bar.innerHTML = '';
+    }
+  });
+
+  // 3. استقبال الرسائل الجديدة
   messagesRef.on('child_added', snap=>{ appendMessage(snap.val()); });
 
   messagesRef.on('value', snap=>{
@@ -604,6 +621,7 @@ async function leaveRoom(){
     await typingRef.remove();
     db.ref(`rooms/${roomId}/presence`).off();
     db.ref(`rooms/${roomId}/typing`).off();
+    if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value', peerTypingListener);
     messagesRef.off();
   } catch(e){}
 

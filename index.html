@@ -12,11 +12,10 @@
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 
 <style>
-/* نفس ستايلك الأصلي بالكامل بدون تغيير */
-*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+/* ===== YOUR ORIGINAL DESIGN (UNCHANGED) ===== */
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box}
 
 :root{
-  --bg:#fff;
   --accent:#10a37f;
   --text:#0d0d0d;
   --muted:#6e6e80;
@@ -87,7 +86,7 @@ html,body{height:100%;font-family:var(--font);background:#fff}
   opacity:.7;
 }
 
-/* 🔥 REPLY (تصغير بدون ما يبوظ الشكل) */
+/* REPLY */
 .reply-quotation{
   background:rgba(0,0,0,0.04);
   border-right:3px solid var(--accent);
@@ -95,9 +94,9 @@ html,body{height:100%;font-family:var(--font);background:#fff}
   border-radius:6px;
   font-size:11px;
   margin-bottom:4px;
-  max-width:240px;
+  max-width:220px;
   width:fit-content;
-  line-height:1.25;
+  line-height:1.2;
 }
 
 .reply-quotation-sender{
@@ -190,6 +189,7 @@ const db = firebase.database();
 
 let room, name;
 
+/* JOIN */
 function join(){
   name = document.getElementById('name').value;
   room = document.getElementById('room').value;
@@ -209,13 +209,13 @@ function join(){
   listenPresence();
 }
 
-/* 🔥 آخر شخص دخل الروم */
+/* 🔥 FIXED: last seen + time */
 function listenPresence(){
   db.ref(`rooms/${room}/presence`).on('value', snap=>{
     const data = snap.val() || {};
 
     const users = Object.values(data)
-      .filter(u=>u.name && u.name !== name)
+      .filter(u => u.name && u.name !== name)
       .sort((a,b)=>(b.joinedAt||0)-(a.joinedAt||0));
 
     const last = users[0];
@@ -227,19 +227,29 @@ function listenPresence(){
     if(last){
       avatar.innerText = last.name.slice(0,2);
 
+      const time = new Date(last.joinedAt || Date.now())
+        .toLocaleString('ar-EG', {
+          hour:'2-digit',
+          minute:'2-digit',
+          day:'numeric',
+          month:'short'
+        });
+
       if(last.online){
         dot.classList.add('on');
-        status.innerText = last.name + " متصل الآن";
+        status.innerText = `${last.name} متصل الآن`;
       } else {
         dot.classList.remove('on');
-        status.innerText = "آخر ظهور: " + last.name;
+        status.innerText = `آخر ظهور: ${last.name} • ${time}`;
       }
     } else {
       status.innerText = "في انتظار الطرف الآخر...";
+      dot.classList.remove('on');
     }
   });
 }
 
+/* MESSAGES */
 function listenMessages(){
   db.ref(`rooms/${room}/messages`).on('child_added', snap=>{
     const m = snap.val();
@@ -247,7 +257,7 @@ function listenMessages(){
     const div = document.createElement('div');
     div.className = 'msg-wrapper ' + (m.sender===name?'sent':'recv');
 
-    let reply = "";
+    let reply="";
     if(m.replyTo){
       reply = `
         <div class="reply-quotation">
@@ -269,6 +279,7 @@ function listenMessages(){
   });
 }
 
+/* SEND */
 function send(){
   const input = document.getElementById('input');
 

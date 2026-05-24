@@ -517,22 +517,31 @@ async function joinRoom(){
 }
 
 function setupListeners(){
+  // 🔥 تعديل لمراقبة وجلب آخر مستخدم دخل الغرفة (بخلاف المستخدم الحالي)
   db.ref(`rooms/${roomId}/presence`).on('value', snap=>{
     const data  = snap.val()||{};
-    const peers = Object.entries(data).filter(([id])=>id!==myId);
+    
+    // تصفية المستخدمين لاستبعادك والتركيز على الآخرين فقط
+    const peers = Object.entries(data)
+                        .filter(([id, u])=> u.name !== myName)
+                        .map(([id, u]) => ({ id, ...u }));
+
     const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
 
-    if(peers.length>0){
-      const [peerId, peer] = peers[peers.length-1];
-      pav.textContent = initials(peer.name||'؟');
+    if(peers.length > 0){
+      // ترتيبهم تصاعدياً بحسب وقت الانضمام (joinedAt) للحصول على آخر واحد دخل الغرفة بشكل صحيح
+      peers.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+      const latestPeer = peers[peers.length - 1];
 
-      if(peer.online){
+      pav.textContent = initials(latestPeer.name || '؟');
+
+      if(latestPeer.online){
         dot.classList.add('on');
-        txt.textContent = peer.name+' متصل الآن';
+        txt.textContent = latestPeer.name + ' متصل الآن';
       } else {
         dot.classList.remove('on');
-        const last = peer.lastSeen ? fmtFull(peer.lastSeen) : '';
-        txt.textContent = last ? `آخر ظهور: ${last}` : peer.name+' غير متصل';
+        const last = latestPeer.lastSeen ? fmtFull(latestPeer.lastSeen) : '';
+        txt.textContent = last ? `آخر ظهور لـ ${latestPeer.name}: ${last}` : latestPeer.name + ' غير متصل';
       }
     } else {
       dot.classList.remove('on');
@@ -568,7 +577,6 @@ function setupListeners(){
     const msg = snap.val();
     appendMessage(msg); 
     
-    // تعديل الفحص ليعتمد على الاسم بدلاً من الـ ID المتغير
     if (!isInitialLoad && msg.type !== 'system' && msg.senderName !== myName) {
       playNotificationSound();
     }
@@ -592,7 +600,6 @@ function appendMessage(msg){
     div.className='system-msg';
     div.textContent=msg.text;
   } else {
-    // 🔥 التعديل الجوهري هنا: نتحقق من خلال الاسم (msg.senderName === myName) لضمان ثبات اللون والاتجاه للرسائل القديمة بعد تسجيل الدخول المتكرر
     const sent = msg.senderName === myName;
     div.className='msg-wrapper '+(sent?'sent':'recv');
 

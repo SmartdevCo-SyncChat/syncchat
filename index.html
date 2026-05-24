@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-<title>SyncChat Pro</title>
+<title>ChatBFT</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
@@ -158,7 +158,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   animation:bubbleIn .18s ease;
 }
 
-/* التعديل: الراسل (أنا) يمين والمستقبل (الزميل) يسار */
+/* الراسل (أنا) يمين والمستقبل (الزميل) يسار */
 .msg-wrapper.sent{justify-content: flex-start;} 
 .msg-wrapper.recv{justify-content: flex-end;}   
 
@@ -194,7 +194,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
   border-bottom-left-radius: 16px;
-  border-bottom-right-radius: 4px; /* زاوية حادة مناسبة للحافة اليمنى */
+  border-bottom-right-radius: 4px;
 }
 
 /* تخصيص الـ Radius والخلفية لـ المستقبل (الزميل) - جهة اليسار */
@@ -203,11 +203,11 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   color: #0d0d0d;
   border-top-left-radius: 16px;
   border-top-right-radius: 16px;
-  border-bottom-left-radius: 4px; /* زاوية حادة مناسبة للحافة اليسرى */
+  border-bottom-left-radius: 4px;
   border-bottom-right-radius: 16px;
 }
 
-/* إعدادات الميتا والوقت (أسفل الرسالة دائماً محاذي لليسار) */
+/* إعدادات الميتا والوقت */
 .msg-meta{
   display: flex;
   align-items: center;
@@ -305,7 +305,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
         <div class="brand-icon">
           <svg viewBox="0 0 24 24"><path d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-2 12H6v-2h12v2zm0-3H6V9h12v2zm0-3H6V6h12v2z"/></svg>
         </div>
-        <div class="brand-name">Sync<span>Chat</span></div>
+        <div class="brand-name">Chat<span>BFT</span></div>
         <div class="brand-sub">محادثة فورية آمنة</div>
       </div>
       <div class="field">
@@ -400,6 +400,7 @@ let myName, myId, roomId;
 let messagesRef, presenceRef, typingRef;
 let typingTimeout;
 let peerTypingListener;
+let isInitialLoad = true; // لمنع تشغيل نغمة الإشعار للرسائل القديمة عند تسجيل الدخول
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -407,6 +408,44 @@ const initials = n => n.trim().slice(0,2).toUpperCase();
 const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
+
+// دالة ذكية لتوليد صوت الإشعار بدون الحاجة لملفات خارجية
+function playNotificationSound() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    
+    // النغمة الأولى
+    const osc1 = ctx.createOscillator();
+    const gain1 = ctx.createGain();
+    osc1.type = 'sine';
+    osc1.frequency.setValueAtTime(587.33, ctx.currentTime); // D5 نغمة
+    gain1.gain.setValueAtTime(0.1, ctx.currentTime);
+    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+    osc1.connect(gain1);
+    gain1.connect(ctx.destination);
+    osc1.start();
+    osc1.stop(ctx.currentTime + 0.15);
+
+    // النغمة الثانية المتناغمة بعدها مباشرة لتعطي صوت إشعار احترافي
+    setTimeout(() => {
+      const osc2 = ctx.createOscillator();
+      const gain2 = ctx.createGain();
+      osc2.type = 'sine';
+      osc2.frequency.setValueAtTime(880, ctx.currentTime); // A5 نغمة أعلى
+      gain2.gain.setValueAtTime(0.1, ctx.currentTime);
+      gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.25);
+      osc2.connect(gain2);
+      gain2.connect(ctx.destination);
+      osc2.start();
+      osc2.stop(ctx.currentTime + 0.25);
+    }, 80);
+
+  } catch (e) {
+    console.log("Audio Context is blocked or not supported yet.");
+  }
+}
 
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -438,6 +477,7 @@ async function joinRoom(){
   catch(e){ err.textContent='خطأ في تهيئة Firebase'; btn.disabled=false; btn.textContent='دخول الغرفة'; return; }
 
   myName=name; myId=genId(); roomId=room;
+  isInitialLoad = true;
 
   messagesRef = db.ref(`rooms/${roomId}/messages`);
   presenceRef = db.ref(`rooms/${roomId}/presence/${myId}`);
@@ -485,18 +525,16 @@ function setupListeners(){
     }
   });
 
-  // 2. إصلاح مراقبة الـ Typing لتكون مستقلة ومستقرة تماماً
+  // 2. مراقبة الـ Typing
   if(peerTypingListener) { db.ref(`rooms/${roomId}/typing`).off('value', peerTypingListener); }
   
   peerTypingListener = db.ref(`rooms/${roomId}/typing`).on('value', snap => {
     const data = snap.val() || {};
-    // جلب أي مستخدم آخر في الغرفة يقوم بالكتابة حالياً ومستبعداً المستخدم الحالي
     const activeTypingPeer = Object.entries(data).find(([id, isTyping]) => id !== myId && isTyping === true);
     const bar = $('typing-bar');
     
     if(activeTypingPeer) {
       const peerId = activeTypingPeer[0];
-      // محاولة جلب الاسم من الـ presence إذا كان متاحاً أو استخدام الاسم الافتراضي للغرفة
       db.ref(`rooms/${roomId}/presence/${peerId}`).once('value', pSnap => {
         const pData = pSnap.val() || {};
         const pName = pData.name || 'الطرف الآخر';
@@ -507,8 +545,21 @@ function setupListeners(){
     }
   });
 
+  // التحكم بـ Load اللحظة الأولى للرسائل لمنع تشغيل الصوت دفعة واحدة للرسائل القديمة
+  messagesRef.once('value', () => {
+    isInitialLoad = false;
+  });
+
   // 3. استقبال الرسائل الجديدة
-  messagesRef.on('child_added', snap=>{ appendMessage(snap.val()); });
+  messagesRef.on('child_added', snap=>{ 
+    const msg = snap.val();
+    appendMessage(msg); 
+    
+    // تشغيل نغمة الإشعار إذا كانت الرسالة جديدة، وليست رسالة نظام، ومن شخص آخر
+    if (!isInitialLoad && msg.type !== 'system' && msg.senderId !== myId) {
+      playNotificationSound();
+    }
+  });
 
   messagesRef.on('value', snap=>{
     if(!snap.exists()){

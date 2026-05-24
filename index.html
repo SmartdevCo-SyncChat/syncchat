@@ -387,9 +387,8 @@ let typingTimeout;
 let peerTypingListener;
 let isInitialLoad = true;
 
-// متغيرات الخمول ومراقبة النشاط
 let inactivityTimeout;
-const INACTIVITY_LIMIT = 2 * 60 * 1000; // دقيقتان
+const INACTIVITY_LIMIT = 2 * 60 * 1000; 
 
 const $  = id => document.getElementById(id);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
@@ -437,12 +436,8 @@ function playNotificationSound() {
   }
 }
 
-// ══════════════════════════════════════════
-// ⏱️ ميزة الخروج التلقائي عند الخمول (محدثة وبدون أية تنبيهات)
-// ══════════════════════════════════════════
 function startInactivityTimer() {
   resetInactivityTimer();
-  // الاستماع لحركة المستخدم لتصفير العداد حتى لو كان فاتح التاب
   window.addEventListener('mousemove', resetInactivityTimer);
   window.addEventListener('click', resetInactivityTimer);
   window.addEventListener('keydown', resetInactivityTimer);
@@ -461,14 +456,12 @@ function stopInactivityTimer() {
 
 function resetInactivityTimer() {
   clearTimeout(inactivityTimeout);
-  // يتم تسجيل الخروج التلقائي صامتاً وبسلاسة فور اكتمال المدة
   if (roomId) {
     inactivityTimeout = setTimeout(() => {
       leaveRoom(); 
     }, INACTIVITY_LIMIT);
   }
 }
-// ══════════════════════════════════════════
 
 function showToast(msg){
   const t=$('toast'); t.textContent=msg; t.classList.add('show');
@@ -575,7 +568,8 @@ function setupListeners(){
     const msg = snap.val();
     appendMessage(msg); 
     
-    if (!isInitialLoad && msg.type !== 'system' && msg.senderId !== myId) {
+    // تعديل الفحص ليعتمد على الاسم بدلاً من الـ ID المتغير
+    if (!isInitialLoad && msg.type !== 'system' && msg.senderName !== myName) {
       playNotificationSound();
     }
   });
@@ -598,7 +592,8 @@ function appendMessage(msg){
     div.className='system-msg';
     div.textContent=msg.text;
   } else {
-    const sent = msg.senderId===myId;
+    // 🔥 التعديل الجوهري هنا: نتحقق من خلال الاسم (msg.senderName === myName) لضمان ثبات اللون والاتجاه للرسائل القديمة بعد تسجيل الدخول المتكرر
+    const sent = msg.senderName === myName;
     div.className='msg-wrapper '+(sent?'sent':'recv');
 
     let mediaHtml='';
@@ -663,7 +658,7 @@ async function handleFileSelect(input){
 function handleTyping(el){
   el.style.height='auto';
   el.style.height=Math.min(el.scrollHeight,130)+'px';
-  resetInactivityTimer(); // إعادة تصفير العداد فوراً بمجرد البدء بالكتابة لتجنب الخروج أثناء الإنشاء
+  resetInactivityTimer(); 
   if(!typingRef) return;
   typingRef.set(true);
   clearTimeout(typingTimeout);

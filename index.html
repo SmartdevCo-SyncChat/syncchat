@@ -167,6 +167,16 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   width: auto;
 }
 
+/* اسم المرسل فوق الرسالة المستقبلة */
+.msg-sender-name {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--muted);
+  margin-bottom: 2px;
+  padding: 0 4px;
+  align-self: flex-start;
+}
+
 .msg-bubble{
   padding: 10px 14px;
   font-size: 15px;
@@ -517,21 +527,24 @@ async function joinRoom(){
 }
 
 function setupListeners(){
-  // 🔥 تعديل لمراقبة وجلب آخر مستخدم دخل الغرفة (بخلاف المستخدم الحالي)
+  // جلب ومراقبة آخر مستخدم دخل الروم بخلاف المستخدم الحالي وبناءً على الاسم بشكل قطعي
   db.ref(`rooms/${roomId}/presence`).on('value', snap=>{
     const data  = snap.val()||{};
     
-    // تصفية المستخدمين لاستبعادك والتركيز على الآخرين فقط
-    const peers = Object.entries(data)
-                        .filter(([id, u])=> u.name !== myName)
-                        .map(([id, u]) => ({ id, ...u }));
+    // تجميع يوزرات الغرفة مع فلترة اسمك تماماً لمنع التداخل عند الخروج والعودة
+    const filterPeers = [];
+    Object.entries(data).forEach(([id, u]) => {
+      if (u && u.name && u.name !== myName) {
+        filterPeers.push({ id, ...u });
+      }
+    });
 
     const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
 
-    if(peers.length > 0){
-      // ترتيبهم تصاعدياً بحسب وقت الانضمام (joinedAt) للحصول على آخر واحد دخل الغرفة بشكل صحيح
-      peers.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
-      const latestPeer = peers[peers.length - 1];
+    if(filterPeers.length > 0){
+      // ترتيب تصاعدي حسب الـ joinedAt للحصول على أحدث المنضمين بالكامل
+      filterPeers.sort((a, b) => (a.joinedAt || 0) - (b.joinedAt || 0));
+      const latestPeer = filterPeers[filterPeers.length - 1];
 
       pav.textContent = initials(latestPeer.name || '؟');
 
@@ -616,9 +629,13 @@ function appendMessage(msg){
       }
     }
 
+    // 🔥 إضافة كود لظهور اسم صاحب الرسالة فقط فوق الرسائل المستقبلة (شمال) للتمييز بين اليوزرات المتعددة
+    const senderNameHtml = !sent ? `<div class="msg-sender-name">${esc(msg.senderName || 'مجهول')}</div>` : '';
+
     div.innerHTML=`
       <div class="msg-row">
         <div class="msg-bubble-wrap">
+          ${senderNameHtml}
           <div class="msg-bubble">
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}

@@ -131,9 +131,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   overflow: hidden;
 }
 
-/* يتغير الـ bottom ديناميكياً ليناسب حجم صندوق المعاينة الرفيع */
 #chat-screen.has-reply .messages-wrap {
-  bottom: 116px;
+  bottom: 112px;
 }
 
 .messages-area{
@@ -150,7 +149,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 }
 
 /* ══════════════════════════════════════════
-   MESSAGES LAYOUT & BUBBLES WITH REPLY BUTTON
+   MESSAGES LAYOUT & BUBBLES
 ══════════════════════════════════════════ */
 .msg-wrapper{
   display:flex;
@@ -206,27 +205,29 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   align-self: flex-start;
 }
 
-/* 🔥 تعديل حجم الـ Reply المقتبس داخل الفقاعة ليصبح صغير مثل واتساب تماماً */
+/* 🔥 تم التحديث: جعل كتلة الاقتباس (Reply) مدمجة وصغيرة وعرضها ديناميكي مثل واتساب تماماً */
 .reply-quotation {
-  background: rgba(0, 0, 0, 0.04);
-  border-right: 3px solid var(--accent);
-  padding: 3px 6px;
-  border-radius: 4px;
-  font-size: 11px;
-  margin-bottom: 4px;
-  color: #555555;
-  max-width: 100%;
+  background: rgba(0, 0, 0, 0.05);
+  border-right: 3.5px solid var(--accent);
+  padding: 4px 8px;
+  border-radius: 6px;
+  font-size: 12px;
+  margin-bottom: 6px;
+  color: #4f4f4f;
   display: block;
+  width: auto;
+  max-width: 100%;
+  box-shadow: inset 0 0 2px rgba(0,0,0,0.02);
 }
 .msg-wrapper.sent .reply-quotation {
-  background: rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.15);
   border-right-color: #ffffff;
-  color: #e5f7f2;
+  color: #f1fbf8;
 }
 .reply-quotation-sender {
   font-weight: 700;
-  font-size: 10px;
-  margin-bottom: 1px;
+  font-size: 11px;
+  margin-bottom: 2px;
   color: var(--accent);
 }
 .msg-wrapper.sent .reply-quotation-sender {
@@ -244,7 +245,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   flex-direction: column;
   width: fit-content;
   max-width: 100%;
-  min-width: 75px;
+  min-width: 90px;
 }
 
 .msg-wrapper.sent .msg-bubble{
@@ -291,7 +292,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 .empty-state{margin:auto;text-align:center;color:var(--muted)}
 
-/* 🔥 شريط الـ Reply Preview رفيع وصغير مثل واتساب تماماً */
+/* شريط الـ Reply Preview السفلي */
 .reply-preview-bar {
   position: fixed;
   bottom: 64px; left: 0; right: 0;
@@ -302,7 +303,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   display: none;
   align-items: center;
   justify-content: space-between;
-  height: 42px;
+  height: 40px;
   z-index: 1001;
 }
 #chat-screen.has-reply .reply-preview-bar { display: flex; }
@@ -327,7 +328,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   height:20px;display:flex;align-items:center;gap:6px;
   z-index: 999; background: transparent;
 }
-#chat-screen.has-reply .typing-bar { bottom: 106px; }
+#chat-screen.has-reply .typing-bar { bottom: 104px; }
 
 .typing-dots{display:flex;gap:3px}
 .typing-dots span{width:4px;height:4px;border-radius:50%;background:var(--muted);animation:tdot 1.1s infinite;}
@@ -481,8 +482,8 @@ const FIREBASE_CONFIG = {
 
 let db, storage;
 let myName, myId, roomId;
-let messagesRef, presenceRef, typingRef;
-let currentActivePeerRef = null; // يحفظ المرجع المباشر للمستخدم النشط الآخر لمنع التداخل العشوائي
+let messagesRef, presenceRef, typingRef, roomPresenceGeneralRef;
+let currentActivePeerRef = null; 
 let typingTimeout;
 let peerTypingListener;
 let isInitialLoad = true;
@@ -552,8 +553,8 @@ async function joinRoom(){
   
   presenceRef = db.ref(`rooms/${roomId}/presence/${myName}`);
   typingRef   = db.ref(`rooms/${roomId}/typing/${myId}`);
+  roomPresenceGeneralRef = db.ref(`rooms/${roomId}/presence`);
 
-  // حفظ التوقيت لتحديد الأقدمية وتحديث الاتصال فوراً
   await presenceRef.set({ name:myName, online:true, joinedAt:Date.now() });
   presenceRef.onDisconnect().set({ name:myName, online:false, lastSeen:firebase.database.ServerValue.TIMESTAMP });
   typingRef.onDisconnect().remove();
@@ -567,8 +568,8 @@ async function joinRoom(){
 }
 
 function setupListeners(){
-  // 🔥 الاستراتيجية الجديدة لـ "آخر ظهور": نعمل لمرة واحدة جلب للمستخدمين، نحدد الآخر المستهدف ثم نراقبه هو بمفرده
-  db.ref(`rooms/${roomId}/presence`).on('value', snap => {
+  // استماع ذكي ومستقر لحالة الطرف الآخر لمنع التداخل العشوائي وهز الـ UI
+  roomPresenceGeneralRef.on('value', snap => {
     const data = snap.val() || {};
     const peers = [];
     
@@ -581,11 +582,9 @@ function setupListeners(){
     const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
 
     if(peers.length > 0) {
-      // ترتيب تنازلي حسب وقت الدخول للحصول على أحدث مستخدم غيرك تماماً
       peers.sort((a, b) => (b.joinedAt || 0) - (a.joinedAt || 0));
       const targetPeer = peers[0];
 
-      // فك ارتباط المستمع القديم المنفصل إن وُجد لمراقبة العقدة الجديدة فقط دون تداخل
       if(currentActivePeerRef) { currentActivePeerRef.off(); }
 
       currentActivePeerRef = db.ref(`rooms/${roomId}/presence/${targetPeer.nodeKey}`);
@@ -603,7 +602,6 @@ function setupListeners(){
           txt.textContent = last ? `آخر ظهور لـ ${user.name}: ${last}` : user.name + ' غير متصل';
         }
       });
-
     } else {
       if(currentActivePeerRef) { currentActivePeerRef.off(); currentActivePeerRef = null; }
       dot.classList.remove('on');
@@ -618,10 +616,8 @@ function setupListeners(){
     const activeTypingPeer = Object.entries(data).find(([id, isTyping]) => id !== myId && isTyping === true);
     const bar = $('typing-bar');
     if(activeTypingPeer) {
-      const peerId = activeTypingPeer[0];
       db.ref(`rooms/${roomId}/presence`).once('value', pSnap => {
         const pData = pSnap.val() || {};
-        // استخراج الاسم الفعلي للشخص الذي يكتب الآن
         const found = Object.values(pData).find(u => u.online === true && u.name !== myName);
         bar.innerHTML = `<div class="typing-dots"><span></span><span></span><span></span></div><span>${esc(found?found.name:'الطرف الآخر')} يكتب...</span>`;
       });
@@ -673,7 +669,6 @@ function appendMessage(msg){
 
     const senderNameHtml = !sent ? `<div class="msg-sender-name">${esc(msg.senderName || 'مجهول')}</div>` : '';
     
-    // بناء الجزء المقتبس داخل الرسالة بحجم مصغر ورفيع جداً (ستايل واتساب)
     let replyBlockHtml = '';
     if(msg.replyTo) {
       replyBlockHtml = `
@@ -763,13 +758,13 @@ async function leaveRoom(){
     await presenceRef.set({ name:myName, online:false, lastSeen:firebase.database.ServerValue.TIMESTAMP });
     await typingRef.remove();
     if(currentActivePeerRef) { currentActivePeerRef.off(); currentActivePeerRef = null; }
-    db.ref(`rooms/${roomId}/presence`).off();
+    if(roomPresenceGeneralRef) roomPresenceGeneralRef.off();
     db.ref(`rooms/${roomId}/typing`).off();
     if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value', peerTypingListener);
     messagesRef.off();
   } catch(e){}
 
-  myName=myId=roomId=null; messagesRef=presenceRef=typingRef=null;
+  myName=myId=roomId=null; messagesRef=presenceRef=typingRef=roomPresenceGeneralRef=null;
   $('messages-area').innerHTML=`<div class="empty-state" id="empty-state"><div class="es-icon">💬</div><p>ابدأ المحادثة الآن</p></div>`;
   $('typing-bar').innerHTML=''; $('name-input').value=''; $('room-input').value='';
   $('join-btn').disabled=false; $('join-btn').textContent='دخول الغرفة';

@@ -168,6 +168,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   position: relative;
 }
 
+/* تحديث الـ CSS لزر الرد ليعمل بثبات كامل على الكروم ويب وينبثق بسلاسة */
 .btn-msg-reply {
   position: absolute;
   top: 50%;
@@ -176,19 +177,20 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   border: 1px solid var(--border);
   color: var(--muted);
   border-radius: 50%;
-  width: 26px;
-  height: 26px;
-  font-size: 11px;
+  width: 28px;
+  height: 28px;
+  font-size: 12px;
   cursor: pointer;
   display: none;
   align-items: center;
   justify-content: center;
-  z-index: 10;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.06);
+  z-index: 99;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  pointer-events: auto;
 }
-.msg-wrapper.sent .btn-msg-reply { left: -32px; }
-.msg-wrapper.recv .btn-msg-reply { right: -32px; }
-.msg-row:hover .btn-msg-reply { display: flex; }
+.msg-wrapper.sent .btn-msg-reply { left: -36px; }
+.msg-wrapper.recv .btn-msg-reply { right: -36px; }
+.msg-row:hover .btn-msg-reply { display: flex !important; }
 
 .msg-bubble-wrap{
   display:flex;
@@ -205,7 +207,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   align-self: flex-start;
 }
 
-/* 🔥 تم التحديث: جعل كتلة الاقتباس (Reply) مدمجة وصغيرة وعرضها ديناميكي مثل واتساب تماماً */
+/* حجم مدمج وصغير جداً للاقتباس الداخلي كـ ستايل واتساب */
 .reply-quotation {
   background: rgba(0, 0, 0, 0.05);
   border-right: 3.5px solid var(--accent);
@@ -217,7 +219,6 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   display: block;
   width: auto;
   max-width: 100%;
-  box-shadow: inset 0 0 2px rgba(0,0,0,0.02);
 }
 .msg-wrapper.sent .reply-quotation {
   background: rgba(255, 255, 255, 0.15);
@@ -292,7 +293,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 .empty-state{margin:auto;text-align:center;color:var(--muted)}
 
-/* شريط الـ Reply Preview السفلي */
+/* شريط المعاينة السفلي للرد */
 .reply-preview-bar {
   position: fixed;
   bottom: 64px; left: 0; right: 0;
@@ -497,7 +498,16 @@ const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>
 const initials = n => n.trim().slice(0,2).toUpperCase();
 const genId    = () => Math.random().toString(36).slice(2,10);
 const fmt      = ts => new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
-const fmtFull  = ts => new Date(ts).toLocaleDateString('ar-EG',{day:'numeric',month:'long'}) + ' - ' + fmt(ts);
+
+// 🔥 تحديث دالة الوقت والتاريخ لضمان معالجة دقيقة لأي صيغة أو كائن غير مكتمل من Firebase بالكروم
+const fmtFull = ts => {
+  if (!ts || typeof ts === 'object') { ts = Date.now(); }
+  try {
+    const d = new Date(ts);
+    if (isNaN(d.getTime())) return '';
+    return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'long' }) + ' - ' + d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+  } catch(e) { return ''; }
+};
 
 function playNotificationSound() {
   if (document.visibilityState === 'visible') return;
@@ -568,7 +578,6 @@ async function joinRoom(){
 }
 
 function setupListeners(){
-  // استماع ذكي ومستقر لحالة الطرف الآخر لمنع التداخل العشوائي وهز الـ UI
   roomPresenceGeneralRef.on('value', snap => {
     const data = snap.val() || {};
     const peers = [];
@@ -626,7 +635,7 @@ function setupListeners(){
 
   messagesRef.once('value', () => { isInitialLoad = false; });
   messagesRef.on('child_added', snap=>{ 
-    const msg = snap.val(); appendMessage(msg); 
+    const msg = snap.val(); appendMessage(msg, snap.key); 
     if (!isInitialLoad && msg.type !== 'system' && msg.senderName !== myName) { playNotificationSound(); }
   });
 }
@@ -644,7 +653,8 @@ function cancelReply() {
   $('chat-screen').classList.remove('has-reply');
 }
 
-function appendMessage(msg){
+// 🔥 تم تعديل معالجة الرسائل لربط أحداث الـ click برمجياً وعزل نصوص الاقتباس لمنع أي مشاكل في متصفح الكروم ويب
+function appendMessage(msg, key){
   const area=$('messages-area'); const empty=$('empty-state'); if(empty) empty.remove();
   const div=document.createElement('div');
 
@@ -679,11 +689,9 @@ function appendMessage(msg){
       `;
     }
 
-    const safeText = esc(msg.text || '').replace(/'/g, "\\'");
-
     div.innerHTML=`
-      <div class="msg-row">
-        <button class="btn-msg-reply" title="رد" onclick="initiateReply('${esc(msg.senderName)}', '${safeText}')">↩️</button>
+      <div class="msg-row" data-key="${key}">
+        <button class="btn-msg-reply" title="رد">↩️</button>
         <div class="msg-bubble-wrap">
           ${senderNameHtml}
           <div class="msg-bubble">
@@ -694,6 +702,16 @@ function appendMessage(msg){
           </div>
         </div>
       </div>`;
+
+      // ربط الحدث برمجياً لضمان تخطي مشاكل الـ inline onclick في الويب كروم
+      const replyBtn = div.querySelector('.btn-msg-reply');
+      if(replyBtn) {
+        replyBtn.addEventListener('click', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          initiateReply(msg.senderName, msg.text || '');
+        });
+      }
   }
 
   area.appendChild(div);

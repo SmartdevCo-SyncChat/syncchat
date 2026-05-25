@@ -221,6 +221,43 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .chat-image{max-width:100%;max-height:200px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;}
 .file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid var(--border);margin-bottom:3px;}
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
+
+/* ── Emoji Reactions ── */
+.reactions-bar{
+  display:flex;flex-wrap:wrap;gap:4px;
+  margin-top:4px;
+}
+.reaction-chip{
+  display:inline-flex;align-items:center;gap:3px;
+  background:#f0f0f0;border:1px solid #e0e0e0;
+  border-radius:12px;padding:2px 7px;
+  font-size:13px;cursor:pointer;
+  transition:background .15s,transform .1s;
+  user-select:none;
+}
+.reaction-chip:hover{background:#e5e5e5;transform:scale(1.05);}
+.reaction-chip.mine{background:#d4f0e8;border-color:#a8dccb;}
+.reaction-chip .r-count{font-size:11px;color:#555;font-family:var(--font);}
+
+/* picker popup */
+.emoji-picker{
+  position:fixed;
+  background:#fff;
+  border:1px solid #e5e5e5;
+  border-radius:14px;
+  box-shadow:0 8px 28px rgba(0,0,0,.13);
+  padding:8px 10px;
+  display:flex;gap:6px;
+  z-index:6000;
+  animation:ctxIn .15s ease;
+}
+.emoji-picker span{
+  font-size:22px;cursor:pointer;
+  padding:4px;border-radius:8px;
+  transition:background .12s,transform .1s;
+  line-height:1;
+}
+.emoji-picker span:hover{background:#f0f0f0;transform:scale(1.2);}
 .empty-state{margin:auto;text-align:center;color:var(--muted)}
 
 /* Reply preview bar */
@@ -467,40 +504,50 @@ function setupListeners(){
   ══════════════════════════════════════════════════════════ */
   roomPresenceGeneralRef.on('value', snap => {
     const data  = snap.val() || {};
+    const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
+
     // كل الناس غير أنا
     const peers = Object.entries(data)
-      .filter(([key, u]) => u && u.name && u.name !== myName)
-      // ترتيب تنازلي حسب joinedAt — آخر واحد دخل أولاً
-      .sort((a, b) => (b[1].joinedAt || 0) - (a[1].joinedAt || 0));
-
-    const dot=$('online-dot'), txt=$('peer-status'), pav=$('peer-avatar');
+      .filter(([k, u]) => u && u.name && u.name !== myName);
 
     if (currentActivePeerRef) { currentActivePeerRef.off(); currentActivePeerRef=null; }
 
-    if (peers.length > 0) {
-      const [peerKey, latestPeer] = peers[0]; // آخر واحد دخل
-      pav.textContent = initials(latestPeer.name || '؟');
-
-      // subscribe على الـ node بتاعته للـ online/offline الحي
-      currentActivePeerRef = db.ref(`rooms/${roomId}/presence/${peerKey}`);
-      currentActivePeerRef.on('value', pSnap => {
-        const u = pSnap.val();
-        if (!u) return;
-        pav.textContent = initials(u.name || '؟');
-        if (u.online) {
-          dot.classList.add('on');
-          txt.textContent = u.name + ' متصل الآن';
-        } else {
-          dot.classList.remove('on');
-          const last = u.lastSeen ? fmtFull(u.lastSeen) : '';
-          txt.textContent = last ? `آخر ظهور لـ ${u.name}: ${last}` : u.name + ' غير متصل';
-        }
-      });
-    } else {
+    if (peers.length === 0) {
       dot.classList.remove('on');
       txt.textContent = 'في انتظار الطرف الآخر...';
       pav.textContent = '؟';
+      return;
     }
+
+    // الأولوية: 1) online  2) آخر lastSeen (مش joinedAt)
+    const onlinePeers  = peers.filter(([k,u]) => u.online === true);
+    const offlinePeers = peers.filter(([k,u]) => u.online !== true);
+
+    let chosen;
+    if (onlinePeers.length > 0) {
+      // لو في أكتر من واحد online → آخر واحد دخل (joinedAt)
+      chosen = onlinePeers.sort((a,b)=>(b[1].joinedAt||0)-(a[1].joinedAt||0))[0];
+    } else {
+      // كلهم offline → آخر واحد كان متصل (lastSeen)
+      chosen = offlinePeers.sort((a,b)=>(b[1].lastSeen||0)-(a[1].lastSeen||0))[0];
+    }
+
+    const [chosenKey, chosenUser] = chosen;
+    pav.textContent = initials(chosenUser.name || '؟');
+
+    currentActivePeerRef = db.ref(`rooms/${roomId}/presence/${chosenKey}`);
+    currentActivePeerRef.on('value', pSnap => {
+      const u = pSnap.val(); if (!u) return;
+      pav.textContent = initials(u.name || '؟');
+      if (u.online) {
+        dot.classList.add('on');
+        txt.textContent = u.name + ' متصل الآن';
+      } else {
+        dot.classList.remove('on');
+        const last = u.lastSeen ? fmtFull(u.lastSeen) : '';
+        txt.textContent = last ? `آخر ظهور لـ ${u.name}: ${last}` : u.name + ' غير متصل';
+      }
+    });
   });
 
   /* Typing */
@@ -596,6 +643,7 @@ function appendMessage(msg, key){
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
             <span class="msg-meta">${fmt(msg.ts)}${sent?' <span class="check-icon">✓✓</span>':''}</span>
           </div>
+          <div class="reactions-bar" id="reactions-${key}"></div>
         </div>
         <button class="msg-reply-btn" title="رد">↩</button>
       </div>`;
@@ -613,20 +661,31 @@ function appendMessage(msg, key){
       });
     }
 
-    // ══ Long press على الفقاعة (موبايل) ══
+    // ══ Long press على الفقاعة (موبايل) → emoji picker ══
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
       let pressTimer = null;
       bubble.addEventListener('touchstart', e => {
         pressTimer = setTimeout(() => {
-          initiateReply(msg.senderName, msg.text||'');
           bubble.classList.add('tapped');
           setTimeout(() => bubble.classList.remove('tapped'), 300);
+          const t = e.touches[0];
+          showEmojiPicker(key, t.clientX, t.clientY);
         }, 500);
       }, {passive:true});
       bubble.addEventListener('touchend',  () => clearTimeout(pressTimer), {passive:true});
       bubble.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive:true});
+
+      // ديسكتوب: double-click → emoji picker
+      bubble.addEventListener('dblclick', e => {
+        showEmojiPicker(key, e.clientX, e.clientY);
+      });
     }
+
+    // ══ Listen to reactions for this message ══
+    db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => {
+      renderReactions(key, snap.val()||{});
+    });
   }
 
   area.appendChild(div);
@@ -713,6 +772,78 @@ function handleTyping(el){
 function clearTypingNow(){ clearTimeout(typingTimeout); if(typingRef) typingRef.set(false); }
 function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
 
+/* ══ EMOJI REACTIONS ══ */
+const EMOJIS = ['❤️','👍','😂','😮','😢','🔥'];
+
+function showEmojiPicker(msgKey, x, y) {
+  closeEmojiPicker();
+  const picker = document.createElement('div');
+  picker.className = 'emoji-picker';
+  picker.id = 'emoji-picker';
+
+  EMOJIS.forEach(em => {
+    const sp = document.createElement('span');
+    sp.textContent = em;
+    sp.title = em;
+    sp.addEventListener('click', () => {
+      toggleReaction(msgKey, em);
+      closeEmojiPicker();
+    });
+    picker.appendChild(sp);
+  });
+
+  document.body.appendChild(picker);
+
+  // position
+  const pw = 220, ph = 52;
+  let left = x - pw/2, top = y - ph - 12;
+  if (left < 8) left = 8;
+  if (left + pw > window.innerWidth) left = window.innerWidth - pw - 8;
+  if (top < 8) top = y + 12;
+  picker.style.left = left + 'px';
+  picker.style.top  = top  + 'px';
+
+  setTimeout(() => {
+    document.addEventListener('click',      closeEmojiPicker, {once:true});
+    document.addEventListener('touchstart', closeEmojiPicker, {once:true, passive:true});
+  }, 50);
+}
+
+function closeEmojiPicker() {
+  const p = document.getElementById('emoji-picker');
+  if (p) p.remove();
+}
+
+async function toggleReaction(msgKey, emoji) {
+  const ref = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
+  const snap = await ref.once('value');
+  if (snap.exists()) {
+    await ref.remove(); // إلغاء الـ reaction
+  } else {
+    await ref.set(true); // إضافة الـ reaction
+  }
+}
+
+function renderReactions(msgKey, data) {
+  const bar = document.getElementById(`reactions-${msgKey}`);
+  if (!bar) return;
+  bar.innerHTML = '';
+
+  // data = { "❤️": { uid1: true, uid2: true }, "👍": { uid3: true } }
+  Object.entries(data).forEach(([emoji, users]) => {
+    const uids  = Object.keys(users||{});
+    const count = uids.length;
+    if (count === 0) return;
+    const mine  = uids.includes(myId);
+
+    const chip = document.createElement('div');
+    chip.className = 'reaction-chip' + (mine?' mine':'');
+    chip.innerHTML = `<span>${emoji}</span><span class="r-count">${count}</span>`;
+    chip.addEventListener('click', () => toggleReaction(msgKey, emoji));
+    bar.appendChild(chip);
+  });
+}
+
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
   try {
@@ -738,6 +869,7 @@ async function leaveRoom(){
     if(roomPresenceGeneralRef) roomPresenceGeneralRef.off();
     db.ref(`rooms/${roomId}/typing`).off();
     db.ref(`rooms/${roomId}/clearSignal`).off();
+    db.ref(`rooms/${roomId}/reactions`).off();
     if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener);
     messagesRef.off();
   } catch(e){}

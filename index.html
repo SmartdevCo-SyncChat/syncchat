@@ -226,21 +226,22 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 /* ══ PIN BAR ══ */
 .pin-bar{
-  position:fixed;top:56px;left:0;right:0;
-  max-width:860px;margin:0 auto;
+  position:absolute;
+  top:56px;left:0;right:0;
   background:#fffbea;border-bottom:1px solid #f0e08a;
-  padding:7px 14px;display:none;align-items:center;gap:10px;
-  z-index:900;cursor:pointer;
+  padding:6px 14px;display:none;align-items:center;gap:10px;
+  z-index:90;cursor:pointer;height:34px;
 }
 .pin-bar.show{display:flex;}
-.pin-icon{font-size:14px;flex-shrink:0;}
+.pin-icon{font-size:13px;flex-shrink:0;}
 .pin-text{flex:1;font-size:12px;color:#7a6000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
-.pin-close{background:transparent;border:none;color:#7a6000;font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0;}
+.pin-close{background:transparent;border:none;color:#7a6000;font-size:15px;cursor:pointer;padding:0 4px;flex-shrink:0;line-height:1;}
 
-/* push messages-wrap down when pin-bar visible */
+/* messages-wrap positions */
 .messages-wrap{position:absolute;top:56px;bottom:74px;left:0;right:0;background:#ffffff;overflow:hidden;}
-.has-pin .messages-wrap{top:90px;}
+#chat-screen.has-pin  .messages-wrap{top:90px;}
 #chat-screen.has-reply .messages-wrap{bottom:112px;}
+#chat-screen.has-pin.has-reply .messages-wrap{top:90px;bottom:112px;}
 
 /* ══ SEARCH OVERLAY ══ */
 .search-overlay{
@@ -542,7 +543,7 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   <div class="search-overlay" id="search-overlay">
     <div class="search-header">
       <button class="btn-close-search" onclick="closeSearch()">✕</button>
-      <input class="search-input" id="search-input" placeholder="ابحث في الرسائل..." oninput="doSearch(this.value)" autocomplete="off">
+      <input class="search-input" id="search-input" placeholder="ابحث في الرسائل..." oninput="doSearch(this.value)" onkeydown="if(event.key==='Escape')closeSearch()" autocomplete="off">
       <span style="font-size:14px">🔍</span>
     </div>
     <div class="search-results" id="search-results">
@@ -1014,7 +1015,7 @@ function appendMessage(msg, key){
         pressTimer = setTimeout(() => {
           bubble.classList.add('tapped');
           setTimeout(() => bubble.classList.remove('tapped'), 250);
-          showReplyMenu(bubble, msg.senderName, msg.text||'', touch.clientX, touch.clientY, key);
+          showCtxMenu(bubble, msg.senderName, msg.text||'', touch.clientX, touch.clientY, key);
         }, 600);
       }, {passive:false});
 
@@ -1145,7 +1146,7 @@ async function uploadAndSend(file) {
 
   try {
     const ref      = storage.ref(`rooms/${roomId}/${genId()}_${file.name}`);
-    const task     = ref.put(file);
+    const task     = ref.put(file, { contentType: file.type });
 
     task.on('state_changed', snapshot => {
       const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
@@ -1164,8 +1165,12 @@ async function uploadAndSend(file) {
     await messagesRef.push(payload);
     showToast('تم الإرسال ✅');
   } catch(e) {
-    showToast('فشل الرفع ❌');
-    console.error(e);
+    console.error('Upload error:', e);
+    if (e.code === 'storage/unauthorized') {
+      showToast('خطأ في صلاحيات Storage — راجع Firebase Rules ❌');
+    } else {
+      showToast('فشل الرفع: ' + (e.message||'خطأ غير معروف') + ' ❌');
+    }
   } finally {
     bar.classList.remove('show');
     prog.classList.remove('show');
@@ -1246,7 +1251,8 @@ async function uploadVoice(blob, mimeType) {
   bar.classList.add('show');
   try {
     const ref      = storage.ref(`rooms/${roomId}/voice/${name}`);
-    const snap     = await ref.put(blob, { contentType: mimeType });
+    const task2    = ref.put(blob, { contentType: mimeType });
+    const snap     = await task2;
     const url      = await snap.ref.getDownloadURL();
     const payload  = {
       type: 'message', text: '',
@@ -1257,7 +1263,12 @@ async function uploadVoice(blob, mimeType) {
     if (currentReplyTarget) { payload.replyTo = currentReplyTarget; cancelReply(); }
     await messagesRef.push(payload);
   } catch(e) {
-    showToast('فشل رفع الصوت ❌');
+    console.error('Voice upload error:', e);
+    if (e.code === 'storage/unauthorized') {
+      showToast('خطأ في صلاحيات Storage — راجع Firebase Rules ❌');
+    } else {
+      showToast('فشل رفع الصوت: ' + (e.message||'') + ' ❌');
+    }
   } finally {
     bar.classList.remove('show');
   }
@@ -1431,6 +1442,138 @@ function toggleVoicePlay(btn) {
 
   audio.onerror = () => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; };
   audio.play().catch(() => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; });
+}
+
+
+/* ══════════════════════════════════════════
+   PIN MESSAGE
+══════════════════════════════════════════ */
+async function pinMessage(key, text) {
+  try {
+    await db.ref(`rooms/${roomId}/pinnedMsg`).set({
+      key, text: (text||'رسالة').slice(0,80), by: myName
+    });
+    showToast('تم تثبيت الرسالة 📌');
+  } catch(e) { showToast('فشل التثبيت'); }
+}
+
+async function unpinMessage(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  try {
+    await db.ref(`rooms/${roomId}/pinnedMsg`).remove();
+    showToast('تم إلغاء التثبيت');
+  } catch(e) {}
+}
+
+function scrollToPinned() {
+  if (!pinnedMsgKey) return;
+  const el = document.querySelector(`[data-key="${pinnedMsgKey}"]`);
+  if (!el) { showToast('الرسالة غير موجودة في الشاشة'); return; }
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  const b = el.querySelector('.msg-bubble');
+  if (b) {
+    b.style.outline = '2px solid var(--accent)';
+    b.style.transition = 'outline .3s';
+    setTimeout(() => { b.style.outline = ''; }, 1800);
+  }
+}
+
+/* ══════════════════════════════════════════
+   MESSAGE SEARCH
+══════════════════════════════════════════ */
+function openSearch() {
+  $('search-overlay').classList.add('open');
+  setTimeout(() => $('search-input').focus(), 100);
+}
+
+function closeSearch() {
+  $('search-overlay').classList.remove('open');
+  $('search-input').value = '';
+  $('search-results').innerHTML = '<div class="search-empty">اكتب للبحث في الرسائل</div>';
+}
+
+function doSearch(q) {
+  const res = $('search-results');
+  q = (q||'').trim();
+  if (!q) {
+    res.innerHTML = '<div class="search-empty">اكتب للبحث في الرسائل</div>';
+    return;
+  }
+  const ql = q.toLowerCase();
+  const matches = Object.entries(allMessages)
+    .filter(([, m]) => m.text && m.text.toLowerCase().includes(ql))
+    .reverse()
+    .slice(0, 40);
+
+  if (!matches.length) {
+    res.innerHTML = '<div class="search-empty">لا توجد نتائج لـ "' + esc(q) + '"</div>';
+    return;
+  }
+
+  res.innerHTML = matches.map(([key, m]) => {
+    const safe = esc(m.text);
+    const hi   = safe.replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi'),
+                               s => `<mark>${s}</mark>`);
+    return `<div class="search-result-item" onclick="jumpToMsg('${key}');closeSearch()">
+      <div class="search-result-sender">${esc(m.senderName||'')}</div>
+      <div class="search-result-text">${hi}</div>
+      <div class="search-result-time">${fmt(m.ts)}</div>
+    </div>`;
+  }).join('');
+}
+
+function jumpToMsg(key) {
+  const el = document.querySelector(`[data-key="${key}"]`);
+  if (!el) { showToast('الرسالة غير موجودة في الشاشة'); return; }
+  el.scrollIntoView({ behavior:'smooth', block:'center' });
+  const b = el.querySelector('.msg-bubble');
+  if (b) {
+    b.style.outline = '2px solid var(--accent)';
+    setTimeout(() => { b.style.outline = ''; }, 1800);
+  }
+}
+
+/* ══════════════════════════════════════════
+   CONTEXT MENU (Reply + Pin)
+══════════════════════════════════════════ */
+function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
+  // close any open menus
+  document.getElementById('reply-ctx-menu') && document.getElementById('reply-ctx-menu').remove();
+  document.getElementById('emoji-picker')   && document.getElementById('emoji-picker').remove();
+
+  const isPinned = pinnedMsgKey === msgKey;
+  const menu = document.createElement('div');
+  menu.className = 'reply-ctx-menu';
+  menu.id = 'reply-ctx-menu';
+  menu.innerHTML = `
+    <button id="ctx-reply-btn"><span class="ctx-icon">↩️</span><span>رد</span></button>
+    <button id="ctx-pin-btn"><span class="ctx-icon">📌</span><span>${isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</span></button>
+  `;
+  document.body.appendChild(menu);
+
+  const mw = 170, mh = 96;
+  let left = x, top = y + 8;
+  if (left + mw > window.innerWidth)  left = window.innerWidth  - mw - 8;
+  if (top  + mh > window.innerHeight) top  = y - mh - 8;
+  if (top < 60) top = 60;
+  menu.style.left = left + 'px';
+  menu.style.top  = top  + 'px';
+
+  menu.querySelector('#ctx-reply-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    initiateReply(senderName, text);
+    menu.remove();
+  });
+  menu.querySelector('#ctx-pin-btn').addEventListener('click', e => {
+    e.stopPropagation();
+    isPinned ? unpinMessage() : pinMessage(msgKey, text);
+    menu.remove();
+  });
+
+  setTimeout(() => {
+    document.addEventListener('click',      () => menu.remove(), {once:true});
+    document.addEventListener('touchstart', () => menu.remove(), {once:true, passive:true});
+  }, 80);
 }
 
 async function clearChat(){

@@ -202,6 +202,8 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   padding:8px 12px;font-size:14.5px;line-height:1.4;
   word-break:break-word;overflow-wrap:anywhere;white-space:pre-wrap;
   display:flex;flex-direction:column;width:fit-content;max-width:100%;min-width:90px;
+  -webkit-user-select:none;user-select:none;
+  -webkit-touch-callout:none;
 }
 .msg-wrapper.sent .msg-bubble{
   background:#10a37f;color:#ffffff;
@@ -669,41 +671,44 @@ function appendMessage(msg, key){
       });
     }
 
-    // ══ Double tap/click → ❤️ مباشرة زي واتس وتليجرام ══
-    // Long press → emoji picker للاختيار
+    // ══ Reactions على الفقاعة ══
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
-      let pressTimer  = null;
-      let lastTap     = 0;
+      let pressTimer = null;
+      let lastTap    = 0;
 
-      // ── موبايل: double-tap → ❤️ | long-press → picker ──
+      // منع قائمة النسخ الافتراضية
+      bubble.addEventListener('contextmenu', e => e.preventDefault());
+
+      // موبايل: double-tap → ❤️  |  long-press (600ms) → emoji picker
       bubble.addEventListener('touchstart', e => {
         const now = Date.now();
-        if (now - lastTap < 350) {
-          // double tap
+        if (now - lastTap < 400) {
           clearTimeout(pressTimer);
           lastTap = 0;
+          e.preventDefault();
           bubble.classList.add('tapped');
-          setTimeout(() => bubble.classList.remove('tapped'), 300);
+          setTimeout(() => bubble.classList.remove('tapped'), 250);
           quickReact(key, '❤️', bubble);
           return;
         }
         lastTap = now;
+        const touch = e.touches[0];
         pressTimer = setTimeout(() => {
           bubble.classList.add('tapped');
-          setTimeout(() => bubble.classList.remove('tapped'), 300);
-          const t = e.touches[0];
-          showEmojiPicker(key, t.clientX, t.clientY);
-        }, 550);
-      }, {passive:true});
-      bubble.addEventListener('touchend',  () => clearTimeout(pressTimer), {passive:true});
-      bubble.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive:true});
+          setTimeout(() => bubble.classList.remove('tapped'), 250);
+          showEmojiPicker(key, touch.clientX, touch.clientY, bubble);
+        }, 600);
+      }, {passive:false});
 
-      // ── ديسكتوب: double-click → ❤️ ──
+      bubble.addEventListener('touchend',  e => { clearTimeout(pressTimer); }, {passive:true});
+      bubble.addEventListener('touchmove', e => { clearTimeout(pressTimer); }, {passive:true});
+
+      // ديسكتوب: double-click → ❤️
       bubble.addEventListener('dblclick', e => {
         e.preventDefault();
         bubble.classList.add('tapped');
-        setTimeout(() => bubble.classList.remove('tapped'), 300);
+        setTimeout(() => bubble.classList.remove('tapped'), 250);
         quickReact(key, '❤️', bubble);
       });
     }
@@ -878,26 +883,29 @@ async function quickReact(msgKey, emoji, bubbleEl) {
 }
 
 function renderReactions(msgKey, data) {
-  // try both direct id and sanitized id
-  const bar = document.querySelector(`.reactions-bar[data-msgkey="${msgKey}"]`);
+  const bar = document.querySelector('[data-msgkey="' + msgKey + '"]');
   if (!bar) return;
+
+  // احتفظ بالـ chips الموجودة وحدّثها بدل innerHTML كامل
   bar.innerHTML = '';
   if (!data || Object.keys(data).length === 0) return;
 
-  // data = { "❤️": { uid1: "Ahmed", uid2: "Sara" } }
   Object.entries(data).forEach(([emoji, users]) => {
-    const uids  = Object.keys(users||{});
+    if (!users || typeof users !== 'object') return;
+    const uids  = Object.keys(users);
     const count = uids.length;
     if (count === 0) return;
     const mine  = uids.includes(myId);
-    // tooltip: أسماء اللي عملوا الـ reaction
-    const names = Object.values(users||{}).filter(v => typeof v === 'string').join('، ');
+    const names = Object.values(users).filter(v => typeof v === 'string').join('، ');
 
     const chip = document.createElement('div');
-    chip.className = 'reaction-chip' + (mine?' mine':'');
-    chip.title     = names || '';
-    chip.innerHTML = `<span>${emoji}</span><span class="r-count">${count > 1 ? count : ''}</span>`;
-    chip.addEventListener('click', () => toggleReaction(msgKey, emoji));
+    chip.className = 'reaction-chip' + (mine ? ' mine' : '');
+    chip.title     = names;
+    chip.innerHTML = `<span>${emoji}</span>${count > 1 ? '<span class="r-count">' + count + '</span>' : ''}`;
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleReaction(msgKey, emoji);
+    });
     bar.appendChild(chip);
   });
 }

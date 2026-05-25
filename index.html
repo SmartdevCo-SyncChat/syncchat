@@ -309,6 +309,11 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .img-modal img{max-width:100%;max-height:90vh;border-radius:8px;}
 .img-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;font-size:20px;cursor:pointer;}
 @keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes floatHeart{
+  0%  {opacity:1;transform:translateX(-50%) scale(1)   translateY(0)}
+  60% {opacity:1;transform:translateX(-50%) scale(1.5) translateY(-24px)}
+  100%{opacity:0;transform:translateX(-50%) scale(1.2) translateY(-40px)}
+}
 </style>
 
 </head>
@@ -661,24 +666,42 @@ function appendMessage(msg, key){
       });
     }
 
-    // ══ Long press على الفقاعة (موبايل) → emoji picker ══
+    // ══ Double tap/click → ❤️ مباشرة زي واتس وتليجرام ══
+    // Long press → emoji picker للاختيار
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
-      let pressTimer = null;
+      let pressTimer  = null;
+      let lastTap     = 0;
+
+      // ── موبايل: double-tap → ❤️ | long-press → picker ──
       bubble.addEventListener('touchstart', e => {
+        const now = Date.now();
+        if (now - lastTap < 350) {
+          // double tap
+          clearTimeout(pressTimer);
+          lastTap = 0;
+          bubble.classList.add('tapped');
+          setTimeout(() => bubble.classList.remove('tapped'), 300);
+          quickReact(key, '❤️', bubble);
+          return;
+        }
+        lastTap = now;
         pressTimer = setTimeout(() => {
           bubble.classList.add('tapped');
           setTimeout(() => bubble.classList.remove('tapped'), 300);
           const t = e.touches[0];
           showEmojiPicker(key, t.clientX, t.clientY);
-        }, 500);
+        }, 550);
       }, {passive:true});
       bubble.addEventListener('touchend',  () => clearTimeout(pressTimer), {passive:true});
       bubble.addEventListener('touchmove', () => clearTimeout(pressTimer), {passive:true});
 
-      // ديسكتوب: double-click → emoji picker
+      // ── ديسكتوب: double-click → ❤️ ──
       bubble.addEventListener('dblclick', e => {
-        showEmojiPicker(key, e.clientX, e.clientY);
+        e.preventDefault();
+        bubble.classList.add('tapped');
+        setTimeout(() => bubble.classList.remove('tapped'), 300);
+        quickReact(key, '❤️', bubble);
       });
     }
 
@@ -815,30 +838,58 @@ function closeEmojiPicker() {
 }
 
 async function toggleReaction(msgKey, emoji) {
-  const ref = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
-  const snap = await ref.once('value');
-  if (snap.exists()) {
-    await ref.remove(); // إلغاء الـ reaction
-  } else {
-    await ref.set(true); // إضافة الـ reaction
-  }
+  try {
+    const ref  = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
+    const snap = await ref.once('value');
+    if (snap.exists()) { await ref.remove(); }
+    else               { await ref.set(myName); }
+  } catch(e) { showToast('تأكد من اتصالك بالإنترنت'); }
+}
+
+/* quickReact: toggle ❤️ مع animation على الفقاعة */
+async function quickReact(msgKey, emoji, bubbleEl) {
+  try {
+    const ref  = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
+    const snap = await ref.once('value');
+    const adding = !snap.exists();
+    if (adding) { await ref.set(myName); }
+    else        { await ref.remove(); }
+
+    if (adding && bubbleEl) {
+      // floating heart animation
+      const heart = document.createElement('span');
+      heart.textContent = emoji;
+      heart.style.cssText = `
+        position:absolute;font-size:28px;pointer-events:none;z-index:999;
+        animation:floatHeart .7s ease forwards;
+        left:50%;transform:translateX(-50%);bottom:0;
+      `;
+      bubbleEl.style.position = 'relative';
+      bubbleEl.appendChild(heart);
+      setTimeout(() => heart.remove(), 700);
+    }
+  } catch(e) { showToast('تأكد من اتصالك بالإنترنت'); }
 }
 
 function renderReactions(msgKey, data) {
   const bar = document.getElementById(`reactions-${msgKey}`);
   if (!bar) return;
   bar.innerHTML = '';
+  if (!data || Object.keys(data).length === 0) return;
 
-  // data = { "❤️": { uid1: true, uid2: true }, "👍": { uid3: true } }
+  // data = { "❤️": { uid1: "Ahmed", uid2: "Sara" } }
   Object.entries(data).forEach(([emoji, users]) => {
     const uids  = Object.keys(users||{});
     const count = uids.length;
     if (count === 0) return;
     const mine  = uids.includes(myId);
+    // tooltip: أسماء اللي عملوا الـ reaction
+    const names = Object.values(users||{}).filter(v => typeof v === 'string').join('، ');
 
     const chip = document.createElement('div');
     chip.className = 'reaction-chip' + (mine?' mine':'');
-    chip.innerHTML = `<span>${emoji}</span><span class="r-count">${count}</span>`;
+    chip.title     = names || '';
+    chip.innerHTML = `<span>${emoji}</span><span class="r-count">${count > 1 ? count : ''}</span>`;
     chip.addEventListener('click', () => toggleReaction(msgKey, emoji));
     bar.appendChild(chip);
   });

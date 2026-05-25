@@ -224,6 +224,80 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid var(--border);margin-bottom:3px;}
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 
+/* ══ PIN BAR ══ */
+.pin-bar{
+  position:fixed;top:56px;left:0;right:0;
+  max-width:860px;margin:0 auto;
+  background:#fffbea;border-bottom:1px solid #f0e08a;
+  padding:7px 14px;display:none;align-items:center;gap:10px;
+  z-index:900;cursor:pointer;
+}
+.pin-bar.show{display:flex;}
+.pin-icon{font-size:14px;flex-shrink:0;}
+.pin-text{flex:1;font-size:12px;color:#7a6000;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:500;}
+.pin-close{background:transparent;border:none;color:#7a6000;font-size:16px;cursor:pointer;padding:0 4px;flex-shrink:0;}
+
+/* push messages-wrap down when pin-bar visible */
+.messages-wrap{position:absolute;top:56px;bottom:74px;left:0;right:0;background:#ffffff;overflow:hidden;}
+.has-pin .messages-wrap{top:90px;}
+#chat-screen.has-reply .messages-wrap{bottom:112px;}
+
+/* ══ SEARCH OVERLAY ══ */
+.search-overlay{
+  position:fixed;inset:0;z-index:8000;
+  background:rgba(255,255,255,.97);
+  display:none;flex-direction:column;
+}
+.search-overlay.open{display:flex;}
+.search-header{
+  display:flex;align-items:center;gap:10px;
+  padding:12px 16px;border-bottom:1px solid var(--border);
+  background:#fff;
+}
+.search-input{
+  flex:1;border:none;outline:none;font-size:15px;
+  font-family:var(--font);color:var(--text);background:transparent;
+}
+.search-input::placeholder{color:#aaa;}
+.btn-close-search{background:transparent;border:none;font-size:18px;color:var(--muted);cursor:pointer;}
+.search-results{
+  flex:1;overflow-y:auto;padding:12px 16px;
+  display:flex;flex-direction:column;gap:8px;
+}
+.search-result-item{
+  padding:10px 14px;border-radius:12px;
+  background:#f9f9f9;border:1px solid var(--border);
+  cursor:pointer;transition:background .15s;
+}
+.search-result-item:hover{background:#f0f0f0;}
+.search-result-sender{font-size:11px;font-weight:700;color:var(--accent);margin-bottom:3px;}
+.search-result-text{font-size:13px;color:var(--text);line-height:1.4;}
+.search-result-text mark{background:#fff3a3;border-radius:3px;padding:0 2px;}
+.search-result-time{font-size:10px;color:var(--muted);margin-top:3px;}
+.search-empty{text-align:center;color:var(--muted);font-size:13px;margin-top:40px;}
+
+/* ══ SWIPE TO REPLY ══ */
+.msg-row{
+  display:flex;max-width:75%;width:auto;position:relative;
+  transition:transform .15s ease;
+}
+.swipe-hint{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-size:18px;opacity:0;transition:opacity .15s;
+  pointer-events:none;
+}
+.msg-wrapper.sent  .swipe-hint{left:-32px;}
+.msg-wrapper.recv  .swipe-hint{right:-32px;}
+
+/* ══ READ RECEIPTS ══ */
+.tick-sent    {color:rgba(255,255,255,.6);}
+.tick-delivered{color:rgba(255,255,255,.7);}
+.tick-read    {color:#53bdeb;}  /* أزرق زي واتس */
+.msg-wrapper.recv .tick-read{color:var(--accent);}
+
+/* header search btn */
+.btn-hdr.search-btn{color:var(--muted);}
+
 /* ── Emoji Reactions ── */
 .reactions-bar{
   display:flex;flex-wrap:wrap;gap:4px;
@@ -309,6 +383,94 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#0d0d0d;color:#ffffff;padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:9999;}
 .toast.show{opacity:1}
+
+/* ── Image preview before send ── */
+.img-preview-wrap{
+  position:fixed;inset:0;z-index:7000;
+  background:rgba(0,0,0,.85);
+  display:none;flex-direction:column;
+  align-items:center;justify-content:center;gap:16px;
+}
+.img-preview-wrap.open{display:flex}
+.img-preview-wrap img{max-width:90%;max-height:70vh;border-radius:12px;}
+.img-preview-actions{display:flex;gap:12px;}
+.img-preview-actions button{
+  padding:10px 28px;border-radius:10px;border:none;
+  font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;
+}
+.btn-send-img{background:var(--accent);color:#fff;}
+.btn-cancel-img{background:rgba(255,255,255,.15);color:#fff;}
+
+/* upload progress */
+.upload-progress{
+  position:fixed;bottom:74px;left:0;right:0;
+  max-width:860px;margin:0 auto;
+  height:3px;background:rgba(16,163,127,.2);
+  z-index:1002;display:none;
+}
+.upload-progress-bar{
+  height:100%;background:var(--accent);
+  width:0%;transition:width .2s;
+  border-radius:2px;
+}
+.upload-progress.show{display:block;}
+
+/* ── Voice recorder button ── */
+.btn-voice{
+  width:36px;height:36px;border:none;border-radius:50%;
+  background:transparent;color:var(--muted);
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;flex-shrink:0;font-size:18px;
+  transition:background .15s,color .15s,transform .15s;
+}
+.btn-voice:hover{background:#f0f0f0;color:var(--accent);}
+.btn-voice.recording{
+  background:#fee2e2;color:#ef4444;
+  animation:recPulse 1s infinite;
+}
+@keyframes recPulse{
+  0%,100%{transform:scale(1);}
+  50%{transform:scale(1.15);}
+}
+
+/* recording timer */
+.rec-timer{
+  font-size:12px;color:#ef4444;font-weight:600;
+  display:none;align-items:center;gap:5px;
+  font-family:var(--font);
+}
+.rec-timer.show{display:flex;}
+.rec-dot{width:7px;height:7px;border-radius:50%;background:#ef4444;animation:recPulse .8s infinite;}
+
+/* ── Voice message bubble ── */
+.voice-msg{
+  display:flex;align-items:center;gap:10px;
+  min-width:200px;padding:2px 0;
+}
+.btn-play-voice{
+  width:36px;height:36px;border-radius:50%;border:none;
+  background:rgba(255,255,255,.25);color:#fff;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:14px;flex-shrink:0;
+  transition:background .15s;
+}
+.msg-wrapper.recv .btn-play-voice{background:rgba(0,0,0,.1);color:#333;}
+.btn-play-voice:hover{background:rgba(255,255,255,.35);}
+.voice-progress-wrap{flex:1;position:relative;height:28px;display:flex;align-items:center;}
+.voice-waveform{
+  width:100%;height:24px;cursor:pointer;
+  display:flex;align-items:center;gap:2px;
+}
+.voice-waveform span{
+  display:inline-block;background:rgba(255,255,255,.6);
+  border-radius:2px;width:3px;
+  transition:background .15s;
+}
+.msg-wrapper.recv .voice-waveform span{background:rgba(0,0,0,.25);}
+.voice-waveform span.played{background:rgba(255,255,255,.95);}
+.msg-wrapper.recv .voice-waveform span.played{background:var(--accent);}
+.voice-duration{font-size:11px;color:rgba(255,255,255,.7);min-width:32px;text-align:left;}
+.msg-wrapper.recv .voice-duration{color:#666;}
 .img-modal{position:fixed;inset:0;z-index:9000;background:rgba(0,0,0,.88);display:none;align-items:center;justify-content:center;padding:20px;}
 .img-modal.open{display:flex}
 .img-modal img{max-width:100%;max-height:90vh;border-radius:8px;}
@@ -361,8 +523,30 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
       <div class="my-avatar-sm" id="my-avatar">ME</div>
     </div>
     <div class="header-actions">
+      <button class="btn-hdr search-btn" onclick="openSearch()" title="بحث">🔍</button>
       <button class="btn-hdr clear" onclick="clearChat()">مسح</button>
       <button class="btn-hdr leave" onclick="leaveRoom()">خروج</button>
+    </div>
+  </div>
+
+  <!-- Pin bar -->
+
+  <div class="pin-bar" id="pin-bar" onclick="scrollToPinned()">
+    <span class="pin-icon">📌</span>
+    <span class="pin-text" id="pin-text">رسالة مثبتة</span>
+    <button class="pin-close" onclick="unpinMessage(event)">✕</button>
+  </div>
+
+  <!-- Search overlay -->
+
+  <div class="search-overlay" id="search-overlay">
+    <div class="search-header">
+      <button class="btn-close-search" onclick="closeSearch()">✕</button>
+      <input class="search-input" id="search-input" placeholder="ابحث في الرسائل..." oninput="doSearch(this.value)" autocomplete="off">
+      <span style="font-size:14px">🔍</span>
+    </div>
+    <div class="search-results" id="search-results">
+      <div class="search-empty">اكتب للبحث في الرسائل</div>
     </div>
   </div>
 
@@ -390,13 +574,34 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
     <button class="btn-close-reply" onclick="cancelReply()">✕</button>
   </div>
 
-  <div class="input-area">
-    <input type="file" id="file-chooser" class="hidden" onchange="handleFileSelect(this)">
-    <div class="input-wrap">
-      <button class="btn-attach" onclick="document.getElementById('file-chooser').click()">📎</button>
-      <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
+  <!-- Image preview before send -->
+
+  <div class="img-preview-wrap" id="img-preview-wrap">
+    <img id="img-preview-el" src="" alt="">
+    <div class="img-preview-actions">
+      <button class="btn-cancel-img" onclick="cancelImgPreview()">إلغاء</button>
+      <button class="btn-send-img"   onclick="confirmSendImage()">إرسال ✓</button>
     </div>
-    <button class="btn-send" onclick="sendMessage()">
+  </div>
+
+  <!-- Upload progress -->
+
+  <div class="upload-progress" id="upload-progress">
+    <div class="upload-progress-bar" id="upload-progress-bar"></div>
+  </div>
+
+  <div class="input-area">
+    <input type="file" id="file-chooser" accept="image/*,video/*,.pdf,.doc,.docx,.zip" class="hidden" onchange="handleFileSelect(this)">
+    <div class="input-wrap">
+      <button class="btn-attach" onclick="document.getElementById('file-chooser').click()" title="إرفاق ملف">📎</button>
+      <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
+      <div class="rec-timer" id="rec-timer">
+        <div class="rec-dot"></div>
+        <span id="rec-time">0:00</span>
+      </div>
+    </div>
+    <button class="btn-voice" id="btn-voice" onclick="toggleVoiceRecord()" title="تسجيل صوتي">🎤</button>
+    <button class="btn-send" id="btn-send" onclick="sendMessage()">
       <svg viewBox="0 0 24 24"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
     </button>
   </div>
@@ -429,6 +634,9 @@ let peerTypingListener;
 let isInitialLoad = true;
 let currentReplyTarget = null;
 let inactivityTimeout;
+let pinnedMsgKey   = null;
+let pinnedMsgText  = '';
+let allMessages    = {};   // key → msg cache for search + pin + read
 const INACTIVITY_LIMIT = 2 * 60 * 1000;
 
 const $   = id => document.getElementById(id);
@@ -590,8 +798,60 @@ function setupListeners(){
   messagesRef.once('value', () => { isInitialLoad=false; });
   messagesRef.on('child_added', snap => {
     const msg=snap.val(); appendMessage(msg, snap.key);
-    if (!isInitialLoad && msg.type!=='system' && msg.senderName!==myName) playNotificationSound();
+    if (!isInitialLoad && msg.type!=='system' && msg.senderName!==myName) {
+      playNotificationSound();
+      // mark as delivered when received
+      markDelivered(snap.key, msg);
+    }
   });
+
+  /* Read receipts — watch readBy node */
+  db.ref(`rooms/${roomId}/readBy`).on('value', snap => {
+    const data = snap.val() || {};
+    // لو الطرف الثاني قرأ → حوّل كل التيكات لزرقاء
+    const peerRead = Object.entries(data).find(([id]) => id !== myId);
+    if (peerRead) {
+      document.querySelectorAll('.check-icon').forEach(el => {
+        el.classList.remove('tick-sent','tick-delivered');
+        el.classList.add('tick-read');
+        el.textContent = '✓✓';
+      });
+    }
+  });
+
+  /* Mark as read when tab visible */
+  markAsRead();
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible' && roomId) markAsRead();
+  });
+
+  /* Pinned message */
+  db.ref(`rooms/${roomId}/pinnedMsg`).on('value', snap => {
+    const data = snap.val();
+    if (data && data.key) {
+      pinnedMsgKey  = data.key;
+      pinnedMsgText = data.text || 'رسالة مثبتة';
+      $('pin-text').textContent = pinnedMsgText;
+      $('pin-bar').classList.add('show');
+      document.getElementById('chat-screen').classList.add('has-pin');
+    } else {
+      pinnedMsgKey = null;
+      $('pin-bar').classList.remove('show');
+      document.getElementById('chat-screen').classList.remove('has-pin');
+    }
+  });
+}
+
+function markAsRead() {
+  if (!roomId || !myId) return;
+  db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now());
+}
+
+function markDelivered(key, msg) {
+  if (!key || msg.senderName === myName) return;
+  // update tick to double delivered
+  const tick = document.getElementById('tick-' + key);
+  if (tick) { tick.textContent = '✓✓'; tick.classList.add('tick-delivered'); }
 }
 
 /* Reply */
@@ -612,15 +872,35 @@ function appendMessage(msg, key){
   const area=$('messages-area'); const empty=$('empty-state'); if(empty) empty.remove();
   const div=document.createElement('div');
 
+  // cache for search + pin
+  if (key && msg.type !== 'system') allMessages[key] = msg;
+
   if (msg.type==='system') {
     div.className='system-msg'; div.textContent=msg.text;
   } else {
     const sent = msg.senderName === myName;
     div.className = 'msg-wrapper ' + (sent?'sent':'recv');
+    div.setAttribute('data-key', key);
 
     let mediaHtml = '';
     if (msg.fileUrl) {
-      if (msg.fileType && msg.fileType.startsWith('image/')) {
+      if (msg.fileType === 'audio' || (msg.fileType && msg.fileType.startsWith('audio/'))) {
+        // Voice message
+        const dur = msg.voiceDuration || 0;
+        const mm  = Math.floor(dur/60), ss = dur%60;
+        const durStr = mm + ':' + String(ss).padStart(2,'0');
+        const bars = Array.from({length:28}, (_,i) => {
+          const h = 6 + Math.floor(Math.abs(Math.sin(i*0.7))*18);
+          return `<span style="height:${h}px"></span>`;
+        }).join('');
+        mediaHtml = `<div class="voice-msg" data-url="${esc(msg.fileUrl)}">
+          <button class="btn-play-voice" onclick="toggleVoicePlay(this)">▶</button>
+          <div class="voice-progress-wrap">
+            <div class="voice-waveform">${bars}</div>
+          </div>
+          <span class="voice-duration">${durStr}</span>
+        </div>`;
+      } else if (msg.fileType && msg.fileType.startsWith('image/')) {
         mediaHtml = `<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
       } else {
         const ext = (msg.fileName||'ملف').split('.').pop().toUpperCase();
@@ -651,7 +931,7 @@ function appendMessage(msg, key){
             ${replyHtml}
             ${mediaHtml}
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
-            <span class="msg-meta">${fmt(msg.ts)}${sent?' <span class="check-icon">✓✓</span>':''}</span>
+            <span class="msg-meta" id="meta-${key}">${fmt(msg.ts)}${sent?` <span class="check-icon tick-sent" id="tick-${key}">✓</span>`:''}</span>
           </div>
           <div class="reactions-bar" data-msgkey="${key}"></div>
         </div>
@@ -669,6 +949,43 @@ function appendMessage(msg, key){
         e.stopPropagation();
         initiateReply(msg.senderName, msg.text||'');
       });
+    }
+
+    // ══ Swipe to reply (موبايل) ══
+    const msgRow = div.querySelector('.msg-row');
+    if (msgRow) {
+      let swipeStartX = 0, swipeStartY = 0, swiping = false;
+      const isSent = msg.senderName === myName;
+
+      msgRow.addEventListener('touchstart', e => {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swiping = false;
+      }, {passive:true});
+
+      msgRow.addEventListener('touchmove', e => {
+        const dx = e.touches[0].clientX - swipeStartX;
+        const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+        if (dy > 12) return; // vertical scroll — ignore
+        // sent: swipe right (dx>0) | recv: swipe left (dx<0)
+        const validSwipe = isSent ? dx > 0 : dx < 0;
+        if (validSwipe && Math.abs(dx) > 8) {
+          swiping = true;
+          const move = Math.min(Math.abs(dx), 60);
+          msgRow.style.transform = isSent ? `translateX(${move}px)` : `translateX(-${move}px)`;
+        }
+      }, {passive:true});
+
+      msgRow.addEventListener('touchend', () => {
+        const cur = msgRow.style.transform;
+        const val = parseInt(cur.replace(/[^0-9-]/g,''))||0;
+        msgRow.style.transform = '';
+        msgRow.style.transition = 'transform .2s ease';
+        setTimeout(() => msgRow.style.transition = '', 200);
+        if (swiping && Math.abs(val) >= 40) {
+          initiateReply(msg.senderName, msg.text||'');
+        }
+      }, {passive:true});
     }
 
     // ══ Reactions على الفقاعة ══
@@ -697,7 +1014,7 @@ function appendMessage(msg, key){
         pressTimer = setTimeout(() => {
           bubble.classList.add('tapped');
           setTimeout(() => bubble.classList.remove('tapped'), 250);
-          showEmojiPicker(key, touch.clientX, touch.clientY, bubble);
+          showReplyMenu(bubble, msg.senderName, msg.text||'', touch.clientX, touch.clientY, key);
         }, 600);
       }, {passive:false});
 
@@ -784,17 +1101,166 @@ async function sendMessage(){
   catch(e) { showToast('فشل الإرسال ❌'); input.value=text; }
 }
 
-async function handleFileSelect(input){
-  const file=input.files[0]; if(!file) return;
-  const bar=$('upload-bar'); bar.classList.add('show');
+/* ── Image preview ── */
+let pendingImageFile = null;
+
+function handleFileSelect(input){
+  const file = input.files[0]; if(!file) return;
+
+  // لو صورة → اعرض preview
+  if (file.type.startsWith('image/')) {
+    pendingImageFile = file;
+    const reader = new FileReader();
+    reader.onload = e => {
+      $('img-preview-el').src = e.target.result;
+      $('img-preview-wrap').classList.add('open');
+    };
+    reader.readAsDataURL(file);
+  } else {
+    uploadAndSend(file);
+  }
+  input.value = '';
+}
+
+function cancelImgPreview() {
+  pendingImageFile = null;
+  $('img-preview-wrap').classList.remove('open');
+  $('img-preview-el').src = '';
+}
+
+async function confirmSendImage() {
+  if (!pendingImageFile) return;
+  $('img-preview-wrap').classList.remove('open');
+  await uploadAndSend(pendingImageFile);
+  pendingImageFile = null;
+}
+
+async function uploadAndSend(file) {
+  const bar  = $('upload-bar');
+  const prog = $('upload-progress');
+  const progBar = $('upload-progress-bar');
+  bar.classList.add('show');
+  prog.classList.add('show');
+  progBar.style.width = '0%';
+
   try {
-    const ref=storage.ref(`rooms/${roomId}/${genId()}_${file.name}`);
-    const snap=await ref.put(file); const url=await snap.ref.getDownloadURL();
-    const payload={ type:'message', text:'', fileUrl:url, fileName:file.name, fileType:file.type, senderId:myId, senderName:myName, ts:Date.now() };
-    if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
-    await messagesRef.push(payload); showToast('تم الإرسال ✅');
-  } catch(e) { showToast('فشل الرفع ❌'); }
-  finally { bar.classList.remove('show'); input.value=''; }
+    const ref      = storage.ref(`rooms/${roomId}/${genId()}_${file.name}`);
+    const task     = ref.put(file);
+
+    task.on('state_changed', snapshot => {
+      const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+      progBar.style.width = pct + '%';
+    });
+
+    const snapshot = await task;
+    const url      = await snapshot.ref.getDownloadURL();
+
+    const payload = {
+      type: 'message', text: '',
+      fileUrl: url, fileName: file.name, fileType: file.type,
+      senderId: myId, senderName: myName, ts: Date.now()
+    };
+    if (currentReplyTarget) { payload.replyTo = currentReplyTarget; cancelReply(); }
+    await messagesRef.push(payload);
+    showToast('تم الإرسال ✅');
+  } catch(e) {
+    showToast('فشل الرفع ❌');
+    console.error(e);
+  } finally {
+    bar.classList.remove('show');
+    prog.classList.remove('show');
+    progBar.style.width = '0%';
+  }
+}
+
+/* ══════════════════════════════════
+   VOICE RECORDER
+══════════════════════════════════ */
+let mediaRecorder = null;
+let audioChunks   = [];
+let recInterval   = null;
+let recSeconds    = 0;
+
+async function toggleVoiceRecord() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks   = [];
+    recSeconds    = 0;
+
+    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: mimeType });
+      await uploadVoice(blob, mimeType);
+    };
+
+    mediaRecorder.start(200);
+
+    // UI
+    $('btn-voice').classList.add('recording');
+    $('btn-voice').textContent = '⏹';
+    $('rec-timer').classList.add('show');
+    $('msg-input').style.display = 'none';
+
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60);
+      const s = recSeconds % 60;
+      $('rec-time').textContent = m + ':' + String(s).padStart(2,'0');
+      if (recSeconds >= 120) stopRecording(); // max 2 min
+    }, 1000);
+
+  } catch(e) {
+    showToast('تعذر الوصول للميكروفون ❌');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  clearInterval(recInterval);
+  $('btn-voice').classList.remove('recording');
+  $('btn-voice').textContent = '🎤';
+  $('rec-timer').classList.remove('show');
+  $('msg-input').style.display = '';
+}
+
+async function uploadVoice(blob, mimeType) {
+  const ext  = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const name = `voice_${genId()}.${ext}`;
+  const bar  = $('upload-bar');
+  bar.classList.add('show');
+  try {
+    const ref      = storage.ref(`rooms/${roomId}/voice/${name}`);
+    const snap     = await ref.put(blob, { contentType: mimeType });
+    const url      = await snap.ref.getDownloadURL();
+    const payload  = {
+      type: 'message', text: '',
+      fileUrl: url, fileName: name, fileType: 'audio',
+      voiceDuration: recSeconds,
+      senderId: myId, senderName: myName, ts: Date.now()
+    };
+    if (currentReplyTarget) { payload.replyTo = currentReplyTarget; cancelReply(); }
+    await messagesRef.push(payload);
+  } catch(e) {
+    showToast('فشل رفع الصوت ❌');
+  } finally {
+    bar.classList.remove('show');
+  }
 }
 
 function handleTyping(el){
@@ -910,6 +1376,63 @@ function renderReactions(msgKey, data) {
   });
 }
 
+/* ── Voice player ── */
+let currentAudio = null;
+let currentPlayBtn = null;
+
+function toggleVoicePlay(btn) {
+  const voiceMsg = btn.closest('.voice-msg');
+  const url      = voiceMsg.dataset.url;
+  const waveform = voiceMsg.querySelector('.voice-waveform');
+  const durEl    = voiceMsg.querySelector('.voice-duration');
+  const bars     = waveform.querySelectorAll('span');
+
+  // لو في صوت شغال → وقفه
+  if (currentAudio && !currentAudio.paused) {
+    if (currentPlayBtn === btn) {
+      currentAudio.pause();
+      btn.textContent = '▶';
+      return;
+    } else {
+      currentAudio.pause();
+      currentAudio = null;
+      if (currentPlayBtn) currentPlayBtn.textContent = '▶';
+    }
+  }
+
+  // شغل الصوت الجديد
+  const audio = new Audio(url);
+  currentAudio   = audio;
+  currentPlayBtn = btn;
+  btn.textContent = '⏸';
+
+  audio.ontimeupdate = () => {
+    const pct = audio.duration ? audio.currentTime / audio.duration : 0;
+    const idx = Math.floor(pct * bars.length);
+    bars.forEach((b,i) => b.classList.toggle('played', i < idx));
+
+    // update timer
+    const rem = audio.duration - audio.currentTime;
+    if (!isNaN(rem)) {
+      const m = Math.floor(rem/60), s = Math.floor(rem%60);
+      durEl.textContent = m + ':' + String(s).padStart(2,'0');
+    }
+  };
+
+  audio.onended = () => {
+    btn.textContent = '▶';
+    bars.forEach(b => b.classList.remove('played'));
+    currentAudio = null; currentPlayBtn = null;
+    // reset duration display
+    const tot = audio.duration||0;
+    const m = Math.floor(tot/60), s = Math.floor(tot%60);
+    durEl.textContent = m + ':' + String(s).padStart(2,'0');
+  };
+
+  audio.onerror = () => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; };
+  audio.play().catch(() => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; });
+}
+
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
   try {
@@ -936,6 +1459,9 @@ async function leaveRoom(){
     db.ref(`rooms/${roomId}/typing`).off();
     db.ref(`rooms/${roomId}/clearSignal`).off();
     db.ref(`rooms/${roomId}/reactions`).off();
+    db.ref(`rooms/${roomId}/readBy`).off();
+    db.ref(`rooms/${roomId}/pinnedMsg`).off();
+    allMessages = {};
     if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener);
     messagesRef.off();
   } catch(e){}

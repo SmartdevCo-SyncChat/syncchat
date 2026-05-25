@@ -225,8 +225,11 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 /* ── Emoji Reactions ── */
 .reactions-bar{
   display:flex;flex-wrap:wrap;gap:4px;
-  margin-top:4px;
+  margin-top:3px;
+  min-height:0;
+  padding: 0 4px;
 }
+.reactions-bar:empty{ display:none; }
 .reaction-chip{
   display:inline-flex;align-items:center;gap:3px;
   background:#f0f0f0;border:1px solid #e0e0e0;
@@ -648,7 +651,7 @@ function appendMessage(msg, key){
             ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
             <span class="msg-meta">${fmt(msg.ts)}${sent?' <span class="check-icon">✓✓</span>':''}</span>
           </div>
-          <div class="reactions-bar" id="reactions-${key}"></div>
+          <div class="reactions-bar" data-msgkey="${key}"></div>
         </div>
         <button class="msg-reply-btn" title="رد">↩</button>
       </div>`;
@@ -705,14 +708,17 @@ function appendMessage(msg, key){
       });
     }
 
-    // ══ Listen to reactions for this message ══
-    db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => {
-      renderReactions(key, snap.val()||{});
-    });
   }
 
   area.appendChild(div);
   requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+
+  // ══ Listen to reactions AFTER div is in DOM ══
+  if (key) {
+    db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => {
+      renderReactions(key, snap.val() || {});
+    });
+  }
 }
 
 /* ══ Context Menu for Reply ══ */
@@ -872,7 +878,8 @@ async function quickReact(msgKey, emoji, bubbleEl) {
 }
 
 function renderReactions(msgKey, data) {
-  const bar = document.getElementById(`reactions-${msgKey}`);
+  // try both direct id and sanitized id
+  const bar = document.querySelector(`.reactions-bar[data-msgkey="${msgKey}"]`);
   if (!bar) return;
   bar.innerHTML = '';
   if (!data || Object.keys(data).length === 0) return;

@@ -245,15 +245,22 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 
 /* ══ SEARCH OVERLAY ══ */
 .search-overlay{
-  position:fixed;inset:0;z-index:8000;
-  background:rgba(255,255,255,.97);
+  position:fixed;
+  top:0;bottom:0;
+  left:50%;transform:translateX(-50%);
+  width:100%;max-width:860px;
+  z-index:8000;
+  background:#ffffff;
   display:none;flex-direction:column;
+  box-shadow:0 0 40px rgba(0,0,0,.12);
 }
 .search-overlay.open{display:flex;}
 .search-header{
   display:flex;align-items:center;gap:10px;
-  padding:12px 16px;border-bottom:1px solid var(--border);
+  padding:12px 16px;
+  border-bottom:1px solid var(--border);
   background:#fff;
+  height:56px;flex-shrink:0;
 }
 .search-input{
   flex:1;border:none;outline:none;font-size:15px;
@@ -1136,46 +1143,77 @@ async function confirmSendImage() {
   pendingImageFile = null;
 }
 
+/* ══ Cloudinary config ══ */
+const CLOUDINARY_CLOUD = 'db03wdg7v';
+const CLOUDINARY_PRESET = 'chatbft_unsigned'; // ← اسم الـ preset اللي عملته
+
 async function uploadAndSend(file) {
-  const bar  = $('upload-bar');
-  const prog = $('upload-progress');
+  const bar     = $('upload-bar');
+  const prog    = $('upload-progress');
   const progBar = $('upload-progress-bar');
   bar.classList.add('show');
   prog.classList.add('show');
   progBar.style.width = '0%';
 
   try {
-    const ref      = storage.ref(`rooms/${roomId}/${genId()}_${file.name}`);
-    const task     = ref.put(file, { contentType: file.type });
-
-    task.on('state_changed', snapshot => {
-      const pct = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+    const url = await uploadToCloudinary(file, pct => {
       progBar.style.width = pct + '%';
     });
 
-    const snapshot = await task;
-    const url      = await snapshot.ref.getDownloadURL();
-
     const payload = {
-      type: 'message', text: '',
-      fileUrl: url, fileName: file.name, fileType: file.type,
+      type:'message', text:'',
+      fileUrl: url,
+      fileName: file.name,
+      fileType: file.type,
       senderId: myId, senderName: myName, ts: Date.now()
     };
-    if (currentReplyTarget) { payload.replyTo = currentReplyTarget; cancelReply(); }
+    if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
     await messagesRef.push(payload);
     showToast('تم الإرسال ✅');
+
   } catch(e) {
     console.error('Upload error:', e);
-    if (e.code === 'storage/unauthorized') {
-      showToast('خطأ في صلاحيات Storage — راجع Firebase Rules ❌');
-    } else {
-      showToast('فشل الرفع: ' + (e.message||'خطأ غير معروف') + ' ❌');
-    }
+    showToast('فشل الرفع — تأكد من الـ Upload Preset ❌');
   } finally {
     bar.classList.remove('show');
     prog.classList.remove('show');
     progBar.style.width = '0%';
   }
+}
+
+/* ── Cloudinary uploader (XHR for progress) ── */
+function uploadToCloudinary(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fd.append('folder', `chatbft/${roomId}`);
+
+    // resource_type auto = يقبل صور + فيديو + ملفات
+    const resourceType = file.type.startsWith('video/') ? 'video'
+                       : file.type.startsWith('image/') ? 'image'
+                       : 'raw';
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`);
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress(Math.round(e.loaded/e.total*100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        console.error('Cloudinary error:', xhr.responseText);
+        reject(new Error('Cloudinary upload failed: ' + xhr.status));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(fd);
+  });
 }
 
 /* ══════════════════════════════════
@@ -1249,26 +1287,25 @@ async function uploadVoice(blob, mimeType) {
   const name = `voice_${genId()}.${ext}`;
   const bar  = $('upload-bar');
   bar.classList.add('show');
+
   try {
-    const ref      = storage.ref(`rooms/${roomId}/voice/${name}`);
-    const task2    = ref.put(blob, { contentType: mimeType });
-    const snap     = await task2;
-    const url      = await snap.ref.getDownloadURL();
-    const payload  = {
-      type: 'message', text: '',
-      fileUrl: url, fileName: name, fileType: 'audio',
+    // Cloudinary: الصوت يترفع كـ raw أو video (webm/mp4 مقبولين كـ video)
+    const file = new File([blob], name, { type: mimeType });
+    const url  = await uploadToCloudinary(file, () => {});
+
+    const payload = {
+      type:'message', text:'',
+      fileUrl: url, fileName: name, fileType:'audio',
       voiceDuration: recSeconds,
-      senderId: myId, senderName: myName, ts: Date.now()
+      senderId:myId, senderName:myName, ts:Date.now()
     };
-    if (currentReplyTarget) { payload.replyTo = currentReplyTarget; cancelReply(); }
+    if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
     await messagesRef.push(payload);
+    showToast('تم إرسال الرسالة الصوتية ✅');
+
   } catch(e) {
     console.error('Voice upload error:', e);
-    if (e.code === 'storage/unauthorized') {
-      showToast('خطأ في صلاحيات Storage — راجع Firebase Rules ❌');
-    } else {
-      showToast('فشل رفع الصوت: ' + (e.message||'') + ' ❌');
-    }
+    showToast('فشل رفع الصوت — تأكد من الـ Upload Preset ❌');
   } finally {
     bar.classList.remove('show');
   }
@@ -1619,5 +1656,6 @@ async function leaveRoom(){
   $('chat-screen').classList.add('hidden'); $('login-screen').classList.remove('hidden');
 }
 </script>
+
 </body>
 </html>

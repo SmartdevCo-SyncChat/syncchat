@@ -822,7 +822,14 @@ function resetInactivityTimer() {
   if (roomId) inactivityTimeout = setTimeout(leaveRoom, INACTIVITY_LIMIT);
 }
 
-function showToast(msg){ const t=$('toast'); t.textContent=msg; t.classList.add('show'); setTimeout(()=>t.classList.remove('show'),2800); }
+// زيادة ثبات توست الإشعار
+function showToast(msg){ 
+  const t=$('toast'); 
+  t.textContent=msg; 
+  t.classList.add('show'); 
+  clearTimeout(window.toastTimeout);
+  window.toastTimeout = setTimeout(()=>t.classList.remove('show'),2800); 
+}
 function openImgModal(src){ $('modal-img').src=src; $('img-modal').classList.add('open'); }
 function closeImgModal(){ $('img-modal').classList.remove('open'); }
 function initFirebase(){ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); storage=firebase.storage(); }
@@ -1459,7 +1466,8 @@ function showEmojiPicker(msgKey, x, y) {
     const sp = document.createElement('span');
     sp.textContent = em;
     sp.title = em;
-    sp.addEventListener('click', () => {
+    sp.addEventListener('click', (e) => {
+      e.stopPropagation(); // منع الانتشار لثبات الاختيار
       toggleReaction(msgKey, em);
       closeEmojiPicker();
     });
@@ -1698,7 +1706,7 @@ function copyToClipboard(text) {
   }
 }
 
-/* دالة النسخ الاحتياطية للأجهزة والمتصفحات القديمة أو بيئات الـ HTTP على الموبايل */
+/* دالة النسخ الاحتياطية */
 function fallbackCopyText(text) {
   const textarea = document.createElement('textarea');
   textarea.value = text;
@@ -1731,6 +1739,7 @@ function fallbackCopyText(text) {
   document.body.removeChild(textarea);
 }
 
+// تعديل القائمة المنبثقة لإلغاء الاختفاء التلقائي وإجبارها على الثبات والـ Click Outside فقط
 function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   document.getElementById('reply-ctx-menu') && document.getElementById('reply-ctx-menu').remove();
   document.getElementById('emoji-picker')   && document.getElementById('emoji-picker').remove();
@@ -1746,16 +1755,18 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   // 1. زر الرد
   const replyBtn = document.createElement('button');
   replyBtn.innerHTML = '<span class="ctx-icon">↩️</span><span>رد</span>';
-  replyBtn.addEventListener('click', () => {
+  replyBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     menu.remove();
     initiateReply(senderName, text, msgKey);
   });
 
-  // 2. زر النسخ (يظهر فقط إذا كان هناك نص حقيقي داخل الرسالة)
+  // 2. زر النسخ
   if (text) {
     const copyBtn = document.createElement('button');
     copyBtn.innerHTML = '<span class="ctx-icon">📋</span><span>نسخ النص</span>';
-    copyBtn.addEventListener('click', () => {
+    copyBtn.addEventListener('click', (e) => {
+      e.stopPropagation(); // منع غلق التوست فوراً من تداخل الأحداث
       menu.remove();
       copyToClipboard(text);
     });
@@ -1765,7 +1776,8 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   // 3. زر التثبيت
   const pinBtn = document.createElement('button');
   pinBtn.innerHTML = `<span class="ctx-icon">📌</span><span>${isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</span>`;
-  pinBtn.addEventListener('click', () => {
+  pinBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
     menu.remove();
     isPinned ? unpinMessage() : pinMessage(msgKey, text);
   });
@@ -1774,7 +1786,7 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   menu.appendChild(pinBtn);
   document.body.appendChild(menu);
 
-  // حساب الحجم ديناميكياً بناءً على وجود زر النسخ أو لا
+  // حساب الحجم ديناميكياً
   const mw = 170;
   const mh = text ? 138 : 96; 
   let left = x, top = y + 8;
@@ -1784,18 +1796,15 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   menu.style.left = left + 'px';
   menu.style.top  = top  + 'px';
 
-  const autoClose = setTimeout(() => { menu.remove(); }, 3000);
-
+  // [تعديل جوهري]: إلغاء الـ setTimeout التلقائي تماماً لضمان ثبات المنيو
   const onOutsideTouch = e => {
     if (!menu.contains(e.target)) {
-      clearTimeout(autoClose);
       menu.remove();
       document.removeEventListener('touchend', onOutsideTouch);
     }
   };
   const onOutsideClick = e => {
     if (!menu.contains(e.target)) {
-      clearTimeout(autoClose);
       menu.remove();
       document.removeEventListener('mousedown', onOutsideClick);
     }

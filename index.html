@@ -140,9 +140,9 @@ html,body{
 .msg-wrapper.recv{justify-content:flex-end;}
 .msg-row{display:flex;max-width:85%;width:auto;position:relative;align-items:center;}
 
-/* الإجراءات السريعة بجانب الرسالة */
+/* الإجراءات السريعة بجانب الرسالة - معدلة للظهور عند الضغط فقط */
 .msg-actions-group{
-  display:none; /* مخفية دائماً افتراضياً */
+  display:none;
   flex-direction:row;
   gap:4px;
   align-self:center;
@@ -164,12 +164,11 @@ html,body{
 }
 .msg-action-btn:hover{background:#f0f0f0;color:#0d0d0d;}
 
-/* عندما تصبح الرسالة نشطة بالضغط، تظهر الأزرار */
+/* كلاس التفعيل عند الضغط */
 .msg-row.active-actions .msg-actions-group {
-  display: inline-flex !important;
+  display: flex !important;
 }
 
-/* إلغاء الـ Hover والظهور التلقائي على الموبايل */
 @media (max-width: 768px) {
   .msg-actions-group { display: none; }
 }
@@ -763,7 +762,7 @@ let typingTimeout;
 let peerTypingListener;
 let isInitialLoad = true;
 let currentReplyTarget = null;
-let activeMessageKey = null; // يحفظ كود الرسالة النشطة حالياً لإظهار أزرارها
+let activeMessageKey = null; // يحفظ كود الرسالة التي تظهر أزرارها حالياً
 let inactivityTimeout;
 let pinnedMsgKey   = null;
 let pinnedMsgText  = '';
@@ -969,6 +968,32 @@ function setupListeners(){
   });
 }
 
+function toggleMessageActions(key, event) {
+  if (event) event.stopPropagation();
+  const currentRow = document.getElementById(`msg-row-${key}`);
+  const previousRow = activeMessageKey ? document.getElementById(`msg-row-${activeMessageKey}`) : null;
+
+  if (previousRow && activeMessageKey !== key) {
+    previousRow.classList.remove('active-actions');
+  }
+
+  if (activeMessageKey === key) {
+    if (currentRow) currentRow.classList.remove('active-actions');
+    activeMessageKey = null;
+  } else {
+    if (currentRow) currentRow.classList.add('active-actions');
+    activeMessageKey = key;
+  }
+}
+
+document.addEventListener('click', () => {
+  if (activeMessageKey) {
+    const currentRow = document.getElementById(`msg-row-${activeMessageKey}`);
+    if (currentRow) currentRow.classList.remove('active-actions');
+    activeMessageKey = null;
+  }
+});
+
 function markAsRead() {
   if (!roomId || !myId) return;
   db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now());
@@ -979,36 +1004,6 @@ function markDelivered(key, msg) {
   const tick = document.getElementById('tick-' + key);
   if (tick) { tick.textContent = '✓✓'; tick.classList.add('tick-delivered'); }
 }
-
-function toggleMessageActions(key, event) {
-  if (event) event.stopPropagation(); // منع انتشار الحدث إلى مستند الصفحة لئلا يغلق القائمة فوراً
-  
-  const currentRow = document.getElementById(`msg-row-${key}`);
-  const previousRow = activeMessageKey ? document.getElementById(`msg-row-${activeMessageKey}`) : null;
-
-  // إغلاق أي منيو أخرى مفتوحة أولاً
-  if (previousRow && activeMessageKey !== key) {
-    previousRow.classList.remove('active-actions');
-  }
-
-  // عمل Toggle لحالة الرسالة الحالية
-  if (activeMessageKey === key) {
-    currentRow.classList.remove('active-actions');
-    activeMessageKey = null;
-  } else {
-    currentRow.classList.add('active-actions');
-    activeMessageKey = key;
-  }
-}
-
-// مستمع لغلق الأزرار عند الضغط على أي مكان فارغ بالشاشة
-document.addEventListener('click', () => {
-  if (activeMessageKey) {
-    const currentRow = document.getElementById(`msg-row-${activeMessageKey}`);
-    if (currentRow) currentRow.classList.remove('active-actions');
-    activeMessageKey = null;
-  }
-});
 
 function initiateReply(senderName, text, targetKey = null) {
   currentReplyTarget = { senderName, text, key: targetKey };
@@ -1031,4 +1026,737 @@ function appendMessage(msg, key){
 
   if (msg.type==='system') {
     div.className='system-msg'; div.textContent=msg.text;
+  } else {
+    const sent = msg.senderName === myName;
+    div.className = 'msg-wrapper ' + (sent?'sent':'recv');
+    div.setAttribute('data-key', key);
+
+    let mediaHtml = '';
+    if (msg.fileUrl) {
+      if (msg.fileType === 'audio' || (msg.fileType && msg.fileType.startsWith('audio/'))) {
+        const dur = msg.voiceDuration || 0;
+        const mm  = Math.floor(dur/60), ss = dur%60;
+        const durStr = mm + ':' + String(ss).padStart(2,'0');
+        const bars = Array.from({length:28}, (_,i) => {
+          const h = 6 + Math.floor(Math.abs(Math.sin(i*0.7))*18);
+          return `<span style="height:${h}px"></span>`;
+        }).join('');
+        mediaHtml = `<div class="voice-msg" data-url="${esc(msg.fileUrl)}">
+          <button class="btn-play-voice" onclick="toggleVoicePlay(this)">▶</button>
+          <div class="voice-progress-wrap">
+            <div class="voice-waveform">${bars}</div>
+          </div>
+          <span class="voice-duration">${durStr}</span>
+        </div>`;
+      } else if (msg.fileType && msg.fileType.startsWith('image/')) {
+        mediaHtml = `<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
+      } else {
+        const ext = (msg.fileName||'ملف').split('.').pop().toUpperCase();
+        mediaHtml = `<a href="${esc(msg.fileUrl)}" target="_blank" class="file-attachment">
+          <span style="font-size:18px">📄</span>
+          <div><div style="font-size:12px;font-weight:700">${esc(msg.fileName||'ملف')}</div><div style="font-size:10px;opacity:.7">${ext}</div></div>
+        </a>`;
+      }
+    }
+
+    const senderNameHtml = !sent ? `<div class="msg-sender-name">${esc(msg.senderName||'')}</div>` : '';
+
+    let replyHtml = '';
+    if (msg.replyTo) {
+      const rText = (msg.replyTo.text||'[ملف / ميديا]').slice(0,60) + ((msg.replyTo.text||'').length>60?'...':'');
+      replyHtml = `<div class="reply-quotation" data-targetkey="${esc(msg.replyTo.key || '')}">
+        <div class="reply-quotation-sender">${esc(msg.replyTo.senderName)}</div>
+        <span class="reply-quotation-text">${esc(rText)}</span>
+      </div>`;
+    }
+
+    const cleanText = msg.text ? msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+
+    div.innerHTML = `
+      <div class="msg-row" data-key="${key}" id="msg-row-${key}">
+        <div class="msg-bubble-wrap">
+          ${senderNameHtml}
+          <div class="msg-bubble" onclick="toggleMessageActions('${key}', event)">
+            ${replyHtml}
+            ${mediaHtml}
+            ${msg.text ? `<span>${esc(msg.text)}</span>` : ''}
+            <span class="msg-meta" id="meta-${key}">${fmt(msg.ts)}${sent?` <span class="check-icon tick-sent" id="tick-${key}">✓</span>`:''}</span>
+          </div>
+          <div class="reactions-bar" data-msgkey="${key}"></div>
+        </div>
+        <div class="msg-actions-group" onclick="event.stopPropagation()">
+          <button class="msg-action-btn" onclick="initiateReply('${esc(msg.senderName)}', '${esc(cleanText)}', '${key}')" title="رد">↩</button>
+          ${msg.text ? `<button class="msg-action-btn" onclick="copyToClipboard('${esc(cleanText)}')" title="نسخ">📋</button>` : ''}
+          <button class="msg-action-btn" onclick="pinnedMsgKey==='${key}' ? unpinMessage() : pinMessage('${key}', '${esc(cleanText)}')" title="تثبيت">📌</button>
+        </div>
+      </div>`;
+
+    const imgEl = div.querySelector('.chat-image');
+    if (imgEl) imgEl.addEventListener('click', () => openImgModal(msg.fileUrl));
+
+    const quoteEl = div.querySelector('.reply-quotation');
+    if (quoteEl) {
+      quoteEl.addEventListener('click', e => {
+        e.stopPropagation();
+        const targetKey = quoteEl.dataset.targetkey;
+        if (targetKey) jumpToMsg(targetKey);
+      });
+    }
+
+    // Swipe to reply
+    const msgRow = div.querySelector('.msg-row');
+    if (msgRow) {
+      let swipeStartX = 0, swipeStartY = 0, swiping = false;
+      const isSent = msg.senderName === myName;
+
+      msgRow.addEventListener('touchstart', e => {
+        swipeStartX = e.touches[0].clientX;
+        swipeStartY = e.touches[0].clientY;
+        swiping = false;
+      }, {passive:true});
+
+      msgRow.addEventListener('touchmove', e => {
+        const dx = e.touches[0].clientX - swipeStartX;
+        const dy = Math.abs(e.touches[0].clientY - swipeStartY);
+        if (dy > 12) return; 
+        const validSwipe = isSent ? dx > 0 : dx < 0;
+        if (validSwipe && Math.abs(dx) > 8) {
+          swiping = true;
+          const move = Math.min(Math.abs(dx), 60);
+          msgRow.style.transform = isSent ? `translateX(${move}px)` : `translateX(-${move}px)`;
+        }
+      }, {passive:true});
+
+      msgRow.addEventListener('touchend', () => {
+        const cur = msgRow.style.transform;
+        const val = parseInt(cur.replace(/[^0-9-]/g,''))||0;
+        msgRow.style.transform = '';
+        msgRow.style.transition = 'transform .2s ease';
+        setTimeout(() => msgRow.style.transition = '', 200);
+        if (swiping && Math.abs(val) >= 40) {
+          initiateReply(msg.senderName, msg.text||'', key);
+        }
+      }, {passive:true});
+    }
+
+    const bubble = div.querySelector('.msg-bubble');
+    if (bubble) {
+      bubble.addEventListener('dblclick', e => {
+        e.preventDefault();
+        bubble.classList.add('tapped');
+        setTimeout(() => bubble.classList.remove('tapped'), 250);
+        quickReact(key, '❤️', bubble);
+      });
+    }
   }
+
+  area.appendChild(div);
+  if (isAtBottom) {
+    requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  } else if (!isInitialLoad) {
+    unreadCount++;
+    updateBadge();
+    $('btn-scroll-down').classList.add('show');
+  }
+
+  if (key) {
+    db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => {
+      renderReactions(key, snap.val() || {});
+    });
+  }
+}
+
+async function sendMessage(){
+  const input=$('msg-input'); const text=input.value.trim();
+  if (!text && !currentReplyTarget) return;
+  if (!messagesRef) return;
+  input.value=''; input.style.height='auto'; clearTypingNow();
+  setTimeout(() => input.focus(), 50);
+
+  const payload = { type:'message', text, senderId:myId, senderName:myName, ts:Date.now() };
+  if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
+  try { await messagesRef.push(payload); }
+  catch(e) { showToast('فشل الإرسال ❌'); input.value=text; }
+}
+
+let pendingFiles = []; 
+
+function handleFileSelect(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
+  input.value = '';
+
+  const images    = files.filter(f => f.type.startsWith('image/'));
+  const nonImages = files.filter(f => !f.type.startsWith('image/'));
+
+  nonImages.forEach(f => uploadAndSend(f));
+
+  if (images.length > 0) {
+    pendingFiles = [...pendingFiles, ...images];
+    renderPreviewGrid();
+    $('img-preview-wrap').classList.add('open');
+  }
+}
+
+let activePreviewIdx = 0;
+
+function renderPreviewWA(focusIdx) {
+  if (focusIdx !== undefined) activePreviewIdx = focusIdx;
+  activePreviewIdx = Math.min(activePreviewIdx, pendingFiles.length - 1);
+
+  const strip    = $('img-preview-strip');
+  const mainImg  = $('img-preview-main-el');
+  const count    = $('img-preview-count');
+  strip.innerHTML = '';
+
+  const reader0 = new FileReader();
+  reader0.onload = e => { mainImg.src = e.target.result; };
+  reader0.readAsDataURL(pendingFiles[activePreviewIdx]);
+
+  pendingFiles.forEach((file, idx) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'prev-thumb' + (idx === activePreviewIdx ? ' active' : '');
+
+    const img = document.createElement('img');
+    const r   = new FileReader();
+    r.onload  = e => { img.src = e.target.result; };
+    r.readAsDataURL(file);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-thumb';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = e => {
+      e.stopPropagation();
+      pendingFiles.splice(idx, 1);
+      if (pendingFiles.length === 0) { cancelImgPreview(); return; }
+      renderPreviewWA(Math.min(idx, pendingFiles.length - 1));
+    };
+
+    thumb.appendChild(img);
+    thumb.appendChild(removeBtn);
+    strip.appendChild(thumb);
+    thumb.addEventListener('click', () => renderPreviewWA(idx));
+  });
+
+  strip.style.display = pendingFiles.length > 1 ? 'flex' : 'none';
+  count.textContent   = pendingFiles.length > 1
+    ? `${activePreviewIdx + 1} / ${pendingFiles.length}`
+    : '';
+}
+
+function renderPreviewGrid() { renderPreviewWA(0); }
+
+function cancelImgPreview() {
+  pendingFiles = [];
+  activePreviewIdx = 0;
+  $('img-preview-wrap').classList.remove('open');
+  $('img-preview-strip').innerHTML = '';
+  $('img-preview-main-el').src = '';
+}
+
+async function confirmSendImage() {
+  if (!pendingFiles.length) return;
+  $('img-preview-wrap').classList.remove('open');
+  const toSend = [...pendingFiles];
+  pendingFiles = [];
+  for (const file of toSend) {
+    await uploadAndSend(file);
+  }
+}
+
+const CLOUDINARY_CLOUD = 'db03wdg7v';
+const CLOUDINARY_PRESET = 'ekk7u3hb'; 
+
+async function uploadAndSend(file) {
+  const bar     = $('upload-bar');
+  const prog    = $('upload-progress');
+  const progBar = $('upload-progress-bar');
+  bar.classList.add('show');
+  prog.classList.add('show');
+  progBar.style.width = '0%';
+
+  try {
+    const url = await uploadToCloudinary(file, pct => {
+      progBar.style.width = pct + '%';
+    });
+
+    const payload = {
+      type:'message', text:'',
+      fileUrl: url,
+      fileName: file.name,
+      fileType: file.type,
+      senderId: myId, senderName: myName, ts: Date.now()
+    };
+    if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
+    await messagesRef.push(payload);
+    showToast('تم الإرسال ✅');
+
+  } catch(e) {
+    console.error('Upload error:', e);
+    showToast('فشل الرفع — تأكد من الـ Upload Preset ❌');
+  } finally {
+    bar.classList.remove('show');
+    prog.classList.remove('show');
+    progBar.style.width = '0%';
+  }
+}
+
+function uploadToCloudinary(file, onProgress) {
+  return new Promise((resolve, reject) => {
+    const fd = new FormData();
+    fd.append('file', file);
+    fd.append('upload_preset', CLOUDINARY_PRESET);
+    fd.append('folder', `chatbft/${roomId}`);
+
+    const resourceType = file.type.startsWith('video/') ? 'video'
+                       : file.type.startsWith('image/') ? 'image'
+                       : 'raw';
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD}/${resourceType}/upload`);
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) onProgress(Math.round(e.loaded/e.total*100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 200) {
+        const res = JSON.parse(xhr.responseText);
+        resolve(res.secure_url);
+      } else {
+        console.error('Cloudinary error:', xhr.responseText);
+        reject(new Error('Cloudinary upload failed: ' + xhr.status));
+      }
+    };
+
+    xhr.onerror = () => reject(new Error('Network error'));
+    xhr.send(fd);
+  });
+}
+
+let mediaRecorder = null;
+let audioChunks   = [];
+let recInterval   = null;
+let recSeconds    = 0;
+
+async function toggleVoiceRecord() {
+  if (mediaRecorder && mediaRecorder.state === 'recording') {
+    stopRecording();
+  } else {
+    startRecording();
+  }
+}
+
+async function startRecording() {
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+    const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+      ? 'audio/webm;codecs=opus'
+      : MediaRecorder.isTypeSupported('audio/mp4') ? 'audio/mp4' : 'audio/webm';
+
+    mediaRecorder = new MediaRecorder(stream, { mimeType });
+    audioChunks   = [];
+    recSeconds    = 0;
+
+    mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
+    mediaRecorder.onstop = async () => {
+      stream.getTracks().forEach(t => t.stop());
+      const blob = new Blob(audioChunks, { type: mimeType });
+      await uploadVoice(blob, mimeType);
+    };
+
+    mediaRecorder.start(200);
+
+    $('btn-voice').classList.add('recording');
+    $('btn-voice').textContent = '⏹';
+    $('rec-timer').classList.add('show');
+    $('msg-input').style.display = 'none';
+
+    recInterval = setInterval(() => {
+      recSeconds++;
+      const m = Math.floor(recSeconds/60);
+      const s = recSeconds % 60;
+      $('rec-time').textContent = m + ':' + String(s).padStart(2,'0');
+      if (recSeconds >= 120) stopRecording(); 
+    }, 1000);
+
+  } catch(e) {
+    showToast('تعذر الوصول للميكروفون ❌');
+  }
+}
+
+function stopRecording() {
+  if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+    mediaRecorder.stop();
+  }
+  clearInterval(recInterval);
+  $('btn-voice').classList.remove('recording');
+  $('btn-voice').textContent = '🎤';
+  $('rec-timer').classList.remove('show');
+  $('msg-input').style.display = '';
+}
+
+async function uploadVoice(blob, mimeType) {
+  const ext  = mimeType.includes('mp4') ? 'mp4' : 'webm';
+  const name = `voice_${genId()}.${ext}`;
+  const bar  = $('upload-bar');
+  bar.classList.add('show');
+
+  try {
+    const file = new File([blob], name, { type: mimeType });
+    const url  = await uploadToCloudinary(file, () => {});
+
+    const payload = {
+      type:'message', text:'',
+      fileUrl: url, fileName: name, fileType:'audio',
+      voiceDuration: recSeconds,
+      senderId:myId, senderName:myName, ts:Date.now()
+    };
+    if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
+    await messagesRef.push(payload);
+    showToast('تم إرسال الرسالة الصوتية ✅');
+
+  } catch(e) {
+    console.error('Voice upload error:', e);
+    showToast('فشل رفع الصوت — تأكد من الـ Upload Preset ❌');
+  } finally {
+    bar.classList.remove('show');
+  }
+}
+
+function handleTyping(el){
+  el.style.height='auto'; el.style.height=Math.min(el.scrollHeight,130)+'px';
+  resetInactivityTimer(); if(!typingRef) return;
+  typingRef.set(true); clearTimeout(typingTimeout);
+  typingTimeout=setTimeout(clearTypingNow, 2000);
+}
+function clearTypingNow(){ clearTimeout(typingTimeout); if(typingRef) typingRef.set(false); }
+function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
+
+async function toggleReaction(msgKey, emoji) {
+  try {
+    const ref  = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
+    const snap = await ref.once('value');
+    if (snap.exists()) { await ref.remove(); }
+    else               { await ref.set(myName); }
+  } catch(e) { showToast('تأكد من اتصالك بالإنترنت'); }
+}
+
+async function quickReact(msgKey, emoji, bubbleEl) {
+  try {
+    const ref  = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
+    const snap = await ref.once('value');
+    const adding = !snap.exists();
+    if (adding) { await ref.set(myName); }
+    else        { await ref.remove(); }
+
+    if (adding && bubbleEl) {
+      const heart = document.createElement('span');
+      heart.textContent = emoji;
+      heart.style.cssText = `
+        position:absolute;font-size:28px;pointer-events:none;z-index:999;
+        animation:floatHeart .7s ease forwards;
+        left:50%;transform:translateX(-50%);bottom:0;
+      `;
+      bubbleEl.style.position = 'relative';
+      bubbleEl.appendChild(heart);
+      setTimeout(() => heart.remove(), 700);
+    }
+  } catch(e) { showToast('تأكد من اتصالك بالإنترنت'); }
+}
+
+function renderReactions(msgKey, data) {
+  const bar = document.querySelector('[data-msgkey="' + msgKey + '"]');
+  if (!bar) return;
+
+  bar.innerHTML = '';
+  if (!data || Object.keys(data).length === 0) return;
+
+  Object.entries(data).forEach(([emoji, users]) => {
+    if (!users || typeof users !== 'object') return;
+    const uids  = Object.keys(users);
+    const count = uids.length;
+    if (count === 0) return;
+    const mine  = uids.includes(myId);
+    const names = Object.values(users).filter(v => typeof v === 'string').join('، ');
+
+    const chip = document.createElement('div');
+    chip.className = 'reaction-chip' + (mine ? ' mine' : '');
+    chip.title     = names;
+    chip.innerHTML = `<span>${emoji}</span>${count > 1 ? '<span class="r-count">' + count + '</span>' : ''}`;
+    chip.addEventListener('click', e => {
+      e.stopPropagation();
+      toggleReaction(msgKey, emoji);
+    });
+    bar.appendChild(chip);
+  });
+}
+
+let currentAudio = null;
+let currentPlayBtn = null;
+
+function toggleVoicePlay(btn) {
+  const voiceMsg = btn.closest('.voice-msg');
+  const url      = voiceMsg.dataset.url;
+  const waveform = voiceMsg.querySelector('.voice-waveform');
+  const durEl    = voiceMsg.querySelector('.voice-duration');
+  const bars     = waveform.querySelectorAll('span');
+
+  if (currentAudio && !currentAudio.paused) {
+    if (currentPlayBtn === btn) {
+      currentAudio.pause();
+      btn.textContent = '▶';
+      return;
+    } else {
+      currentAudio.pause();
+      currentAudio = null;
+      if (currentPlayBtn) currentPlayBtn.textContent = '▶';
+    }
+  }
+
+  const audio = new Audio(url);
+  currentAudio   = audio;
+  currentPlayBtn = btn;
+  btn.textContent = '⏸';
+
+  audio.ontimeupdate = () => {
+    const pct = audio.duration ? audio.currentTime / audio.duration : 0;
+    const idx = Math.floor(pct * bars.length);
+    bars.forEach((b,i) => b.classList.toggle('played', i < idx));
+
+    const rem = audio.duration - audio.currentTime;
+    if (!isNaN(rem)) {
+      const m = Math.floor(rem/60), s = Math.floor(rem%60);
+      durEl.textContent = m + ':' + String(s).padStart(2,'0');
+    }
+  };
+
+  audio.onended = () => {
+    btn.textContent = '▶';
+    bars.forEach(b => b.classList.remove('played'));
+    currentAudio = null; currentPlayBtn = null;
+    const tot = audio.duration||0;
+    const m = Math.floor(tot/60), s = Math.floor(tot%60);
+    durEl.textContent = m + ':' + String(s).padStart(2,'0');
+  };
+
+  audio.onerror = () => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; };
+  audio.play().catch(() => { showToast('تعذر تشغيل الصوت'); btn.textContent = '▶'; });
+}
+
+async function pinMessage(key, text) {
+  try {
+    await db.ref(`rooms/${roomId}/pinnedMsg`).set({
+      key, text: (text||'رسالة').slice(0,80), by: myName
+    });
+    showToast('تم تثبيت الرسالة 📌');
+  } catch(e) { showToast('فشل التثبيت'); }
+}
+
+async function unpinMessage(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  try {
+    await db.ref(`rooms/${roomId}/pinnedMsg`).remove();
+    showToast('تم إلغاء التثبيت');
+  } catch(e) {}
+}
+
+function scrollToPinned() {
+  if (!pinnedMsgKey) return;
+  jumpToMsg(pinnedMsgKey);
+}
+
+function openSearch() {
+  $('search-overlay').classList.add('open');
+  setTimeout(() => $('search-input').focus(), 100);
+}
+
+function closeSearch() {
+  $('search-overlay').classList.remove('open');
+  $('search-input').value = '';
+  $('search-results').innerHTML = '<div class="search-empty">اكتب للبحث في الرسائل</div>';
+}
+
+function doSearch(q) {
+  const res = $('search-results');
+  q = (q||'').trim();
+  if (!q) {
+    res.innerHTML = '<div class="search-empty">اكتب للبحث في الرسائل</div>';
+    return;
+  }
+  const ql = q.toLowerCase();
+  const matches = Object.entries(allMessages)
+    .filter(([, m]) => m.text && m.text.toLowerCase().includes(ql))
+    .reverse()
+    .slice(0, 40);
+
+  if (!matches.length) {
+    res.innerHTML = '<div class="search-empty">لا توجد نتائج لـ "' + esc(q) + '"</div>';
+    return;
+  }
+
+  res.innerHTML = matches.map(([key, m]) => {
+    const safe = esc(m.text);
+    const hi   = safe.replace(new RegExp(esc(q).replace(/[.*+?^${}()|[\]\\]/g,'\\$&'), 'gi'),
+                               s => `<mark>${s}</mark>`);
+    return `<div class="search-result-item" onclick="jumpToMsg('${key}');closeSearch()">
+      <div class="search-result-sender">${esc(m.senderName||'')}</div>
+      <div class="search-result-text">${hi}</div>
+      <div class="search-result-time">${fmt(m.ts)}</div>
+    </div>`;
+  }).join('');
+}
+
+function jumpToMsg(key) {
+  if (!key) return;
+  const el = document.querySelector(`[data-key="${key}"]`);
+  if (!el) { showToast('الرسالة غير موجودة في الشاشة الحالية'); return; }
+  
+  el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  
+  const b = el.querySelector('.msg-bubble');
+  if (b) {
+    b.style.outline = '2px solid var(--accent)';
+    b.style.boxShadow = '0 0 12px rgba(16, 163, 127, 0.4)';
+    b.style.transition = 'all .3s ease';
+    setTimeout(() => { 
+      b.style.outline = ''; 
+      b.style.boxShadow = '';
+    }, 1800);
+  }
+}
+
+function copyToClipboard(text) {
+  if (!text) return;
+  
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text)
+      .then(() => {
+        showToast('تم نسخ نص الرسالة بنجاح 📋');
+      })
+      .catch(err => {
+        console.error('فشل النسخ عبر API الأساسي:', err);
+        fallbackCopyText(text);
+      });
+  } else {
+    fallbackCopyText(text);
+  }
+}
+
+function fallbackCopyText(text) {
+  const textarea = document.createElement('textarea');
+  textarea.value = text;
+  textarea.style.position = 'fixed';
+  textarea.style.top = '0';
+  textarea.style.left = '0';
+  textarea.style.width = '2em';
+  textarea.style.height = '2em';
+  textarea.style.padding = '0';
+  textarea.style.border = 'none';
+  textarea.style.outline = 'none';
+  textarea.style.boxShadow = 'none';
+  textarea.style.background = 'transparent';
+  document.body.appendChild(textarea);
+  textarea.focus();
+  textarea.select();
+  
+  try {
+    const successful = document.execCommand('copy');
+    if (successful) {
+      showToast('تم نسخ نص الرسالة بنجاح 📋');
+    } else {
+      showToast('عذراً، فشل نسخ الرسالة ❌');
+    }
+  } catch (err) {
+    console.error('فشل الـ Fallback في النسخ:', err);
+    showToast('عذراً، المتصفح لا يدعم النسخ ❌');
+  }
+  
+  document.body.removeChild(textarea);
+}
+
+let unreadCount = 0;
+let isAtBottom  = true;
+
+function initScrollButton() {
+  const area = $('messages-area');
+  if (!area) return;
+
+  area.addEventListener('scroll', () => {
+    const distFromBottom = area.scrollHeight - area.scrollTop - area.clientHeight;
+    isAtBottom = distFromBottom < 60;
+
+    const btn = $('btn-scroll-down');
+    if (isAtBottom) {
+      btn.classList.remove('show');
+      unreadCount = 0;
+      updateBadge();
+    } else {
+      btn.classList.add('show');
+    }
+  }, { passive: true });
+}
+
+function scrollToBottom() {
+  const area = $('messages-area');
+  if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+  unreadCount = 0;
+  updateBadge();
+  $('btn-scroll-down').classList.remove('show','has-unread');
+}
+
+function updateBadge() {
+  const badge = $('unread-badge');
+  const btn   = $('btn-scroll-down');
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    btn.classList.add('has-unread');
+  } else {
+    btn.classList.remove('has-unread');
+  }
+}
+
+async function clearChat(){
+  if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
+  try {
+    await db.ref(`rooms/${roomId}/clearSignal`).set({
+      by: myName,
+      ts: Date.now()
+    });
+    await db.ref(`rooms/${roomId}/messages`).remove();
+    showToast('تم مسح المحادثة للجميع 🗑️');
+  }
+  catch(e){ showToast('فشل الحذف ❌'); }
+}
+
+async function leaveRoom(){
+  stopInactivityTimer(); clearTypingNow(); cancelReply();
+  try {
+    if(messagesRef) await messagesRef.push({ type:'system', text:myName+' غادر المحادثة', ts:Date.now() });
+    await presenceRef.set({ name:myName, online:false, lastSeen:firebase.database.ServerValue.TIMESTAMP });
+    await typingRef.remove();
+    if(currentActivePeerRef){ currentActivePeerRef.off(); currentActivePeerRef=null; }
+    if(roomPresenceGeneralRef) roomPresenceGeneralRef.off();
+    db.ref(`rooms/${roomId}/typing`).off();
+    db.ref(`rooms/${roomId}/clearSignal`).off();
+    db.ref(`rooms/${roomId}/reactions`).off();
+    db.ref(`rooms/${roomId}/readBy`).off();
+    db.ref(`rooms/${roomId}/pinnedMsg`).off();
+    allMessages = {};
+    if(peerTypingListener) db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener);
+    messagesRef.off();
+  } catch(e){}
+
+  myName=myId=roomId=null;
+  messagesRef=presenceRef=typingRef=roomPresenceGeneralRef=null;
+  $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>';
+  $('typing-bar').innerHTML='';
+  $('name-input').value=''; $('room-input').value='';
+  $('join-btn').disabled=false; $('join-btn').textContent='دخول الغرفة';
+  $('msg-input').value=''; $('msg-input').style.height='auto';
+  $('chat-screen').classList.add('hidden'); $('login-screen').classList.remove('hidden');
+}
+</script>
+
+</body>
+</html>

@@ -468,12 +468,48 @@ html,body{
 /* ── Image preview before send ── */
 .img-preview-wrap{
   position:fixed;inset:0;z-index:7000;
-  background:rgba(0,0,0,.85);
+  background:rgba(0,0,0,.9);
   display:none;flex-direction:column;
-  align-items:center;justify-content:center;gap:16px;
+  align-items:center;justify-content:center;gap:14px;
+  padding:20px;
 }
-.img-preview-wrap.open{display:flex}
-.img-preview-wrap img{max-width:90%;max-height:70vh;border-radius:12px;}
+.img-preview-wrap.open{display:flex;}
+
+/* grid الصور */
+.img-preview-grid{
+  display:flex;flex-wrap:wrap;gap:8px;
+  justify-content:center;
+  max-width:92vw;max-height:65vh;
+  overflow-y:auto;
+}
+.img-preview-grid .prev-thumb{
+  position:relative;
+  width:100px;height:100px;
+  border-radius:10px;overflow:hidden;
+  border:2px solid transparent;
+  cursor:pointer;flex-shrink:0;
+}
+.img-preview-grid .prev-thumb img{
+  width:100%;height:100%;object-fit:cover;
+}
+.img-preview-grid .prev-thumb .remove-thumb{
+  position:absolute;top:3px;right:3px;
+  width:20px;height:20px;border-radius:50%;
+  background:rgba(0,0,0,.6);color:#fff;
+  border:none;font-size:12px;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  line-height:1;
+}
+
+/* لو صورة واحدة بس تكبر */
+.img-preview-grid.single .prev-thumb{
+  width:min(280px,80vw);height:min(280px,60vh);
+}
+
+.img-preview-count{
+  font-size:13px;color:rgba(255,255,255,.7);
+}
+
 .img-preview-actions{display:flex;gap:12px;}
 .img-preview-actions button{
   padding:10px 28px;border-radius:10px;border:none;
@@ -665,7 +701,8 @@ html,body{
   <!-- Image preview before send -->
 
   <div class="img-preview-wrap" id="img-preview-wrap">
-    <img id="img-preview-el" src="" alt="">
+    <div class="img-preview-grid" id="img-preview-grid"></div>
+    <div class="img-preview-count" id="img-preview-count"></div>
     <div class="img-preview-actions">
       <button class="btn-cancel-img" onclick="cancelImgPreview()">إلغاء</button>
       <button class="btn-send-img"   onclick="confirmSendImage()">إرسال ✓</button>
@@ -679,7 +716,7 @@ html,body{
   </div>
 
   <div class="input-area">
-    <input type="file" id="file-chooser" accept="image/*,video/*,.pdf,.doc,.docx,.zip" class="hidden" onchange="handleFileSelect(this)">
+    <input type="file" id="file-chooser" accept="image/*,video/*,.pdf,.doc,.docx,.zip" class="hidden" multiple onchange="handleFileSelect(this)">
     <div class="input-wrap">
       <button class="btn-attach" onclick="document.getElementById('file-chooser').click()" title="إرفاق ملف">📎</button>
       <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
@@ -1208,37 +1245,75 @@ async function sendMessage(){
 }
 
 /* ── Image preview ── */
-let pendingImageFile = null;
+let pendingFiles = []; // array of File objects
 
-function handleFileSelect(input){
-  const file = input.files[0]; if(!file) return;
-
-  // لو صورة → اعرض preview
-  if (file.type.startsWith('image/')) {
-    pendingImageFile = file;
-    const reader = new FileReader();
-    reader.onload = e => {
-      $('img-preview-el').src = e.target.result;
-      $('img-preview-wrap').classList.add('open');
-    };
-    reader.readAsDataURL(file);
-  } else {
-    uploadAndSend(file);
-  }
+function handleFileSelect(input) {
+  const files = Array.from(input.files);
+  if (!files.length) return;
   input.value = '';
+
+  const images    = files.filter(f => f.type.startsWith('image/'));
+  const nonImages = files.filter(f => !f.type.startsWith('image/'));
+
+  // الملفات غير الصور ترفع فوراً
+  nonImages.forEach(f => uploadAndSend(f));
+
+  // الصور تظهر في preview
+  if (images.length > 0) {
+    pendingFiles = [...pendingFiles, ...images];
+    renderPreviewGrid();
+    $('img-preview-wrap').classList.add('open');
+  }
+}
+
+function renderPreviewGrid() {
+  const grid  = $('img-preview-grid');
+  const count = $('img-preview-count');
+  grid.innerHTML = '';
+  grid.className = 'img-preview-grid' + (pendingFiles.length === 1 ? ' single' : '');
+
+  pendingFiles.forEach((file, idx) => {
+    const thumb = document.createElement('div');
+    thumb.className = 'prev-thumb';
+
+    const img = document.createElement('img');
+    const reader = new FileReader();
+    reader.onload = e => { img.src = e.target.result; };
+    reader.readAsDataURL(file);
+
+    const removeBtn = document.createElement('button');
+    removeBtn.className = 'remove-thumb';
+    removeBtn.textContent = '✕';
+    removeBtn.onclick = (e) => {
+      e.stopPropagation();
+      pendingFiles.splice(idx, 1);
+      if (pendingFiles.length === 0) { cancelImgPreview(); return; }
+      renderPreviewGrid();
+    };
+
+    thumb.appendChild(img);
+    thumb.appendChild(removeBtn);
+    grid.appendChild(thumb);
+  });
+
+  count.textContent = pendingFiles.length > 1 ? `${pendingFiles.length} صور` : '';
 }
 
 function cancelImgPreview() {
-  pendingImageFile = null;
+  pendingFiles = [];
   $('img-preview-wrap').classList.remove('open');
-  $('img-preview-el').src = '';
+  $('img-preview-grid').innerHTML = '';
 }
 
 async function confirmSendImage() {
-  if (!pendingImageFile) return;
+  if (!pendingFiles.length) return;
   $('img-preview-wrap').classList.remove('open');
-  await uploadAndSend(pendingImageFile);
-  pendingImageFile = null;
+  const toSend = [...pendingFiles];
+  pendingFiles = [];
+  // بعت الصور واحدة واحدة
+  for (const file of toSend) {
+    await uploadAndSend(file);
+  }
 }
 
 /* ══ Cloudinary config ══ */

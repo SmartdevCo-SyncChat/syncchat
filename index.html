@@ -124,7 +124,10 @@ html,body{
   background:#ffffff;
   overflow:hidden;
   min-height:0;
+  /* مساحة للـ input الـ fixed */
+  margin-bottom:64px;
 }
+#chat-screen.has-reply .messages-wrap{margin-bottom:108px;}
 
 .messages-area{
   width:100%;height:100%;
@@ -414,12 +417,15 @@ html,body{
 
 /* Input */
 .input-area{
-  position:relative;
-  background:#ffffff;padding:10px 16px;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  max-width:860px;margin:0 auto;
+  background:#ffffff;
+  padding:10px 16px;
   padding-bottom:calc(10px + env(safe-area-inset-bottom));
   display:flex;gap:8px;align-items:flex-end;
   border-top:1px solid #e5e5e5;
-  flex-shrink:0;
+  z-index:1000;
 }
 .input-wrap{flex:1;background:var(--input-bg);border-radius:14px;display:flex;align-items:flex-end;gap:4px;padding:8px 12px;border:1px solid #d9d9d9;min-height:44px;}
 .btn-attach{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:18px;display:flex;align-items:center;justify-content:center;width:30px;height:30px;}
@@ -449,9 +455,11 @@ html,body{
 
 /* upload progress */
 .upload-progress{
-  position:absolute;top:0;left:0;right:0;
+  position:fixed;
+  bottom:64px;left:0;right:0;
+  max-width:860px;margin:0 auto;
   height:3px;background:rgba(16,163,127,.2);
-  display:none;
+  z-index:1001;display:none;
 }
 .upload-progress-bar{
   height:100%;background:var(--accent);

@@ -138,27 +138,38 @@ html,body{
 .msg-wrapper{display:flex;width:100%;position:relative;animation:bubbleIn .18s ease;}
 .msg-wrapper.sent{justify-content:flex-start;}
 .msg-wrapper.recv{justify-content:flex-end;}
-.msg-row{display:flex;max-width:75%;width:auto;position:relative;}
+.msg-row{display:flex;max-width:85%;width:auto;position:relative;align-items:center;}
 
-/* Reply button */
-.msg-reply-btn{
-  flex-shrink:0;
+/* الإجراءات السريعة بجانب الرسالة */
+.msg-actions-group{
+  display:none;
+  flex-direction:row;
+  gap:4px;
   align-self:center;
+  flex-shrink:0;
+}
+.msg-action-btn{
   width:30px;height:30px;
   border-radius:50%;
   border:1px solid #e5e5e5;
   background:#ffffff;
   color:#6e6e80;
-  font-size:14px;
+  font-size:13px;
   cursor:pointer;
-  display:none;
+  display:flex;
   align-items:center;
   justify-content:center;
   box-shadow:0 1px 4px rgba(0,0,0,.08);
   transition:background .15s,color .15s;
 }
-.msg-reply-btn:hover{background:#f0f0f0;color:#0d0d0d;}
-.msg-row:hover .msg-reply-btn{ display:flex; }
+.msg-action-btn:hover{background:#f0f0f0;color:#0d0d0d;}
+.msg-row:hover .msg-actions-group{ display:flex; }
+
+/* للهواتف الذكية تظهر أزرار التحكم دائماً بشكل خفيف */
+@media (max-width: 768px) {
+  .msg-actions-group { display: flex; opacity: 0.6; }
+  .msg-row:hover .msg-actions-group { opacity: 1; }
+}
 
 .msg-wrapper.sent .msg-row{ flex-direction:row; gap:6px; }
 .msg-wrapper.recv .msg-row{ flex-direction:row-reverse; gap:6px; }
@@ -168,29 +179,6 @@ html,body{
   filter:brightness(.92);
   transition:filter .15s;
 }
-
-/* context menu للرد والنسخ والتثبيت */
-.reply-ctx-menu{
-  position:fixed;
-  background:#ffffff;
-  border:1px solid #e5e5e5;
-  border-radius:12px;
-  box-shadow:0 8px 28px rgba(0,0,0,.14);
-  z-index:5000;
-  overflow:hidden;
-  min-width:140px;
-  animation:ctxIn .15s ease;
-}
-@keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
-.reply-ctx-menu button{
-  display:flex;align-items:center;gap:10px;
-  width:100%;padding:12px 16px;
-  background:transparent;border:none;
-  font-size:14px;font-family:var(--font);
-  color:#0d0d0d;cursor:pointer;text-align:right;
-}
-.reply-ctx-menu button:hover{background:#f5f5f5;}
-.reply-ctx-menu button .ctx-icon{font-size:16px;}
 
 .msg-bubble-wrap{display:flex;flex-direction:column;width:auto;}
 .msg-sender-name{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:2px;padding:0 4px;align-self:flex-start;}
@@ -412,6 +400,7 @@ html,body{
   z-index:6000;
   animation:ctxIn .15s ease;
 }
+@keyframes ctxIn{from{opacity:0;transform:scale(.92)}to{opacity:1;transform:scale(1)}}
 .emoji-picker span{
   font-size:22px;cursor:pointer;
   padding:4px;border-radius:8px;
@@ -1051,6 +1040,17 @@ function appendMessage(msg, key){
       </div>`;
     }
 
+    const cleanText = msg.text ? msg.text.replace(/'/g, "\\'").replace(/"/g, '&quot;') : '';
+
+    // بناء مجموعة الأزرار الجانبية (رد، نسخ، تثبيت) بدلاً من البوب اب
+    const actionsGroupHtml = `
+      <div class="msg-actions-group">
+        <button class="msg-action-btn" onclick="initiateReply('${esc(msg.senderName)}', '${esc(cleanText)}', '${key}')" title="رد">↩</button>
+        ${msg.text ? `<button class="msg-action-btn" onclick="copyToClipboard('${esc(cleanText)}')" title="نسخ">📋</button>` : ''}
+        <button class="msg-action-btn" onclick="pinnedMsgKey==='${key}' ? unpinMessage() : pinMessage('${key}', '${esc(cleanText)}')" title="تثبيت">📌</button>
+      </div>
+    `;
+
     div.innerHTML = `
       <div class="msg-row" data-key="${key}">
         <div class="msg-bubble-wrap">
@@ -1063,19 +1063,11 @@ function appendMessage(msg, key){
           </div>
           <div class="reactions-bar" data-msgkey="${key}"></div>
         </div>
-        <button class="msg-reply-btn" title="رد">↩</button>
+        ${actionsGroupHtml}
       </div>`;
 
     const imgEl = div.querySelector('.chat-image');
     if (imgEl) imgEl.addEventListener('click', () => openImgModal(msg.fileUrl));
-
-    const replyBtn = div.querySelector('.msg-reply-btn');
-    if (replyBtn) {
-      replyBtn.addEventListener('click', e => {
-        e.stopPropagation();
-        initiateReply(msg.senderName, msg.text||'', key);
-      });
-    }
 
     const quoteEl = div.querySelector('.reply-quotation');
     if (quoteEl) {
@@ -1122,37 +1114,9 @@ function appendMessage(msg, key){
       }, {passive:true});
     }
 
-    // Reactions & Long Press Context Menu
+    // إضافة تفاعل الضغط المزدوج للتفاعل بـ قلوب فقط بدون منيو
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
-      let pressTimer = null;
-      let lastTap    = 0;
-
-      bubble.addEventListener('contextmenu', e => e.preventDefault());
-
-      bubble.addEventListener('touchstart', e => {
-        const now = Date.now();
-        if (now - lastTap < 400) {
-          clearTimeout(pressTimer);
-          lastTap = 0;
-          e.preventDefault();
-          bubble.classList.add('tapped');
-          setTimeout(() => bubble.classList.remove('tapped'), 250);
-          quickReact(key, '❤️', bubble);
-          return;
-        }
-        lastTap = now;
-        const touch = e.touches[0];
-        pressTimer = setTimeout(() => {
-          bubble.classList.add('tapped');
-          setTimeout(() => bubble.classList.remove('tapped'), 250);
-          showCtxMenu(bubble, msg.senderName, msg.text||'', touch.clientX, touch.clientY, key);
-        }, 600);
-      }, {passive:false});
-
-      bubble.addEventListener('touchend',  e => { clearTimeout(pressTimer); }, {passive:true});
-      bubble.addEventListener('touchmove', e => { clearTimeout(pressTimer); }, {passive:true});
-
       bubble.addEventListener('dblclick', e => {
         e.preventDefault();
         bubble.classList.add('tapped');
@@ -1176,11 +1140,6 @@ function appendMessage(msg, key){
       renderReactions(key, snap.val() || {});
     });
   }
-}
-
-function closeReplyMenu() {
-  const m = document.getElementById('reply-ctx-menu');
-  if (m) m.remove();
 }
 
 async function sendMessage(){
@@ -1450,47 +1409,6 @@ function handleTyping(el){
 function clearTypingNow(){ clearTimeout(typingTimeout); if(typingRef) typingRef.set(false); }
 function handleKey(e){ if(e.key==='Enter'&&!e.shiftKey){ e.preventDefault(); sendMessage(); } }
 
-const EMOJIS = ['❤️','👍','😂','😮','😢','🔥'];
-
-function showEmojiPicker(msgKey, x, y) {
-  closeEmojiPicker();
-  const picker = document.createElement('div');
-  picker.className = 'emoji-picker';
-  picker.id = 'emoji-picker';
-
-  EMOJIS.forEach(em => {
-    const sp = document.createElement('span');
-    sp.textContent = em;
-    sp.title = em;
-    sp.addEventListener('click', (e) => {
-      e.stopPropagation(); 
-      toggleReaction(msgKey, em);
-      closeEmojiPicker();
-    });
-    picker.appendChild(sp);
-  });
-
-  document.body.appendChild(picker);
-
-  const pw = 220, ph = 52;
-  let left = x - pw/2, top = y - ph - 12;
-  if (left < 8) left = 8;
-  if (left + pw > window.innerWidth) left = window.innerWidth - pw - 8;
-  if (top < 8) top = y + 12;
-  picker.style.left = left + 'px';
-  picker.style.top  = top  + 'px';
-
-  setTimeout(() => {
-    document.addEventListener('click',      closeEmojiPicker, {once:true});
-    document.addEventListener('touchstart', closeEmojiPicker, {once:true, passive:true});
-  }, 50);
-}
-
-function closeEmojiPicker() {
-  const p = document.getElementById('emoji-picker');
-  if (p) p.remove();
-}
-
 async function toggleReaction(msgKey, emoji) {
   try {
     const ref  = db.ref(`rooms/${roomId}/reactions/${msgKey}/${emoji}/${myId}`);
@@ -1731,79 +1649,6 @@ function fallbackCopyText(text) {
   }
   
   document.body.removeChild(textarea);
-}
-
-// تعديل القائمة المنبثقة لمنع الاختفاء التلقائي الناتجة عن تداخل أحداث اللمس (Touch Events)
-function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
-  document.getElementById('reply-ctx-menu') && document.getElementById('reply-ctx-menu').remove();
-  document.getElementById('emoji-picker')   && document.getElementById('emoji-picker').remove();
-
-  const isPinned = pinnedMsgKey === msgKey;
-  const menu = document.createElement('div');
-  menu.className = 'reply-ctx-menu';
-  menu.id = 'reply-ctx-menu';
-
-  menu.addEventListener('click',      e => e.stopPropagation());
-  menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
-
-  // 1. زر الرد
-  const replyBtn = document.createElement('button');
-  replyBtn.innerHTML = '<span class="ctx-icon">↩️</span><span>رد</span>';
-  replyBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.remove();
-    initiateReply(senderName, text, msgKey);
-  });
-
-  // 2. زر النسخ
-  if (text) {
-    const copyBtn = document.createElement('button');
-    copyBtn.innerHTML = '<span class="ctx-icon">📋</span><span>نسخ النص</span>';
-    copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); 
-      menu.remove();
-      copyToClipboard(text);
-    });
-    menu.appendChild(copyBtn);
-  }
-
-  // 3. زر التثبيت
-  const pinBtn = document.createElement('button');
-  pinBtn.innerHTML = `<span class="ctx-icon">📌</span><span>${isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</span>`;
-  pinBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    menu.remove();
-    isPinned ? unpinMessage() : pinMessage(msgKey, text);
-  });
-
-  menu.appendChild(replyBtn);
-  menu.appendChild(pinBtn);
-  document.body.appendChild(menu);
-
-  // حساب الحجم ديناميكياً
-  const mw = 170;
-  const mh = text ? 138 : 96; 
-  let left = x, top = y + 8;
-  if (left + mw > window.innerWidth)  left = window.innerWidth  - mw - 8;
-  if (top  + mh > window.innerHeight) top  = y - mh - 8;
-  if (top < 60) top = 60;
-  menu.style.left = left + 'px';
-  menu.style.top  = top  + 'px';
-
-  // معالج الإغلاق بالخارج الموحد لتفادي مشكلة الـ touchend الفورية
-  const closeMenuHandler = (e) => {
-    if (!menu.contains(e.target)) {
-      menu.remove();
-      document.removeEventListener('touchstart', closeMenuHandler);
-      document.removeEventListener('mousedown', closeMenuHandler);
-    }
-  };
-
-  // تفعيل الاستماع بعد مهلة زمنية صغيرة لإنهاء الـ touch cycle الأساسية
-  setTimeout(() => {
-    document.addEventListener('touchstart', closeMenuHandler, { passive: true });
-    document.addEventListener('mousedown', closeMenuHandler);
-  }, 150);
 }
 
 let unreadCount = 0;

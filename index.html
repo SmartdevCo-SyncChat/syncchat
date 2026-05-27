@@ -268,23 +268,25 @@ html,body{
 
 /* ══ Scroll to bottom ══ */
 .btn-scroll-down{
-  position:absolute;
-  bottom:12px;
-  left:50%;transform:translateX(-50%);
+  position:fixed;
+  bottom:80px;
+  left:50%;
+  transform:translateX(-50%);
   background:#ffffff;
-  border:none;
+  border:1px solid #e5e5e5;
   border-radius:50%;
-  width:34px;height:34px;
+  width:36px;height:36px;
   display:none;
   align-items:center;justify-content:center;
   cursor:pointer;
-  box-shadow:0 2px 10px rgba(0,0,0,.18);
-  z-index:90;
-  transition:opacity .2s;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  z-index:995;
+  transition:opacity .2s,transform .2s;
   padding:0;
 }
 .btn-scroll-down.show{display:flex;}
-.btn-scroll-down svg{width:18px;height:18px;stroke:var(--muted);}
+.btn-scroll-down:hover{transform:translateX(-50%) scale(1.08);}
+.btn-scroll-down svg{width:18px;height:18px;stroke:#666;}
 .btn-scroll-down .unread-badge{
   position:absolute;top:-5px;right:-5px;
   background:var(--accent);color:white;
@@ -722,12 +724,6 @@ html,body{
   </div>
 
   <div class="messages-wrap" style="position:relative;">
-    <button class="btn-scroll-down" id="btn-scroll-down" onclick="scrollToBottom()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="6 9 12 15 18 9"></polyline>
-      </svg>
-      <span class="unread-badge" id="unread-badge">0</span>
-    </button>
     <div class="messages-area" id="messages-area" onclick="if(document.activeElement===$('msg-input'))$('msg-input').blur()">
       <div class="empty-state" id="empty-state">
         <div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div>
@@ -737,6 +733,12 @@ html,body{
   </div>
 
   <div class="typing-bar" id="typing-bar"></div>
+  <button class="btn-scroll-down" id="btn-scroll-down" onclick="scrollToBottom()">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+      <polyline points="6 9 12 15 18 9"></polyline>
+    </svg>
+    <span class="unread-badge" id="unread-badge">0</span>
+  </button>
 
   <div class="reply-preview-bar" id="reply-preview-bar">
     <div class="reply-preview-content">

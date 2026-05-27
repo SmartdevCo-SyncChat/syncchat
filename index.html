@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="ar" dir="rtl">
 <head>
 <meta charset="UTF-8"/>
@@ -7,9 +6,7 @@
 <title>ChatBFT</title>
 
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
-
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-storage-compat.js"></script>
 
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
@@ -288,7 +285,7 @@ html,body{
   display:none;align-items:center;justify-content:center;
   font-family:var(--font);
 }
-.btn-scroll-down.has-unread .unread-badge{display:flex;}
+.btn-scroll-down.add-unread .unread-badge{display:flex;}
 
 /* PIN BAR */
 .pin-bar{
@@ -822,7 +819,6 @@ function resetInactivityTimer() {
   if (roomId) inactivityTimeout = setTimeout(leaveRoom, INACTIVITY_LIMIT);
 }
 
-// زيادة ثبات توست الإشعار
 function showToast(msg){ 
   const t=$('toast'); 
   t.textContent=msg; 
@@ -1253,10 +1249,10 @@ function renderPreviewWA(focusIdx) {
       renderPreviewWA(Math.min(idx, pendingFiles.length - 1));
     };
 
-    thumb.addEventListener('click', () => renderPreviewWA(idx));
     thumb.appendChild(img);
     thumb.appendChild(removeBtn);
     strip.appendChild(thumb);
+    thumb.addEventListener('click', () => renderPreviewWA(idx));
   });
 
   strip.style.display = pendingFiles.length > 1 ? 'flex' : 'none';
@@ -1467,7 +1463,7 @@ function showEmojiPicker(msgKey, x, y) {
     sp.textContent = em;
     sp.title = em;
     sp.addEventListener('click', (e) => {
-      e.stopPropagation(); // منع الانتشار لثبات الاختيار
+      e.stopPropagation(); 
       toggleReaction(msgKey, em);
       closeEmojiPicker();
     });
@@ -1688,7 +1684,6 @@ function jumpToMsg(key) {
   }
 }
 
-/* دالة نسخ الرسالة الاحترافية المدمجة */
 function copyToClipboard(text) {
   if (!text) return;
   
@@ -1706,7 +1701,6 @@ function copyToClipboard(text) {
   }
 }
 
-/* دالة النسخ الاحتياطية */
 function fallbackCopyText(text) {
   const textarea = document.createElement('textarea');
   textarea.value = text;
@@ -1739,7 +1733,7 @@ function fallbackCopyText(text) {
   document.body.removeChild(textarea);
 }
 
-// تعديل القائمة المنبثقة لإلغاء الاختفاء التلقائي وإجبارها على الثبات والـ Click Outside فقط
+// تعديل القائمة المنبثقة لمنع الاختفاء التلقائي الناتجة عن تداخل أحداث اللمس (Touch Events)
 function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   document.getElementById('reply-ctx-menu') && document.getElementById('reply-ctx-menu').remove();
   document.getElementById('emoji-picker')   && document.getElementById('emoji-picker').remove();
@@ -1766,7 +1760,7 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
     const copyBtn = document.createElement('button');
     copyBtn.innerHTML = '<span class="ctx-icon">📋</span><span>نسخ النص</span>';
     copyBtn.addEventListener('click', (e) => {
-      e.stopPropagation(); // منع غلق التوست فوراً من تداخل الأحداث
+      e.stopPropagation(); 
       menu.remove();
       copyToClipboard(text);
     });
@@ -1796,24 +1790,20 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   menu.style.left = left + 'px';
   menu.style.top  = top  + 'px';
 
-  // [تعديل جوهري]: إلغاء الـ setTimeout التلقائي تماماً لضمان ثبات المنيو
-  const onOutsideTouch = e => {
+  // معالج الإغلاق بالخارج الموحد لتفادي مشكلة الـ touchend الفورية
+  const closeMenuHandler = (e) => {
     if (!menu.contains(e.target)) {
       menu.remove();
-      document.removeEventListener('touchend', onOutsideTouch);
-    }
-  };
-  const onOutsideClick = e => {
-    if (!menu.contains(e.target)) {
-      menu.remove();
-      document.removeEventListener('mousedown', onOutsideClick);
+      document.removeEventListener('touchstart', closeMenuHandler);
+      document.removeEventListener('mousedown', closeMenuHandler);
     }
   };
 
+  // تفعيل الاستماع بعد مهلة زمنية صغيرة لإنهاء الـ touch cycle الأساسية
   setTimeout(() => {
-    document.addEventListener('touchend',  onOutsideTouch);
-    document.addEventListener('mousedown', onOutsideClick);
-  }, 100);
+    document.addEventListener('touchstart', closeMenuHandler, { passive: true });
+    document.addEventListener('mousedown', closeMenuHandler);
+  }, 150);
 }
 
 let unreadCount = 0;

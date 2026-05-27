@@ -1824,7 +1824,6 @@ function jumpToMsg(key) {
    CONTEXT MENU (Reply + Pin)
 ══════════════════════════════════════════ */
 function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
-  // close any open menus
   document.getElementById('reply-ctx-menu') && document.getElementById('reply-ctx-menu').remove();
   document.getElementById('emoji-picker')   && document.getElementById('emoji-picker').remove();
 
@@ -1832,12 +1831,30 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   const menu = document.createElement('div');
   menu.className = 'reply-ctx-menu';
   menu.id = 'reply-ctx-menu';
-  menu.innerHTML = `
-    <button id="ctx-reply-btn"><span class="ctx-icon">↩️</span><span>رد</span></button>
-    <button id="ctx-pin-btn"><span class="ctx-icon">📌</span><span>${isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</span></button>
-  `;
+
+  // منع الـ menu نفسه من إغلاق نفسه
+  menu.addEventListener('click',      e => e.stopPropagation());
+  menu.addEventListener('touchstart', e => e.stopPropagation(), {passive:true});
+
+  const replyBtn = document.createElement('button');
+  replyBtn.innerHTML = '<span class="ctx-icon">↩️</span><span>رد</span>';
+  replyBtn.addEventListener('click', () => {
+    menu.remove();
+    initiateReply(senderName, text);
+  });
+
+  const pinBtn = document.createElement('button');
+  pinBtn.innerHTML = `<span class="ctx-icon">📌</span><span>${isPinned ? 'إلغاء التثبيت' : 'تثبيت'}</span>`;
+  pinBtn.addEventListener('click', () => {
+    menu.remove();
+    isPinned ? unpinMessage() : pinMessage(msgKey, text);
+  });
+
+  menu.appendChild(replyBtn);
+  menu.appendChild(pinBtn);
   document.body.appendChild(menu);
 
+  // position
   const mw = 170, mh = 96;
   let left = x, top = y + 8;
   if (left + mw > window.innerWidth)  left = window.innerWidth  - mw - 8;
@@ -1846,21 +1863,12 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   menu.style.left = left + 'px';
   menu.style.top  = top  + 'px';
 
-  menu.querySelector('#ctx-reply-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    initiateReply(senderName, text);
-    menu.remove();
+  // إغلاق لو ضغط بره المنيو — بعد frame واحد
+  requestAnimationFrame(() => {
+    const closeMenu = () => { menu.remove(); };
+    document.addEventListener('click',      closeMenu, {once:true});
+    document.addEventListener('touchstart', closeMenu, {once:true, passive:true});
   });
-  menu.querySelector('#ctx-pin-btn').addEventListener('click', e => {
-    e.stopPropagation();
-    isPinned ? unpinMessage() : pinMessage(msgKey, text);
-    menu.remove();
-  });
-
-  setTimeout(() => {
-    document.addEventListener('click',      () => menu.remove(), {once:true});
-    document.addEventListener('touchstart', () => menu.remove(), {once:true, passive:true});
-  }, 80);
 }
 
 /* ══ Scroll to bottom button ══ */

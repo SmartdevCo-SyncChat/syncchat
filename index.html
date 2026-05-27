@@ -1863,12 +1863,30 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
   menu.style.left = left + 'px';
   menu.style.top  = top  + 'px';
 
-  // إغلاق لو ضغط بره المنيو — بعد frame واحد
-  requestAnimationFrame(() => {
-    const closeMenu = () => { menu.remove(); };
-    document.addEventListener('click',      closeMenu, {once:true});
-    document.addEventListener('touchstart', closeMenu, {once:true, passive:true});
-  });
+  // إغلاق بعد 3 ثواني تلقائياً أو لو ضغط بره
+  const autoClose = setTimeout(() => { menu.remove(); }, 3000);
+
+  // على الموبايل: touchend بره المنيو يشيله
+  const onOutsideTouch = e => {
+    if (!menu.contains(e.target)) {
+      clearTimeout(autoClose);
+      menu.remove();
+      document.removeEventListener('touchend', onOutsideTouch);
+    }
+  };
+  // على الديسكتوب: mousedown بره المنيو
+  const onOutsideClick = e => {
+    if (!menu.contains(e.target)) {
+      clearTimeout(autoClose);
+      menu.remove();
+      document.removeEventListener('mousedown', onOutsideClick);
+    }
+  };
+
+  setTimeout(() => {
+    document.addEventListener('touchend',  onOutsideTouch);
+    document.addEventListener('mousedown', onOutsideClick);
+  }, 100);
 }
 
 /* ══ Scroll to bottom button ══ */

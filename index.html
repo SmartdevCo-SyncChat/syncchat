@@ -37,9 +37,16 @@
   --font:          'Cairo', sans-serif;
 }
 
-html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(--font);background:#ffffff;color:#0d0d0d}
+html,body{
+  width:100%;
+  height:100%;
+  height:100dvh;
+  overflow:hidden;
+  font-family:var(--font);
+  background:#ffffff;color:#0d0d0d;
+}
 
-#app{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+#app{width:100%;height:100%;height:100dvh;display:flex;align-items:stretch;}
 .screen{width:100%;height:100%;overflow:hidden}
 .hidden{display:none!important}
 
@@ -83,9 +90,9 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
 .chat-header{
   position:relative;
   background:var(--header-bg);border-bottom:1px solid #e5e5e5;
-  height:56px;min-height:56px;
+  height:56px;min-height:56px;max-height:56px;
   display:flex;align-items:center;gap:10px;padding:0 14px;
-  z-index:100;flex-shrink:0;
+  z-index:100;flex-shrink:0;overflow:hidden;
 }
 .peer-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;}
 .my-avatar-sm{width:28px;height:28px;border-radius:50%;background:#f4f4f4;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-2);flex-shrink:0;}
@@ -95,12 +102,14 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   font-size:11px;color:var(--muted);
   margin-top:1px;
   display:flex;align-items:center;gap:5px;
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
-  max-width:100%;line-height:1.2;
+  line-height:1.3;min-width:0;
 }
 #peer-status{
-  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
   flex:1;min-width:0;
+  font-size:11px;
 }
 .online-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0;}
 .online-dot.on{background:#10a37f;box-shadow:0 0 5px rgba(16,163,127,.5)}
@@ -117,7 +126,14 @@ html,body{width:100%;height:100vh;height:100dvh;overflow:hidden;font-family:var(
   min-height:0;
 }
 
-.messages-area{width:100%;height:100%;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px;-webkit-overflow-scrolling:touch;}
+.messages-area{
+  width:100%;height:100%;
+  overflow-y:auto;
+  padding:16px;
+  display:flex;flex-direction:column;gap:12px;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior:contain;
+}
 
 .date-divider{align-self:center;background:#f0f0f0;padding:4px 14px;border-radius:20px;font-size:11px;color:var(--muted);margin:10px 0;}
 
@@ -792,7 +808,14 @@ function setupListeners(){
       } else {
         dot.classList.remove('on');
         const last = u.lastSeen ? fmtFull(u.lastSeen) : '';
-        txt.textContent = last ? `آخر ظهور لـ ${u.name}: ${last}` : u.name + ' غير متصل';
+        // اختصر الوقت عشان يدخل في سطر واحد
+        const shortTime = u.lastSeen ? new Date(u.lastSeen).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'}) : '';
+        const shortDate = u.lastSeen ? new Date(u.lastSeen).toLocaleDateString('ar-EG',{day:'numeric',month:'numeric'}) : '';
+        const now = new Date();
+        const seenDate = u.lastSeen ? new Date(u.lastSeen) : null;
+        const isToday = seenDate && seenDate.toDateString() === now.toDateString();
+        const displayTime = isToday ? shortTime : (shortDate + ' ' + shortTime);
+        txt.textContent = displayTime ? `آخر ظهور ${displayTime}` : u.name + ' غير متصل';
       }
     });
   });

@@ -266,6 +266,37 @@ html,body{
 .file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid var(--border);margin-bottom:3px;}
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
 
+/* ══ Scroll to bottom button ══ */
+.btn-scroll-down{
+  position:fixed;
+  bottom:80px;
+  left:50%;transform:translateX(-50%);
+  background:#ffffff;
+  border:1px solid #e5e5e5;
+  border-radius:50%;
+  width:38px;height:38px;
+  display:none;
+  align-items:center;justify-content:center;
+  cursor:pointer;
+  font-size:18px;
+  box-shadow:0 2px 12px rgba(0,0,0,.15);
+  z-index:997;
+  transition:opacity .2s,transform .2s;
+  color:var(--text);
+}
+.btn-scroll-down.show{display:flex;}
+.btn-scroll-down:hover{background:#f5f5f5;transform:translateX(-50%) scale(1.05);}
+/* unread badge */
+.btn-scroll-down .unread-badge{
+  position:absolute;top:-4px;right:-4px;
+  background:var(--accent);color:white;
+  border-radius:50%;width:18px;height:18px;
+  font-size:10px;font-weight:700;
+  display:none;align-items:center;justify-content:center;
+  font-family:var(--font);
+}
+.btn-scroll-down.has-unread .unread-badge{display:flex;}
+
 /* ══ PIN BAR ══ */
 .pin-bar{
   position:relative;
@@ -661,6 +692,12 @@ html,body{
 </div>
 
 <div class="toast" id="toast"></div>
+<button class="btn-scroll-down" id="btn-scroll-down" onclick="scrollToBottom()">
+  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+    <polyline points="6 9 12 15 18 9"></polyline>
+  </svg>
+  <span class="unread-badge" id="unread-badge">0</span>
+</button>
 <div class="img-modal" id="img-modal" onclick="closeImgModal()">
   <button class="img-modal-close">✕</button>
   <img id="modal-img" src="" alt="">
@@ -766,6 +803,7 @@ async function joinRoom(){
   setupListeners(); startInactivityTimer();
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
+  setTimeout(initScrollButton, 100);
   await messagesRef.push({ type:'system', text:myName+' انضم إلى المحادثة', ts:Date.now() });
 }
 
@@ -1093,7 +1131,15 @@ function appendMessage(msg, key){
   }
 
   area.appendChild(div);
-  requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  // scroll لتحت بس لو المستخدم في الأسفل
+  if (isAtBottom) {
+    requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; });
+  } else if (!isInitialLoad) {
+    // عدّ الرسائل الغير مقروءة
+    unreadCount++;
+    updateBadge();
+    $('btn-scroll-down').classList.add('show');
+  }
 
   // ══ Listen to reactions AFTER div is in DOM ══
   if (key) {
@@ -1665,6 +1711,48 @@ function showCtxMenu(bubble, senderName, text, x, y, msgKey) {
     document.addEventListener('click',      () => menu.remove(), {once:true});
     document.addEventListener('touchstart', () => menu.remove(), {once:true, passive:true});
   }, 80);
+}
+
+/* ══ Scroll to bottom button ══ */
+let unreadCount = 0;
+let isAtBottom  = true;
+
+function initScrollButton() {
+  const area = $('messages-area');
+  if (!area) return;
+
+  area.addEventListener('scroll', () => {
+    const distFromBottom = area.scrollHeight - area.scrollTop - area.clientHeight;
+    isAtBottom = distFromBottom < 60;
+
+    const btn = $('btn-scroll-down');
+    if (isAtBottom) {
+      btn.classList.remove('show');
+      unreadCount = 0;
+      updateBadge();
+    } else {
+      btn.classList.add('show');
+    }
+  }, { passive: true });
+}
+
+function scrollToBottom() {
+  const area = $('messages-area');
+  if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' });
+  unreadCount = 0;
+  updateBadge();
+  $('btn-scroll-down').classList.remove('show','has-unread');
+}
+
+function updateBadge() {
+  const badge = $('unread-badge');
+  const btn   = $('btn-scroll-down');
+  if (unreadCount > 0) {
+    badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+    btn.classList.add('has-unread');
+  } else {
+    btn.classList.remove('has-unread');
+  }
 }
 
 async function clearChat(){

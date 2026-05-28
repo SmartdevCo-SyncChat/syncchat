@@ -140,7 +140,6 @@ html,body{
 .msg-wrapper.recv{justify-content:flex-end;}
 .msg-row{display:flex;max-width:85%;width:auto;position:relative;align-items:center;}
 
-/* الإجراءات السريعة بجانب الرسالة - تظهر عند الضغط في الموبايل */
 .msg-actions-group{
   display:none;
   flex-direction:row;
@@ -164,14 +163,12 @@ html,body{
 }
 .msg-action-btn:hover{background:#f0f0f0;color:#0d0d0d;}
 
-/* إظهار الأزرار على الديسكتوب عند الحوم بالماوس */
 @media (min-width: 769px) {
   .msg-row:hover .msg-actions-group {
     display: flex !important;
   }
 }
 
-/* تفعيل ظهور الأزرار على الموبايل عند الضغط */
 .msg-row.active-actions .msg-actions-group {
   display: flex !important;
 }
@@ -187,7 +184,7 @@ html,body{
 .msg-bubble-wrap{display:flex;flex-direction:column;width:auto;}
 .msg-sender-name{font-size:11px;font-weight:600;color:var(--muted);margin-bottom:2px;padding:0 4px;align-self:flex-start;}
 
-/* ═══ REPLY QUOTATION ═══ */
+/* REPLY QUOTATION */
 .reply-quotation{
   background:rgba(0,0,0,.06);
   border-right:3px solid var(--accent);
@@ -442,7 +439,7 @@ html,body{
 .upload-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);border-top-color:transparent;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* INPUT AREA */
+/* INPUT AREA - ترتيب جديد لدعم زر الإيموجي والميكروفون بشكل متناسق */
 .input-area {
   position:fixed;
   bottom:0;left:0;right:0;
@@ -476,7 +473,7 @@ html,body{
   border-radius:14px;
   display:flex;
   align-items:flex-end;
-  gap:4px;
+  gap:6px;
   padding:8px 12px;
   border:1px solid #d9d9d9;
   min-height:44px;
@@ -488,12 +485,19 @@ html,body{
   color:var(--text);font-size:14px;font-family:var(--font);
   resize:none;max-height:120px;
   text-align: right;
+  padding: 0 4px;
 }
 .btn-attach {
   border:none;background:transparent;color:var(--muted);
   cursor:pointer;font-size:18px;display:flex;
   align-items:center;justify-content:center;
-  width:30px;height:30px;
+  width:26px;height:26px;
+}
+.btn-emoji-input {
+  border:none;background:transparent;
+  cursor:pointer;font-size:18px;display:flex;
+  align-items:center;justify-content:center;
+  width:26px;height:26px;
 }
 
 .btn-voice {
@@ -599,6 +603,33 @@ html,body{
 .img-modal.open{display:flex}
 .img-modal img{max-width:100%;max-height:90vh;border-radius:8px;}
 .img-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:white;font-size:20px;cursor:pointer;}
+
+/* لوحة اختيار الإيموجيات العامة في حقل الإدخال */
+.input-emoji-picker {
+  position: fixed;
+  bottom: 60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 360px;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 14px;
+  box-shadow: 0 8px 28px rgba(0,0,0,.15);
+  padding: 10px;
+  display: none;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 6px;
+  z-index: 2000;
+  max-height: 200px;
+  overflow-y: auto;
+}
+.input-emoji-picker.show { display: grid; }
+.input-emoji-picker span {
+  font-size: 22px; cursor: pointer; text-align: center; padding: 4px; border-radius: 8px; transition: background .1s;
+}
+.input-emoji-picker span:hover { background: #f0f0f0; }
+
 @keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes floatHeart{
   0%  {opacity:1;transform:translateX(-50%) scale(1)   translateY(0)}
@@ -700,6 +731,20 @@ html,body{
     <button class="btn-close-reply" onclick="cancelReply()">✕</button>
   </div>
 
+  <div class="input-emoji-picker" id="input-emoji-picker">
+    <span onclick="insertEmoji('😀')">😀</span><span onclick="insertEmoji('😂')">😂</span>
+    <span onclick="insertEmoji('🥰')">🥰</span><span onclick="insertEmoji('😍')">😍</span>
+    <span onclick="insertEmoji('👍')">👍</span><span onclick="insertEmoji('🌹')">🌹</span>
+    <span onclick="insertEmoji('👏')">👏</span><span onclick="insertEmoji('🔥')">🔥</span>
+    <span onclick="insertEmoji('ش')">❤️</span><span onclick="insertEmoji(' غ')">💔</span>
+    <span onclick="insertEmoji(' س')"> إس</span><span onclick="insertEmoji(' ص')"> أ</span>
+    <span onclick="insertEmoji(' غ')"> ع</span><span onclick="insertEmoji(' ف')"> ق</span>
+    <span onclick="insertEmoji(' ظ')"> ع</span><span onclick="insertEmoji(' غ')"> ف</span>
+    <span onclick="insertEmoji(' ق')"> ك</span><span onclick="insertEmoji(' ل')"> م</span>
+    <span onclick="insertEmoji(' ن')"> هـ</span><span onclick="insertEmoji(' و')"> ي</span>
+    <span onclick="insertEmoji('🎉')">🎉</span>
+  </div>
+
   <div class="img-preview-wrap" id="img-preview-wrap">
     <div class="img-preview-main">
       <img id="img-preview-main-el" src="" alt="">
@@ -728,6 +773,7 @@ html,body{
     <div class="input-wrap">
       <button class="btn-attach" onclick="document.getElementById('file-chooser').click()" title="إرفاق ملف">📎</button>
       <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
+      <button class="btn-emoji-input" onclick="toggleInputEmojiPicker(event)" title="إيموجي">😀</button>
       <div class="rec-timer" id="rec-timer">
         <div class="rec-dot"></div>
         <span id="rec-time">0:00</span>
@@ -816,6 +862,21 @@ function openImgModal(src){ $('modal-img').src=src; $('img-modal').classList.add
 function closeImgModal(){ $('img-modal').classList.remove('open'); }
 function initFirebase(){ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); storage=firebase.storage(); }
 
+// دوال الـ Emoji Picker الجديد بداخل الـ Input
+function toggleInputEmojiPicker(event) {
+  if(event) event.stopPropagation();
+  $('input-emoji-picker').classList.toggle('show');
+}
+function insertEmoji(emoji) {
+  const input = $('msg-input');
+  input.value += emoji;
+  $('input-emoji-picker').classList.remove('show');
+  input.focus();
+}
+document.addEventListener('click', () => {
+  $('input-emoji-picker').classList.remove('show');
+});
+
 async function joinRoom(){
   const name=$('name-input').value.trim();
   const room=$('room-input').value.trim().replace(/\s+/g,'');
@@ -825,7 +886,7 @@ async function joinRoom(){
   const btn=$('join-btn'); btn.disabled=true; btn.textContent='جاري الدخول...';
   try{ initFirebase(); } catch(e){ err.textContent='خطأ في تهيئة Firebase'; btn.disabled=false; return; }
 
-  myName=name; myId=genId(); roomId=room; isInitialLoad=true;
+  myName=name; myId=genId(); roomId=room; isInitialLoad=true; allMessages = {};
   messagesRef          = db.ref(`rooms/${roomId}/messages`);
   presenceRef          = db.ref(`rooms/${roomId}/presence/${myName}`);
   typingRef            = db.ref(`rooms/${roomId}/typing/${myId}`);
@@ -900,11 +961,15 @@ function setupListeners(){
     area.innerHTML = `<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">🗑️</div><p>تم مسح المحادثة</p></div>`;
   });
 
-  messagesRef.once('value', () => { isInitialLoad=false; });
+  messagesRef.once('value', () => { isInitialLoad=false; renderAllSortedMessages(); });
   messagesRef.on('child_added', snap => {
-    const msg=snap.val(); appendMessage(msg, snap.key);
-    if (!isInitialLoad && msg.type!=='system' && msg.senderName!==myName) {
-      playNotificationSound(); markDelivered(snap.key, msg);
+    const msg=snap.val();
+    allMessages[snap.key] = msg;
+    if (!isInitialLoad) {
+      renderAllSortedMessages();
+      if (msg.type!=='system' && msg.senderName!==myName) {
+        playNotificationSound(); markDelivered(snap.key, msg);
+      }
     }
   });
 
@@ -925,52 +990,33 @@ function setupListeners(){
     if (data && data.key) {
       pinnedMsgKey = data.key; pinnedMsgText = data.text || 'رسالة مثبتة';
       $('pin-text').textContent = pinnedMsgText; $('pin-bar').classList.add('show');
-      document.getElementById('chat-screen').classList.add('has-pin');
     } else {
       pinnedMsgKey = null; $('pin-bar').classList.remove('show');
-      document.getElementById('chat-screen').classList.remove('has-pin');
     }
   });
 }
 
-function toggleMessageActions(key, event) {
-  if (event) event.stopPropagation();
-  const currentRow = document.getElementById(`msg-row-${key}`);
-  const previousRow = activeMessageKey ? document.getElementById(`msg-row-${activeMessageKey}`) : null;
+// دالة جديدة كلياً لضمان ترتيب الرسائل تصاعدياً بحسب الوقت ومنع العشوائية تماماً بعد إعادة الدخول
+function renderAllSortedMessages() {
+  const area = $('messages-area'); if (!area) return;
+  area.innerHTML = '';
 
-  if (previousRow && activeMessageKey !== key) previousRow.classList.remove('active-actions');
+  const sortedArray = Object.entries(allMessages).sort((a, b) => (a[1].ts || 0) - (b[1].ts || 0));
 
-  if (activeMessageKey === key) {
-    if (currentRow) currentRow.classList.remove('active-actions'); activeMessageKey = null;
-  } else {
-    if (currentRow) currentRow.classList.add('active-actions'); activeMessageKey = key;
+  if (sortedArray.length === 0) {
+    area.innerHTML = `<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>`;
+    return;
   }
+
+  sortedArray.forEach(([key, msg]) => {
+    buildAndAppendHtml(msg, key, area);
+  });
+
+  if (isAtBottom) { requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; }); }
 }
 
-document.addEventListener('click', () => {
-  if (activeMessageKey) {
-    const currentRow = document.getElementById(`msg-row-${activeMessageKey}`);
-    if (currentRow) currentRow.classList.remove('active-actions'); activeMessageKey = null;
-  }
-});
-
-function markAsRead() { if (roomId && myId) db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now()); }
-function markDelivered(key, msg) { if (key && msg.senderName !== myName) { const tick = document.getElementById('tick-' + key); if (tick) { tick.textContent = '✓✓'; tick.classList.add('tick-delivered'); } } }
-
-function initiateReply(senderName, text, targetKey = null) {
-  currentReplyTarget = { senderName, text, key: targetKey };
-  $('reply-preview-sender').textContent = `الرد على ${senderName}`;
-  $('reply-preview-text').textContent   = text || '[ملف / ميديا]';
-  $('chat-screen').classList.add('has-reply'); $('msg-input').focus();
-}
-function cancelReply() { currentReplyTarget = null; $('chat-screen').classList.remove('has-reply'); }
-
-function appendMessage(msg, key){
-  const area=$('messages-area'); const empty=$('empty-state'); if(empty) empty.remove();
+function buildAndAppendHtml(msg, key, area) {
   const div=document.createElement('div');
-
-  if (key && msg.type !== 'system') allMessages[key] = msg;
-
   if (msg.type==='system') {
     div.className='system-msg'; div.textContent=msg.text;
   } else {
@@ -1009,7 +1055,6 @@ function appendMessage(msg, key){
 
     const escapedText = msg.text ? msg.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n') : '';
 
-    // بناء الأزرار السريعة بداخل متغير نصي لحماية دالة الدخول
     const actionsGroupHtml = `
       <div class="msg-actions-group" onclick="event.stopPropagation()">
         <button class="msg-action-btn" onclick="initiateReply('${esc(msg.senderName)}', '${escapedText}', '${key}')" title="رد">↩</button>
@@ -1035,7 +1080,6 @@ function appendMessage(msg, key){
     const imgEl = div.querySelector('.chat-image'); if (imgEl) imgEl.addEventListener('click', () => openImgModal(msg.fileUrl));
     const quoteEl = div.querySelector('.reply-quotation'); if (quoteEl) quoteEl.addEventListener('click', e => { e.stopPropagation(); const tk = quoteEl.dataset.targetkey; if (tk) jumpToMsg(tk); });
 
-    // ميزة السحب للرد Swipe to Reply
     const msgRow = div.querySelector('.msg-row');
     if (msgRow) {
       let startX = 0, startY = 0, swiping = false;
@@ -1058,13 +1102,41 @@ function appendMessage(msg, key){
       });
     }
   }
-
   area.appendChild(div);
-  if (isAtBottom) { requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; }); }
-  else if (!isInitialLoad) { unreadCount++; updateBadge(); $('btn-scroll-down').classList.add('show'); }
-
-  if (key) db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => renderReactions(key, snap.val() || {}));
+  db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => renderReactions(key, snap.val() || {}));
 }
+
+function toggleMessageActions(key, event) {
+  if (event) event.stopPropagation();
+  const currentRow = document.getElementById(`msg-row-${key}`);
+  const previousRow = activeMessageKey ? document.getElementById(`msg-row-${activeMessageKey}`) : null;
+
+  if (previousRow && activeMessageKey !== key) previousRow.classList.remove('active-actions');
+
+  if (activeMessageKey === key) {
+    if (currentRow) currentRow.classList.remove('active-actions'); activeMessageKey = null;
+  } else {
+    if (currentRow) currentRow.classList.add('active-actions'); activeMessageKey = key;
+  }
+}
+
+document.addEventListener('click', () => {
+  if (activeMessageKey) {
+    const currentRow = document.getElementById(`msg-row-${activeMessageKey}`);
+    if (currentRow) currentRow.classList.remove('active-actions'); activeMessageKey = null;
+  }
+});
+
+function markAsRead() { if (roomId && myId) db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now()); }
+function markDelivered(key, msg) { if (key && msg.senderName !== myName) { const tick = document.getElementById('tick-' + key); if (tick) { tick.textContent = '✓✓'; tick.classList.add('tick-delivered'); } } }
+
+function initiateReply(senderName, text, targetKey = null) {
+  currentReplyTarget = { senderName, text, key: targetKey };
+  $('reply-preview-sender').textContent = `الرد على ${senderName}`;
+  $('reply-preview-text').textContent   = text || '[ملف / ميديا]';
+  $('chat-screen').classList.add('has-reply'); $('msg-input').focus();
+}
+function cancelReply() { currentReplyTarget = null; $('chat-screen').classList.remove('has-reply'); }
 
 async function sendMessage(){
   const input=$('msg-input'); const text=input.value.trim(); if (!text && !currentReplyTarget) return; if (!messagesRef) return;
@@ -1212,12 +1284,10 @@ function jumpToMsg(key) {
   if (b) { b.style.outline = '2px solid var(--accent)'; b.style.boxShadow = '0 0 12px rgba(16, 163, 127, 0.4)'; setTimeout(() => { b.style.outline = ''; b.style.boxShadow = ''; }, 1800); }
 }
 
-// دالة النسخ المُصلحة والمضمونة للرسائل الكبيرة والمقسّمة
 function copyToClipboard(text, event) {
   if (event) event.stopPropagation();
   if (!text) return;
   
-  // فك تشفير السطور المكسورة للرسائل الكبيرة
   const cleanText = text.replace(/\\n/g, '\n').replace(/\\'/g, "'");
 
   if (navigator.clipboard && window.isSecureContext) {
@@ -1257,7 +1327,7 @@ function updateBadge() { const badge = $('unread-badge'); if (unreadCount > 0) {
 
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
-  try { await db.ref(`rooms/${roomId}/clearSignal`).set({ by: myName, ts: Date.now() }); await db.ref(`rooms/${roomId}/messages`).remove(); showToast('تم مسح المحادثة للجميع 🗑️'); } catch(e){}
+  try { await db.ref(`rooms/${roomId}/clearSignal`).set({ by: myName, ts: Date.now() }); await db.ref(`rooms/${roomId}/messages`).remove(); allMessages = {}; showToast('تم مسح المحادثة للجميع 🗑️'); } catch(e){}
 }
 
 async function leaveRoom(){

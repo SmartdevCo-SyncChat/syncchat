@@ -98,7 +98,7 @@
             const name = usernameInput.value.trim();
             
             if (name === "") {
-                alert("برجاء إدخال اسم صحصح أولاً!");
+                alert("برجاء إدخال اسم صحيح أولاً!");
                 return;
             }
 
@@ -126,13 +126,13 @@
             // هيكل الأزرار السريعة الذكية (رد، نسخ، تثبيت)
             const actionsGroupHtml = `
                 <div class="actions-group absolute -top-8 left-2 bg-white border border-slate-100 rounded-lg shadow-md flex items-center p-1 gap-1 z-10 transition-all duration-200">
-                    <button onclick="replyMessage(this)" class="p-1 px-2 text-xs text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded" title="رد">
+                    <button onclick="replyMessage(this, event)" class="p-1 px-2 text-xs text-slate-500 hover:text-blue-600 hover:bg-slate-50 rounded" title="رد">
                         <i class="fas fa-reply"></i>
                     </button>
-                    <button onclick="copyMessage(this)" class="p-1 px-2 text-xs text-slate-500 hover:text-green-600 hover:bg-slate-50 rounded" title="نسخ">
+                    <button onclick="copyMessage(this, event)" class="p-1 px-2 text-xs text-slate-500 hover:text-green-600 hover:bg-slate-50 rounded" title="نسخ">
                         <i class="fas fa-copy"></i>
                     </button>
-                    <button onclick="pinMessage(this)" class="p-1 px-2 text-xs text-slate-500 hover:text-amber-500 hover:bg-slate-50 rounded" title="تثبيت">
+                    <button onclick="pinMessage(this, event)" class="p-1 px-2 text-xs text-slate-500 hover:text-amber-500 hover:bg-slate-50 rounded" title="تثبيت">
                         <i class="fas fa-thumbtack"></i>
                     </button>
                 </div>
@@ -146,7 +146,7 @@
                 <span class="text-xs text-slate-400 px-2">${currentUser}</span>
                 <div class="message-bubble relative bg-blue-600 text-white p-3.5 rounded-2xl rounded-tl-none shadow-sm cursor-pointer transition-all duration-200" onclick="toggleMobileActions(this)">
                     ${actionsGroupHtml}
-                    <p class="text-sm leading-relaxed break-words">${text}</p>
+                    <p class="text-sm leading-relaxed break-words"><span class="message-text">${text}</span></p>
                 </div>
                 <span class="text-[10px] text-slate-400 px-2">${new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</span>
             `;
@@ -178,26 +178,32 @@
             }
         });
 
-        // دالة نسخ نص الرسالة للحافظة
-        function copyMessage(btn) {
+        // دالة نسخ نص الرسالة للحافظة (مُعدلة ومضمونة للرسائل الكبيرة)
+        function copyMessage(btn, event) {
+            event.stopPropagation(); // منع إغلاق القائمة عند الضغط على الزر نفسه
             const bubble = btn.closest('.message-bubble');
-            const text = bubble.querySelector('p').innerText;
+            const text = bubble.querySelector('.message-text').innerText;
+            
             navigator.clipboard.writeText(text).then(() => {
-                alert('تم نسخ النص إلى الحافظة!');
+                alert('تم نسخ النص بنجاح!');
                 bubble.classList.remove('show-actions');
+            }).catch(err => {
+                console.error('فشل النسخ: ', err);
             });
         }
 
         // دوال وهمية جاهزة للربط مستقبلاً بـ Firebase
-        function replyMessage(btn) {
+        function replyMessage(btn, event) {
+            event.stopPropagation();
             const bubble = btn.closest('.message-bubble');
-            const text = bubble.querySelector('p').innerText;
-            document.getElementById('message-input').value = `رداً على (${text}): `;
+            const text = bubble.querySelector('.message-text').innerText;
+            document.getElementById('message-input').value = `رداً على (${text.substring(0, 20)}...): `;
             document.getElementById('message-input').focus();
             bubble.classList.remove('show-actions');
         }
 
-        function pinMessage(btn) {
+        function pinMessage(btn, event) {
+            event.stopPropagation();
             alert('تم تثبيت الرسالة بنجاح!');
             btn.closest('.message-bubble').classList.remove('show-actions');
         }

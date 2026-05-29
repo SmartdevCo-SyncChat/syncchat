@@ -93,7 +93,7 @@ html,body{
 .peer-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;}
 .my-avatar-sm{width:28px;height:28px;border-radius:50%;background:#f4f4f4;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-2);flex-shrink:0;}
 .header-info{flex:1;min-width:0}
-.header-room{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-room(font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-sub{
   font-size:11px;color:var(--muted);
   margin-top:1px;
@@ -244,7 +244,8 @@ html,body{
 
 .chat-image{max-width:100%;max-height:200px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;}
 .file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.03);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid var(--border);margin-bottom:3px;}
-.system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;}
+.system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;display:flex;gap:6px;align-items:center;}
+.system-msg-ts{font-size:9.5px;opacity:.7;font-family:var(--font);}
 
 /* Scroll to bottom */
 .btn-scroll-down{
@@ -576,7 +577,7 @@ html,body{
 .upload-progress{
   position:fixed;bottom:64px;left:0;right:0;
   max-width:860px;margin:0 auto;height:3px;
-  background:rgba(16,163,127,.2);z-index:1001;display:none;
+  background:rgba(16,163,127,.2);z-index:1011;display:none;
 }
 .upload-progress-bar{height:100%;background:var(--accent);width:0%;transition:width .2s;border-radius:2px;}
 .upload-progress.show{display:block;}
@@ -629,6 +630,23 @@ html,body{
   font-size: 22px; cursor: pointer; text-align: center; padding: 4px; border-radius: 8px; transition: background .1s;
 }
 .input-emoji-picker span:hover { background: #f0f0f0; }
+
+/* لوحة التفاعل بالإيموجي عند الضغط المزدوج أو الطويل */
+.context-emoji-picker {
+  position: fixed;
+  background: #ffffff;
+  border: 1px solid #e5e5e5;
+  border-radius: 20px;
+  box-shadow: 0 5px 20px rgba(0,0,0,.15);
+  padding: 6px 10px;
+  display: none;
+  gap: 8px;
+  z-index: 5000;
+  align-items: center;
+}
+.context-emoji-picker.show { display: flex; }
+.context-emoji-picker span { font-size: 20px; cursor: pointer; transition: transform .1s; }
+.context-emoji-picker span:hover { transform: scale(1.25); }
 
 @keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
 @keyframes floatHeart{
@@ -738,7 +756,7 @@ html,body{
     <span onclick="insertEmoji('😍')">😍</span>
     <span onclick="insertEmoji('😊')">😊</span>
     <span onclick="insertEmoji('😎')">😎</span>
-    <span onclick="insertEmoji('🙈')">🙈</span>
+    <span onclick="insertEmoji('😡')">😡</span>
     
     <span onclick="insertEmoji('👍')">👍</span>
     <span onclick="insertEmoji('👌')">👌</span>
@@ -755,6 +773,15 @@ html,body{
     <span onclick="insertEmoji('☕')">☕</span>
     <span onclick="insertEmoji('🤝')">🤝</span>
     <span onclick="insertEmoji('🙏')">🙏</span>
+  </div>
+
+  <div class="context-emoji-picker" id="context-emoji-picker">
+    <span onclick="triggerContextReaction('❤️')">❤️</span>
+    <span onclick="triggerContextReaction('👍')">👍</span>
+    <span onclick="triggerContextReaction('😂')">😂</span>
+    <span onclick="triggerContextReaction('😮')">😮</span>
+    <span onclick="triggerContextReaction('😢')">😢</span>
+    <span onclick="triggerContextReaction('😡')">😡</span>
   </div>
 
   <div class="img-preview-wrap" id="img-preview-wrap">
@@ -827,6 +854,7 @@ let inactivityTimeout;
 let pinnedMsgKey   = null;
 let pinnedMsgText  = '';
 let allMessages    = {};   
+let currentContextMsgKey = null;
 const INACTIVITY_LIMIT = 2 * 60 * 1000;
 
 const $   = id => document.getElementById(id);
@@ -874,7 +902,7 @@ function openImgModal(src){ $('modal-img').src=src; $('img-modal').classList.add
 function closeImgModal(){ $('img-modal').classList.remove('open'); }
 function initFirebase(){ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); storage=firebase.storage(); }
 
-// دوال الـ Emoji Picker
+// دوال الـ Emoji Picker لخانه الإدخال
 function toggleInputEmojiPicker(event) {
   if(event) event.stopPropagation();
   $('input-emoji-picker').classList.toggle('show');
@@ -885,17 +913,17 @@ function insertEmoji(emoji) {
   $('input-emoji-picker').classList.remove('show');
   input.focus();
 }
+
+// إغلاق أي لوحة منبثقة عند الضغط العشوائي في الشاشة
 document.addEventListener('click', () => {
   $('input-emoji-picker').classList.remove('show');
+  $('context-emoji-picker').style.display = 'none';
 });
 
-// طلب إذن الإشعارات من المستخدم وصوت الخلفية لـ WebView / Capacitor للآيفون
 function requestNotificationPermission() {
   if (!('Notification' in window)) return;
   Notification.requestPermission().then(permission => {
-    if (permission === 'granted') {
-      setupDeviceToken();
-    }
+    if (permission === 'granted') { setupDeviceToken(); }
   });
 }
 
@@ -937,11 +965,13 @@ async function joinRoom(){
   $('header-room-id').textContent = 'غرفة: ' + roomId;
 
   setupListeners(); startInactivityTimer();
-  requestNotificationPermission(); // تفعيل طلب الإشعار والتوكن للآيفون
+  requestNotificationPermission();
 
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
   setTimeout(initScrollButton, 100);
+  
+  // حفظ رسالة النظام وتضمين الوقت الفعلي بداخل الـ Timestamp للفرز السليم
   await messagesRef.push({ type:'system', text:myName+' انضم إلى المحادثة', ts:Date.now() });
 }
 
@@ -994,9 +1024,7 @@ function setupListeners(){
     } else { bar.innerHTML = ''; }
   });
 
-  // الـ Listener المتطور لتفريغ الواجهة والمصفوفة فوراً عند قيام أي طرف بالمسح
-  db.ref(`rooms/${roomId}/clearSignal`).on('value', snap => {
-    if (!snap.exists()) return;
+  db.ref(`rooms/${roomId}/clearSignal`).on('child_added', snap => {
     allMessages = {}; 
     const area = $('messages-area'); 
     if (area) {
@@ -1057,7 +1085,9 @@ function renderAllSortedMessages() {
 function buildAndAppendHtml(msg, key, area) {
   const div=document.createElement('div');
   if (msg.type==='system') {
-    div.className='system-msg'; div.textContent=msg.text;
+    // عرض رسالة النظام مع إضافة وقت الانضمام أو المغادرة بدقة بجانبها
+    div.className='system-msg'; 
+    div.innerHTML=`<span>${esc(msg.text)}</span><span class="system-msg-ts">${fmt(msg.ts||Date.now())}</span>`;
   } else {
     const sent = msg.senderName === myName;
     div.className = 'msg-wrapper ' + (sent?'sent':'recv');
@@ -1105,7 +1135,7 @@ function buildAndAppendHtml(msg, key, area) {
       <div class="msg-row" data-key="${key}" id="msg-row-${key}">
         <div class="msg-bubble-wrap">
           ${senderNameHtml}
-          <div class="msg-bubble" onclick="toggleMessageActions('${key}', event)">
+          <div class="msg-bubble" onclick="toggleMessageActions('${key}', event)" oncontextmenu="showContextEmojiBar('${key}', event)">
             ${replyHtml}
             ${mediaHtml}
             ${msg.text ? `<span class="actual-msg-text">${esc(msg.text)}</span>` : ''}
@@ -1135,6 +1165,7 @@ function buildAndAppendHtml(msg, key, area) {
 
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
+      // تفاعل الضغط المزدوج الافتراضي
       bubble.addEventListener('dblclick', e => {
         e.preventDefault(); bubble.classList.add('tapped'); setTimeout(() => bubble.classList.remove('tapped'), 250);
         quickReact(key, '❤️', bubble);
@@ -1143,6 +1174,26 @@ function buildAndAppendHtml(msg, key, area) {
   }
   area.appendChild(div);
   db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => renderReactions(key, snap.val() || {}));
+}
+
+// عرض شريط الإيموجي المنبثق عند النقر المطول / كليك يمين
+function showContextEmojiBar(msgKey, event) {
+  event.preventDefault();
+  event.stopPropagation();
+  currentContextMsgKey = msgKey;
+  const picker = $('context-emoji-picker');
+  picker.style.display = 'flex';
+  picker.style.top = `${Math.min(event.clientY, window.innerHeight - 60)}px`;
+  picker.style.left = `${Math.min(event.clientX, window.innerWidth - 220)}px`;
+}
+
+function triggerContextReaction(emoji) {
+  if (currentContextMsgKey) {
+    const bubbleRow = document.getElementById(`msg-row-${currentContextMsgKey}`);
+    const bubbleEl = bubbleRow ? bubbleRow.querySelector('.msg-bubble') : null;
+    quickReact(currentContextMsgKey, emoji, bubbleEl);
+  }
+  $('context-emoji-picker').style.display = 'none';
 }
 
 function toggleMessageActions(key, event) {
@@ -1248,7 +1299,7 @@ async function startRecording() {
     mediaRecorder.ondataavailable = e => { if(e.data.size > 0) audioChunks.push(e.data); };
     mediaRecorder.onstop = async () => { stream.getTracks().forEach(t => t.stop()); const blob = new Blob(audioChunks, { type: mt }); await uploadVoice(blob, mt); };
     mediaRecorder.start(200); $('btn-voice').classList.add('recording'); $('btn-voice').textContent = '⏹'; $('rec-timer').classList.add('show'); $('msg-input').style.display = 'none';
-    recInterval = setInterval(() => { recSeconds++; const m = Math.floor(recSeconds/60), s = recSeconds % 60; $('rec-time').textContent = m + ':' + String(s).padStart(2,'0'); if (recSeconds >= 120) stopRecording(); }, 1000);
+    recInterval = setInterval(() => { recSeconds++; const mm = Math.floor(recSeconds/60), ss = recSeconds % 60; $('rec-time').textContent = mm + ':' + String(ss).padStart(2,'0'); if (recSeconds >= 120) stopRecording(); }, 1000);
   } catch(e) { showToast('تعذر الوصول للميكروفون ❌'); }
 }
 function stopRecording() { if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop(); clearInterval(recInterval); $('btn-voice').classList.remove('recording'); $('btn-voice').textContent = '🎤'; $('rec-timer').classList.remove('show'); $('msg-input').style.display = ''; }
@@ -1296,7 +1347,7 @@ function toggleVoicePlay(btn, event) {
   const audio = new Audio(url); currentAudio = audio; currentPlayBtn = btn; btn.textContent = '⏸';
   audio.ontimeupdate = () => {
     const idx = Math.floor((audio.duration ? audio.currentTime / audio.duration : 0) * bars.length); bars.forEach((b,i) => b.classList.toggle('played', i < idx));
-    const rem = audio.duration - audio.currentTime; if (!isNaN(rem)) { const m = Math.floor(rem/60), s = Math.floor(rem%60); durEl.textContent = m + ':' + String(s).padStart(2,'0'); }
+    const rem = audio.duration - audio.currentTime; if (!isNaN(rem)) { const mm = Math.floor(rem/60), ss = Math.floor(rem%60); durEl.textContent = mm + ':' + String(ss).padStart(2,'0'); }
   };
   audio.onended = () => { btn.textContent = '▶'; bars.forEach(b => b.classList.remove('played')); currentAudio = null; currentPlayBtn = null; const tot = audio.duration||0; durEl.textContent = Math.floor(tot/60) + ':' + String(Math.floor(tot%60)).padStart(2,'0'); };
   audio.play().catch(() => { btn.textContent = '▶'; });
@@ -1355,13 +1406,13 @@ function initScrollButton() {
 function scrollToBottom() { const area = $('messages-area'); if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }); unreadCount = 0; updateBadge(); $('btn-scroll-down').classList.remove('show'); }
 function updateBadge() { const badge = $('unread-badge'); if (unreadCount > 0) { badge.textContent = unreadCount > 99 ? '99+' : unreadCount; $('btn-scroll-down').classList.add('add-unread'); } else { $('btn-scroll-down').classList.remove('add-unread'); } }
 
-// دالة الـ clearChat المحدثة لتصليح عطل المسح فوراً للطرفين
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
   try { 
     await db.ref(`rooms/${roomId}/messages`).remove(); 
     allMessages = {}; 
-    await db.ref(`rooms/${roomId}/clearSignal`).set({ by: myName, ts: Date.now() }); 
+    const newSignalRef = db.ref(`rooms/${roomId}/clearSignal`).push();
+    await newSignalRef.set({ by: myName, ts: Date.now() }); 
     showToast('تم مسح المحادثة للجميع 🗑️'); 
   } catch(e){ showToast('فشل مسح المحادثة ❌'); }
 }

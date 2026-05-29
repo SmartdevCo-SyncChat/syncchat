@@ -439,7 +439,7 @@ html,body{
 .upload-spin{width:12px;height:12px;border-radius:50%;border:2px solid var(--accent);border-top-color:transparent;animation:spin .7s linear infinite;}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* INPUT AREA - ترتيب جديد لدعم زر الإيموجي والميكروفون بشكل متناسق */
+/* INPUT AREA */
 .input-area {
   position:fixed;
   bottom:0;left:0;right:0;
@@ -731,7 +731,6 @@ html,body{
     <button class="btn-close-reply" onclick="cancelReply()">✕</button>
   </div>
 
-  <!-- لوحة اختيار الإيموجيات العامة في حقل الإدخال -->
   <div class="input-emoji-picker" id="input-emoji-picker">
     <span onclick="insertEmoji('😀')">😀</span>
     <span onclick="insertEmoji('😂')">😂</span>
@@ -757,7 +756,6 @@ html,body{
     <span onclick="insertEmoji('🤝')">🤝</span>
     <span onclick="insertEmoji('🙏')">🙏</span>
   </div>
-
 
   <div class="img-preview-wrap" id="img-preview-wrap">
     <div class="img-preview-main">
@@ -876,7 +874,7 @@ function openImgModal(src){ $('modal-img').src=src; $('img-modal').classList.add
 function closeImgModal(){ $('img-modal').classList.remove('open'); }
 function initFirebase(){ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); storage=firebase.storage(); }
 
-// دوال الـ Emoji Picker الجديد بداخل الـ Input
+// دوال الـ Emoji Picker
 function toggleInputEmojiPicker(event) {
   if(event) event.stopPropagation();
   $('input-emoji-picker').classList.toggle('show');
@@ -890,6 +888,31 @@ function insertEmoji(emoji) {
 document.addEventListener('click', () => {
   $('input-emoji-picker').classList.remove('show');
 });
+
+// طلب إذن الإشعارات من المستخدم وصوت الخلفية لـ WebView / Capacitor للآيفون
+function requestNotificationPermission() {
+  if (!('Notification' in window)) return;
+  Notification.requestPermission().then(permission => {
+    if (permission === 'granted') {
+      setupDeviceToken();
+    }
+  });
+}
+
+function setupDeviceToken() {
+  if (window.Capacitor) {
+    const { PushNotifications } = window.Capacitor.Plugins;
+    PushNotifications.requestPermissions().then(result => {
+      if (result.receive === 'granted') { PushNotifications.register(); }
+    });
+    PushNotifications.addListener('registration', token => {
+      if (roomId && myId) { db.ref(`rooms/${roomId}/tokens/${myId}`).set(token.value); }
+    });
+    PushNotifications.addListener('pushNotificationReceived', notification => {
+      playNotificationSound();
+    });
+  }
+}
 
 async function joinRoom(){
   const name=$('name-input').value.trim();
@@ -914,6 +937,8 @@ async function joinRoom(){
   $('header-room-id').textContent = 'غرفة: ' + roomId;
 
   setupListeners(); startInactivityTimer();
+  requestNotificationPermission(); // تفعيل طلب الإشعار والتوكن للآيفون
+
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
   setTimeout(initScrollButton, 100);
@@ -969,10 +994,14 @@ function setupListeners(){
     } else { bar.innerHTML = ''; }
   });
 
+  // الـ Listener المتطور لتفريغ الواجهة والمصفوفة فوراً عند قيام أي طرف بالمسح
   db.ref(`rooms/${roomId}/clearSignal`).on('value', snap => {
     if (!snap.exists()) return;
-    const area = $('messages-area'); if (!area) return;
-    area.innerHTML = `<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">🗑️</div><p>تم مسح المحادثة</p></div>`;
+    allMessages = {}; 
+    const area = $('messages-area'); 
+    if (area) {
+      area.innerHTML = `<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">🗑️</div><p>تم مسح المحادثة</p></div>`;
+    }
   });
 
   messagesRef.once('value', () => { isInitialLoad=false; renderAllSortedMessages(); });
@@ -1010,7 +1039,6 @@ function setupListeners(){
   });
 }
 
-// دالة جديدة كلياً لضمان ترتيب الرسائل تصاعدياً بحسب الوقت ومنع العشوائية تماماً بعد إعادة الدخول
 function renderAllSortedMessages() {
   const area = $('messages-area'); if (!area) return;
   area.innerHTML = '';
@@ -1022,10 +1050,7 @@ function renderAllSortedMessages() {
     return;
   }
 
-  sortedArray.forEach(([key, msg]) => {
-    buildAndAppendHtml(msg, key, area);
-  });
-
+  sortedArray.forEach(([key, msg]) => { buildAndAppendHtml(msg, key, area); });
   if (isAtBottom) { requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; }); }
 }
 
@@ -1124,9 +1149,7 @@ function toggleMessageActions(key, event) {
   if (event) event.stopPropagation();
   const currentRow = document.getElementById(`msg-row-${key}`);
   const previousRow = activeMessageKey ? document.getElementById(`msg-row-${activeMessageKey}`) : null;
-
   if (previousRow && activeMessageKey !== key) previousRow.classList.remove('active-actions');
-
   if (activeMessageKey === key) {
     if (currentRow) currentRow.classList.remove('active-actions'); activeMessageKey = null;
   } else {
@@ -1299,18 +1322,13 @@ function jumpToMsg(key) {
 }
 
 function copyToClipboard(text, event) {
-  if (event) event.stopPropagation();
-  if (!text) return;
-  
+  if (event) event.stopPropagation(); if (!text) return;
   const cleanText = text.replace(/\\n/g, '\n').replace(/\\'/g, "'");
-
   if (navigator.clipboard && window.isSecureContext) {
     navigator.clipboard.writeText(cleanText)
       .then(() => { showToast('تم نسخ نص الرسالة بنجاح 📋'); if(activeMessageKey) toggleMessageActions(activeMessageKey); })
       .catch(() => fallbackCopyText(cleanText));
-  } else {
-    fallbackCopyText(cleanText);
-  }
+  } else { fallbackCopyText(cleanText); }
 }
 
 function fallbackCopyText(text) {
@@ -1321,9 +1339,7 @@ function fallbackCopyText(text) {
   try {
     if (document.execCommand('copy')) showToast('تم نسخ نص الرسالة بنجاح 📋');
     else showToast('عذراً، فشل نسخ الرسالة ❌');
-  } catch (err) {
-    showToast('عذراً، المتصفح لا يدعم النسخ ❌');
-  }
+  } catch (err) { showToast('عذراً، المتصفح لا يدعم النسخ ❌'); }
   document.body.removeChild(ta);
   if(activeMessageKey) toggleMessageActions(activeMessageKey);
 }
@@ -1339,9 +1355,15 @@ function initScrollButton() {
 function scrollToBottom() { const area = $('messages-area'); if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }); unreadCount = 0; updateBadge(); $('btn-scroll-down').classList.remove('show'); }
 function updateBadge() { const badge = $('unread-badge'); if (unreadCount > 0) { badge.textContent = unreadCount > 99 ? '99+' : unreadCount; $('btn-scroll-down').classList.add('add-unread'); } else { $('btn-scroll-down').classList.remove('add-unread'); } }
 
+// دالة الـ clearChat المحدثة لتصليح عطل المسح فوراً للطرفين
 async function clearChat(){
   if(!confirm('سيتم حذف الرسائل للجميع، هل أنت متأكد؟')) return;
-  try { await db.ref(`rooms/${roomId}/clearSignal`).set({ by: myName, ts: Date.now() }); await db.ref(`rooms/${roomId}/messages`).remove(); allMessages = {}; showToast('تم مسح المحادثة للجميع 🗑️'); } catch(e){}
+  try { 
+    await db.ref(`rooms/${roomId}/messages`).remove(); 
+    allMessages = {}; 
+    await db.ref(`rooms/${roomId}/clearSignal`).set({ by: myName, ts: Date.now() }); 
+    showToast('تم مسح المحادثة للجميع 🗑️'); 
+  } catch(e){ showToast('فشل مسح المحادثة ❌'); }
 }
 
 async function leaveRoom(){

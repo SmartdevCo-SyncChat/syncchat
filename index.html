@@ -93,7 +93,7 @@ html,body{
 .peer-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:white;flex-shrink:0;}
 .my-avatar-sm{width:28px;height:28px;border-radius:50%;background:#f4f4f4;border:1px solid #d9d9d9;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text-2);flex-shrink:0;}
 .header-info{flex:1;min-width:0}
-.header-room(font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.header-room{font-size:14px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .header-sub{
   font-size:11px;color:var(--muted);
   margin-top:1px;
@@ -971,7 +971,6 @@ async function joinRoom(){
   $('chat-screen').classList.remove('hidden');
   setTimeout(initScrollButton, 100);
   
-  // حفظ رسالة النظام وتضمين الوقت الفعلي بداخل الـ Timestamp للفرز السليم
   await messagesRef.push({ type:'system', text:myName+' انضم إلى المحادثة', ts:Date.now() });
 }
 
@@ -1085,7 +1084,6 @@ function renderAllSortedMessages() {
 function buildAndAppendHtml(msg, key, area) {
   const div=document.createElement('div');
   if (msg.type==='system') {
-    // عرض رسالة النظام مع إضافة وقت الانضمام أو المغادرة بدقة بجانبها
     div.className='system-msg'; 
     div.innerHTML=`<span>${esc(msg.text)}</span><span class="system-msg-ts">${fmt(msg.ts||Date.now())}</span>`;
   } else {
@@ -1165,7 +1163,6 @@ function buildAndAppendHtml(msg, key, area) {
 
     const bubble = div.querySelector('.msg-bubble');
     if (bubble) {
-      // تفاعل الضغط المزدوج الافتراضي
       bubble.addEventListener('dblclick', e => {
         e.preventDefault(); bubble.classList.add('tapped'); setTimeout(() => bubble.classList.remove('tapped'), 250);
         quickReact(key, '❤️', bubble);
@@ -1176,7 +1173,6 @@ function buildAndAppendHtml(msg, key, area) {
   db.ref(`rooms/${roomId}/reactions/${key}`).on('value', snap => renderReactions(key, snap.val() || {}));
 }
 
-// عرض شريط الإيموجي المنبثق عند النقر المطول / كليك يمين
 function showContextEmojiBar(msgKey, event) {
   event.preventDefault();
   event.stopPropagation();

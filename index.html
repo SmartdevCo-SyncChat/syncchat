@@ -248,7 +248,7 @@ html,body{
 .system-msg{align-self:center;background:#f4f4f4;border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:8px 0;display:flex;gap:6px;align-items:center;}
 .system-msg-ts{font-size:9.5px;opacity:.7;font-family:var(--font);}
 
-/* Scroll to bottom */
+/* Scroll to bottom button */
 .btn-scroll-down{
   position:fixed;
   bottom:80px;
@@ -725,7 +725,7 @@ html,body{
     <span>جاري رفع الملف...</span>
   </div>
 
-  <div class="messages-wrap" style="position:relative;">
+  <div class="messages-wrap">
     <div class="messages-area" id="messages-area" onclick="if(document.activeElement===$('msg-input'))$('msg-input').blur()">
       <div class="empty-state" id="empty-state">
         <div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div>
@@ -856,6 +856,8 @@ let pinnedMsgKey   = null;
 let pinnedMsgText  = '';
 let allMessages    = {};   
 let currentContextMsgKey = null;
+let unreadCount = 0;
+let isAtBottom = true;
 const INACTIVITY_LIMIT = 2 * 60 * 1000;
 
 const $   = id => document.getElementById(id);
@@ -903,7 +905,6 @@ function openImgModal(src){ $('modal-img').src=src; $('img-modal').classList.add
 function closeImgModal(){ $('img-modal').classList.remove('open'); }
 function initFirebase(){ if(!firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG); db=firebase.database(); storage=firebase.storage(); }
 
-// دوال الـ Emoji Picker لخانه الإدخال
 function toggleInputEmojiPicker(event) {
   if(event) event.stopPropagation();
   $('input-emoji-picker').classList.toggle('show');
@@ -915,7 +916,6 @@ function insertEmoji(emoji) {
   input.focus();
 }
 
-// إغلاق أي لوحة منبثقة عند الضغط العشوائي في الشاشة
 document.addEventListener('click', () => {
   $('input-emoji-picker').classList.remove('show');
   $('context-emoji-picker').style.display = 'none';
@@ -970,7 +970,8 @@ async function joinRoom(){
 
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
-  setTimeout(initScrollButton, 100);
+  
+  initScrollButton();
   
   await messagesRef.push({ type:'system', text:myName+' انضم إلى المحادثة', ts:Date.now() });
 }
@@ -1032,19 +1033,31 @@ function setupListeners(){
     }
   });
 
-  messagesRef.once('value', () => { isInitialLoad=false; renderAllSortedMessages(); });
+  messagesRef.once('value', () => { 
+    isInitialLoad=false; 
+    renderAllSortedMessages(); 
+    setTimeout(scrollToBottom, 150);
+  });
+
   messagesRef.on('child_added', snap => {
     const msg=snap.val();
     allMessages[snap.key] = msg;
     if (!isInitialLoad) {
       renderAllSortedMessages();
       if (msg.type!=='system' && msg.senderName!==myName) {
-        playNotificationSound(); markDelivered(snap.key, msg);
+        playNotificationSound(); 
+        markDelivered(snap.key, msg);
+        if(!isAtBottom) {
+          unreadCount++;
+          updateBadge();
+        }
+      }
+      if (isAtBottom || msg.senderName === myName) {
+        setTimeout(scrollToBottom, 50);
       }
     }
   });
 
-  // الاستماع لحذف الرسائل الفردية من الـ Realtime Database لإزالتها فوراً
   messagesRef.on('child_removed', snap => {
     if (allMessages[snap.key]) {
       delete allMessages[snap.key];
@@ -1087,7 +1100,6 @@ function renderAllSortedMessages() {
   }
 
   sortedArray.forEach(([key, msg]) => { buildAndAppendHtml(msg, key, area); });
-  if (isAtBottom) { requestAnimationFrame(() => { area.scrollTop = area.scrollHeight; }); }
 }
 
 function buildAndAppendHtml(msg, key, area) {
@@ -1130,8 +1142,6 @@ function buildAndAppendHtml(msg, key, area) {
     }
 
     const escapedText = msg.text ? msg.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n') : '';
-
-    // إظهار زر الحذف 🗑️ فقط إذا كانت الرسالة مرسلة من المستخدم نفسه
     const deleteBtnHtml = sent ? `<button class="msg-action-btn delete-btn" onclick="deleteOneMessage('${key}', event)" title="حذف من عند الكل">🗑️</button>` : '';
 
     const actionsGroupHtml = `
@@ -1241,7 +1251,10 @@ async function sendMessage(){
 
   const payload = { type:'message', text, senderId:myId, senderName:myName, ts:Date.now() };
   if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
-  try { await messagesRef.push(payload); } catch(e) { showToast('فشل الإرسال ❌'); input.value=text; }
+  try { 
+    await messagesRef.push(payload); 
+    setTimeout(scrollToBottom, 50);
+  } catch(e) { showToast('فشل الإرسال ❌'); input.value=text; }
 }
 
 let pendingFiles = [];
@@ -1283,7 +1296,9 @@ async function uploadAndSend(file) {
     const url = await uploadToCloudinary(file, pct => { progBar.style.width = pct + '%'; });
     const payload = { type:'message', text:'', fileUrl: url, fileName: file.name, fileType: file.type, senderId: myId, senderName: myName, ts: Date.now() };
     if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
-    await messagesRef.push(payload); showToast('تم الإرسال ✅');
+    await messagesRef.push(payload); 
+    showToast('تم الإرسال ✅');
+    setTimeout(scrollToBottom, 50);
   } catch(e) { showToast('فشل الرفع ❌'); } finally { bar.classList.remove('show'); prog.classList.remove('show'); }
 }
 
@@ -1318,7 +1333,9 @@ async function uploadVoice(blob, mt) {
     const file = new File([blob], name, { type: mt }); const url = await uploadToCloudinary(file, () => {});
     const payload = { type:'message', text:'', fileUrl: url, fileName: name, fileType:'audio', voiceDuration: recSeconds, senderId:myId, senderName:myName, ts:Date.now() };
     if (currentReplyTarget) { payload.replyTo=currentReplyTarget; cancelReply(); }
-    await messagesRef.push(payload); showToast('تم إرسال الرسالة الصوتية ✅');
+    await messagesRef.push(payload); 
+    showToast('تم إرسال الرسالة الصوتية ✅');
+    setTimeout(scrollToBottom, 50);
   } catch(e) { showToast('فشل رفع الصوت ❌'); } finally { bar.classList.remove('show'); }
 }
 
@@ -1404,21 +1421,15 @@ function fallbackCopyText(text) {
   if(activeMessageKey) toggleMessageActions(activeMessageKey);
 }
 
-// دالة حذف رسالة واحدة محددة للجميع
 async function deleteOneMessage(key, event) {
   if (event) event.stopPropagation();
   if (!confirm('هل تريد حذف هذه الرسالة من عند الجميع؟')) return;
   try {
-    // حذف الرسالة من قاعدة البيانات
     await db.ref(`rooms/${roomId}/messages/${key}`).remove();
-    // حذف التفاعلات المرتبطة بالرسالة لضمان نظافة البيانات
     await db.ref(`rooms/${roomId}/reactions/${key}`).remove();
-    
-    // إذا كانت الرسالة المحذوفة هي المثبتة، قم بإلغاء التثبيت تلقائياً
     if (pinnedMsgKey === key) {
       await db.ref(`rooms/${roomId}/pinnedMsg`).remove();
     }
-    
     showToast('تم حذف الرسالة للجميع 🗑️');
     if (activeMessageKey === key) activeMessageKey = null;
   } catch (e) {
@@ -1426,15 +1437,31 @@ async function deleteOneMessage(key, event) {
   }
 }
 
-let unreadCount = 0, isAtBottom = true;
 function initScrollButton() {
   const area = $('messages-area'); if (!area) return;
   area.addEventListener('scroll', () => {
-    isAtBottom = (area.scrollHeight - area.scrollTop - area.clientHeight) < 60;
-    if (isAtBottom) { $('btn-scroll-down').classList.remove('show'); unreadCount = 0; updateBadge(); } else { $('btn-scroll-down').classList.add('show'); }
+    const diff = area.scrollHeight - area.scrollTop - area.clientHeight;
+    isAtBottom = diff < 100;
+    if (isAtBottom) { 
+      $('btn-scroll-down').classList.remove('show'); 
+      unreadCount = 0; 
+      updateBadge(); 
+    } else { 
+      $('btn-scroll-down').classList.add('show'); 
+    }
   }, { passive: true });
 }
-function scrollToBottom() { const area = $('messages-area'); if (area) area.scrollTo({ top: area.scrollHeight, behavior: 'smooth' }); unreadCount = 0; updateBadge(); $('btn-scroll-down').classList.remove('show'); }
+
+function scrollToBottom() { 
+  const area = $('messages-area'); 
+  if (area) {
+    area.scrollTop = area.scrollHeight;
+  }
+  unreadCount = 0; 
+  updateBadge(); 
+  $('btn-scroll-down').classList.remove('show'); 
+}
+
 function updateBadge() { const badge = $('unread-badge'); if (unreadCount > 0) { badge.textContent = unreadCount > 99 ? '99+' : unreadCount; $('btn-scroll-down').classList.add('add-unread'); } else { $('btn-scroll-down').classList.remove('add-unread'); } }
 
 async function clearChat(){

@@ -162,6 +162,7 @@ html,body{
   transition:background .15s,color .15s;
 }
 .msg-action-btn:hover{background:#f0f0f0;color:#0d0d0d;}
+.msg-action-btn.delete-btn:hover{background:#fee2e2;color:var(--danger);}
 
 @media (min-width: 769px) {
   .msg-row:hover .msg-actions-group {
@@ -1043,6 +1044,14 @@ function setupListeners(){
     }
   });
 
+  // الاستماع لحذف الرسائل الفردية من الـ Realtime Database لإزالتها فوراً
+  messagesRef.on('child_removed', snap => {
+    if (allMessages[snap.key]) {
+      delete allMessages[snap.key];
+      renderAllSortedMessages();
+    }
+  });
+
   db.ref(`rooms/${roomId}/readBy`).on('value', snap => {
     const data = snap.val() || {}; const peerRead = Object.entries(data).find(([id]) => id !== myId);
     if (peerRead) {
@@ -1122,11 +1131,15 @@ function buildAndAppendHtml(msg, key, area) {
 
     const escapedText = msg.text ? msg.text.replace(/\\/g, '\\\\').replace(/'/g, "\\'").replace(/"/g, '&quot;').replace(/\n/g, '\\n') : '';
 
+    // إظهار زر الحذف 🗑️ فقط إذا كانت الرسالة مرسلة من المستخدم نفسه
+    const deleteBtnHtml = sent ? `<button class="msg-action-btn delete-btn" onclick="deleteOneMessage('${key}', event)" title="حذف من عند الكل">🗑️</button>` : '';
+
     const actionsGroupHtml = `
       <div class="msg-actions-group" onclick="event.stopPropagation()">
         <button class="msg-action-btn" onclick="initiateReply('${esc(msg.senderName)}', '${escapedText}', '${key}')" title="رد">↩</button>
         ${msg.text ? `<button class="msg-action-btn" onclick="copyToClipboard('${escapedText}', event)" title="نسخ">📋</button>` : ''}
         <button class="msg-action-btn" onclick="pinnedMsgKey==='${key}' ? unpinMessage(event) : pinMessage('${key}', '${escapedText}', event)" title="تثبيت">📌</button>
+        ${deleteBtnHtml}
       </div>`;
 
     div.innerHTML = `
@@ -1389,6 +1402,28 @@ function fallbackCopyText(text) {
   } catch (err) { showToast('عذراً، المتصفح لا يدعم النسخ ❌'); }
   document.body.removeChild(ta);
   if(activeMessageKey) toggleMessageActions(activeMessageKey);
+}
+
+// دالة حذف رسالة واحدة محددة للجميع
+async function deleteOneMessage(key, event) {
+  if (event) event.stopPropagation();
+  if (!confirm('هل تريد حذف هذه الرسالة من عند الجميع؟')) return;
+  try {
+    // حذف الرسالة من قاعدة البيانات
+    await db.ref(`rooms/${roomId}/messages/${key}`).remove();
+    // حذف التفاعلات المرتبطة بالرسالة لضمان نظافة البيانات
+    await db.ref(`rooms/${roomId}/reactions/${key}`).remove();
+    
+    // إذا كانت الرسالة المحذوفة هي المثبتة، قم بإلغاء التثبيت تلقائياً
+    if (pinnedMsgKey === key) {
+      await db.ref(`rooms/${roomId}/pinnedMsg`).remove();
+    }
+    
+    showToast('تم حذف الرسالة للجميع 🗑️');
+    if (activeMessageKey === key) activeMessageKey = null;
+  } catch (e) {
+    showToast('فشل حذف الرسالة ❌');
+  }
 }
 
 let unreadCount = 0, isAtBottom = true;

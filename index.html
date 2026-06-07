@@ -56,6 +56,7 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .btn-hdr.clear{color:var(--muted)}
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
 .btn-hdr.search-btn{color:var(--muted)}
+.btn-hdr.call-btn{color:#fff; background: var(--accent); border-color: var(--accent);}
 
 /* pin bar */
 .pin-bar{background:#fffbea;border-bottom:1.5px solid #f0d060;border-right:4px solid var(--accent);padding:8px 14px;display:none;align-items:center;gap:10px;cursor:pointer;min-height:40px;flex-shrink:0}
@@ -97,7 +98,7 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .msg-wrapper{display:flex;width:100%;animation:fadeUp .18s ease}
 .msg-wrapper.sent { justify-content: flex-start; }
 .msg-wrapper.recv { justify-content: flex-end; }
-.msg-row{display:flex;max-width:78%;width:auto;position:relative;transition:transform .15s ease}
+.msg-row{display:flex;max-width:78%;width:auto;position:relative;transition:transform .15s cubic-bezier(0.1, 0.8, 0.3, 1)}
 .msg-wrapper.sent .msg-row{flex-direction:row}
 .msg-wrapper.recv .msg-row{flex-direction:row-reverse}
 .msg-bubble-wrap{display:flex;flex-direction:column;width:auto}
@@ -117,7 +118,7 @@ transition:background .15s;
 .msg-wrapper.sent .reply-quotation-sender{color:#fff}
 .reply-quotation-text{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:220px;display:block;font-size:11px}
 
-/* التعديل هنا: جعل حجم فقاعة الرسالة طبيعياً ومرناً تماماً كـ واتساب */
+/* فقاعة الرسالة طبيعية ومرنة */
 .msg-bubble{
 padding:8px 12px 18px; border-radius:12px; font-size:14px; line-height:1.4;
 word-break:break-word; white-space:pre-wrap; position:relative;
@@ -133,8 +134,23 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .tick-delivered{color:rgba(255,255,255,.8)}
 .tick-read{color:#53bdeb}
 
-/* media */
-.chat-image{max-width:100%;max-height:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px}
+/* تليجرام أنيميشن للإيموجي المنفرد */
+.telegram-emoji {
+  animation: telegramBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
+  display: inline-block;
+  font-size: 42px !important;
+  line-height: 1 !important;
+  padding: 4px 8px !important;
+}
+@keyframes telegramBounce {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.1); }
+  70% { transform: scale(0.9); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* ميديا */
+.chat-image, .chat-video{max-width:100%;max-height:220px;border-radius:10px;display:block;cursor:pointer;margin-bottom:3px;outline:none}
 .file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid rgba(0,0,0,.08);margin-bottom:3px}
 .msg-wrapper.sent .file-attachment{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.2)}
 
@@ -220,7 +236,7 @@ position:relative;z-index:10;
 .rec-dot{width:7px;height:7px;border-radius:50%;background:var(--danger);animation:recP .8s infinite;flex-shrink:0}
 @keyframes recP{0%,100%{transform:scale(1)}50%{transform:scale(1.3)}}
 
-/* تعديل زر الارسال ليكون جهة اليمين وبتصميم متناسق */
+/* زر الإرسال */
 .btn-send{width:40px;height:40px;border:none;border-radius:50%;background:var(--accent);color:#fff;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:background .15s}
 .btn-send:hover{background:var(--accent-h)}
 .btn-send svg{width:16px;height:16px;fill:#fff;}
@@ -255,6 +271,20 @@ position:relative;z-index:10;
 .btn-send-img{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer}
 .btn-cancel-img{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-family:var(--font);cursor:pointer}
 
+/* voice call modal overlay */
+.call-modal{position:fixed;inset:0;background:rgba(13,13,13,0.95);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:var(--font)}
+.call-modal.open{display:flex}
+.call-avatar{width:100px;height:100px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;margin-bottom:20px;box-shadow:0 0 20px rgba(16,163,127,0.4)}
+.call-avatar.ringing{animation:callPulse 1.5s infinite}
+@keyframes callPulse{0%{box-shadow:0 0 0 0 rgba(16,163,127,0.7)}70%{box-shadow:0 0 0 25px rgba(16,163,127,0)}100%{box-shadow:0 0 0 0 rgba(16,163,127,0)}}
+.call-name{font-size:22px;font-weight:600;margin-bottom:8px}
+.call-status{font-size:14px;color:var(--muted);margin-bottom:40px}
+.call-actions{display:flex;gap:30px}
+.btn-call-act{width:56px;height:56px;border-radius:50%;border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s}
+.btn-call-act:active{transform:scale(0.9)}
+.btn-call-act.accept{background:var(--accent)}
+.btn-call-act.decline{background:var(--danger)}
+
 /* toast */
 .toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#0d0d0d;color:#fff;padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:9999;white-space:nowrap}
 .toast.show{opacity:1}
@@ -264,19 +294,13 @@ position:relative;z-index:10;
 .img-modal.open{display:flex}
 .img-modal img{max-width:100%;max-height:90vh;border-radius:8px}
 .img-modal-close{position:absolute;top:20px;right:20px;width:36px;height:36px;border-radius:50%;background:rgba(255,255,255,.15);border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center}
-
-/* animations */
-@keyframes bubbleIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
-@keyframes floatHeart{0%{opacity:1;transform:translateX(-50%) scale(1) translateY(0)}60%{opacity:1;transform:translateX(-50%) scale(1.5) translateY(-24px)}100%{opacity:0;transform:translateX(-50%) scale(1.2) translateY(-40px)}}
-.msg-bubble.tapped{filter:brightness(.92)}
 </style>
 </head>
 <body>
 
 <div id="app">
   <div id="login-screen" class="screen">
-    <div class="login-wrap">
-      <div class="login-card">
+    <div class="login-wrap">      <div class="login-card">
         <div class="brand">
           <div class="brand-name">Chat<span>BFT</span></div>
           <div class="brand-sub">محادثة فورية آمنة</div>
@@ -307,6 +331,7 @@ position:relative;z-index:10;
         </div>
       </div>
       <div style="display:flex;align-items:center;gap:6px;margin-right:auto">
+        <button class="btn-hdr call-btn" onclick="startAudioCall()" title="مكالمة صوتية">📞 مكالمة</button>
         <div class="my-avatar-sm" id="my-avatar">ME</div>
       </div>
       <div class="header-actions">
@@ -414,6 +439,16 @@ position:relative;z-index:10;
     </div>
   </div>
 
+  <div id="call-modal" class="call-modal">
+    <div class="call-avatar ringing" id="call-avatar-el">📞</div>
+    <div class="call-name" id="call-username">الطرف الآخر</div>
+    <div class="call-status" id="call-status-text">جاري الاتصال...</div>
+    <div class="call-actions">
+      <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">📞</button>
+      <button class="btn-call-act decline" onclick="endCall()">挂</button>
+    </div>
+  </div>
+
   <div class="toast" id="toast"></div>
   <div class="img-modal" id="img-modal" onclick="closeImgModal()">
     <button class="img-modal-close">✕</button>
@@ -436,8 +471,8 @@ const CLOUDINARY_CLOUD='db03wdg7v', CLOUDINARY_PRESET='ekk7u3hb';
 
 /* ══ STATE ══ */
 let db;
-let myName,myId,roomId;
-let messagesRef,presenceRef,typingRef,roomPresenceRef;
+let myName,myId,roomId,peerName=null;
+let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef;
 let currentActivePeerRef=null, peerTypingListener=null;
 let typingTimeout, inactivityTimeout;
 let isInitialLoad=true;
@@ -459,6 +494,13 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'
 const initials=n=>n.trim().slice(0,2).toUpperCase();
 const genId=()=>Math.random().toString(36).slice(2,10);
 const fmt=ts=>new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
+
+// دالة فحص الإيموجي المنفرد لتليجرام أنيميشن
+function isSingleEmoji(text) {
+  if(!text) return false;
+  const emojiRegex = /^[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{1F900}-\u{1F9FF}\u{1F300}-\u{1F5FF}\u{1F500}-\u{1F5FF}\u{1F900}-\u{1F9FF}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F251}\u{2B50}\u{2B55}\u{231A}\u{231B}\u{23F0}\u{23F3}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}\u{25FC}\u{25FD}\u{25FE}]$/u;
+  return emojiRegex.test(text.trim());
+}
 
 function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800)}
 function openImgModal(src){$('modal-img').src=src;$('img-modal').classList.add('open')}
@@ -506,6 +548,7 @@ async function joinRoom(){
   presenceRef=db.ref(`rooms/${roomId}/presence/${myName}`);
   typingRef=db.ref(`rooms/${roomId}/typing/${myId}`);
   roomPresenceRef=db.ref(`rooms/${roomId}/presence`);
+  callRef=db.ref(`rooms/${roomId}/call`);
 
   await presenceRef.set({name:myName,online:true,joinedAt:Date.now()});
   presenceRef.onDisconnect().set({name:myName,online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
@@ -515,6 +558,7 @@ async function joinRoom(){
   $('header-room-id').textContent='غرفة: '+roomId;
 
   setupListeners();
+  setupCallListener();
   startInactivityTimer();
   initScrollButton();
 
@@ -531,10 +575,11 @@ function setupListeners(){
     const dot=$('online-dot'),txt=$('peer-status'),pav=$('peer-avatar');
     const peers=Object.entries(data).filter(([k,u])=>u&&u.name&&u.name!==myName);
     if(currentActivePeerRef){currentActivePeerRef.off();currentActivePeerRef=null}
-    if(!peers.length){dot.classList.remove('on');txt.textContent='في انتظار الطرف الآخر...';pav.textContent='؟';return}
+    if(!peers.length){peerName=null;dot.classList.remove('on');txt.textContent='في انتظار الطرف الآخر...';pav.textContent='؟';return}
     const online=peers.filter(([,u])=>u.online===true);
     const offline=peers.filter(([,u])=>u.online!==true);
     const [ck,cu]=(online.length?online.sort((a,b)=>(b[1].joinedAt||0)-(a[1].joinedAt||0)):offline.sort((a,b)=>(b[1].lastSeen||0)-(a[1].lastSeen||0)))[0];
+    peerName=cu.name;
     pav.textContent=initials(cu.name||'؟');
     currentActivePeerRef=db.ref(`rooms/${roomId}/presence/${ck}`);
     currentActivePeerRef.on('value',ps=>{
@@ -659,7 +704,7 @@ function appendMsgToDOM(msg,key,areaEl){
     div.className='msg-wrapper '+(sent?'sent':'recv');
     div.setAttribute('data-key',key);
 
-    /* media */
+    /* ميديا (دعم الفيديو + الصور + الصوت + الملفات) */
     let mediaHtml='';
     if(msg.fileUrl){
       if(msg.fileType==='audio'||(msg.fileType&&msg.fileType.startsWith('audio/'))){
@@ -668,6 +713,8 @@ function appendMsgToDOM(msg,key,areaEl){
         mediaHtml=`<div class="voice-msg" data-url="${esc(msg.fileUrl)}"><button class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform">${bars}</div></div><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
       }else if(msg.fileType&&msg.fileType.startsWith('image/')){
         mediaHtml=`<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
+      }else if(msg.fileType&&msg.fileType.startsWith('video/')){
+        mediaHtml=`<video src="${esc(msg.fileUrl)}" class="chat-video" controls playsinline></video>`;
       }else{
         mediaHtml=`<a href="${esc(msg.fileUrl)}" target="_blank" class="file-attachment"><span style="font-size:18px">📄</span><div><div style="font-size:12px;font-weight:700">${esc(msg.fileName||'ملف')}</div><div style="font-size:10px;opacity:.7">${(msg.fileName||'').split('.').pop().toUpperCase()}</div></div></a>`;
       }
@@ -694,10 +741,14 @@ function appendMsgToDOM(msg,key,areaEl){
       ${sent?`<button class="msg-action-btn" onclick="deleteMsg('${key}',event)" title="حذف">🗑️</button>`:''}
     </div>`;
 
+    // التحقق من تفعيل أنيميشن تليجرام للإيموجي
+    const isEmojiOnly = !msg.fileUrl && isSingleEmoji(msg.text);
+    const bubbleClass = isEmojiOnly ? 'msg-bubble telegram-emoji' : 'msg-bubble';
+
     div.innerHTML=`<div class="msg-row" id="msgrow-${key}" data-key="${key}">
       <div class="msg-bubble-wrap">
         ${senderHtml}
-        <div class="msg-bubble" onclick="toggleActions('${key}',event)" oncontextmenu="showCtxEmoji('${key}',event)">
+        <div class="${bubbleClass}" onclick="toggleActions('${key}',event)" oncontextmenu="showCtxEmoji('${key}',event)">
           ${replyHtml}
           ${mediaHtml}
           ${msg.text?`<span class="actual-msg-text">${esc(msg.text)}${edited}</span>`:''}
@@ -716,21 +767,29 @@ function appendMsgToDOM(msg,key,areaEl){
     const qt=div.querySelector('.reply-quotation');
     if(qt)qt.addEventListener('click',e=>{e.stopPropagation();jumpToMsg(qt.dataset.targetkey)});
 
-    /* swipe to reply */
+    /* التعديل: السحب لليمين أو اليسار للرد الفوري بمرونة فائقة كـ واتساب */
     const row=div.querySelector('.msg-row');
     if(row){
       let sx=0,sy=0,sw=false;
       row.addEventListener('touchstart',e=>{sx=e.touches[0].clientX;sy=e.touches[0].clientY;sw=false},{passive:true});
       row.addEventListener('touchmove',e=>{
         const dx=e.touches[0].clientX-sx,dy=Math.abs(e.touches[0].clientY-sy);
-        if(dy>12)return;
-        if((sent&&dx>0)||(!sent&&dx<0)){sw=true;row.style.transform=`translateX(${Math.min(Math.abs(dx),55)*(sent?1:-1)}px)`}
+        if(dy>12)return; // تجاهل الحركة الرأسية (Scroll)
+        
+        // دعم السحب لليمين أو اليسار بناءً على الـ RTL والـ Layout لزيادة راحة السحب
+        if(Math.abs(dx) > 10){
+          sw=true;
+          row.style.transform=`translateX(${dx > 0 ? Math.min(dx, 65) : Math.max(dx, -65)}px)`;
+        }
       },{passive:true});
       row.addEventListener('touchend',()=>{
         const v=parseInt(row.style.transform.replace(/[^0-9-]/g,''))||0;
-        row.style.transform='';row.style.transition='transform .2s';
+        row.style.transform='';row.style.transition='transform .2s ease';
         setTimeout(()=>row.style.transition='',200);
-        if(sw&&Math.abs(v)>=40)initiateReply(msg.senderName,msg.text||'',key);
+        if(sw&&Math.abs(v)>=35) {
+          if (window.navigator.vibrate) window.navigator.vibrate(15); // اهتزاز خفيف جداً محاكي للهواتف
+          initiateReply(msg.senderName,msg.text||'',key);
+        }
       },{passive:true});
     }
 
@@ -935,7 +994,7 @@ function uploadCloudinary(file,onProg){
   });
 }
 
-/* ══ VOICE ══ */
+/* ══ VOICE RECORD ══ */
 async function toggleVoiceRecord(){if(mediaRecorder&&mediaRecorder.state==='recording')stopRec();else startRec()}
 async function startRec(){
   try{
@@ -985,6 +1044,56 @@ function playVoice(btn,e){
   };
   audio.onended=()=>{btn.textContent='▶';bars.forEach(b=>b.classList.remove('played'));currentAudio=null;currentPlayBtn=null;const t=audio.duration||0;durEl.textContent=Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
   audio.play().catch(()=>{btn.textContent='▶'});
+}
+
+/* ══ VOICE CALL LOGIC (Firebase Real-time Signaling Engine) ══ */
+function setupCallListener(){
+  callRef.on('value', snap => {
+    const callData = snap.val();
+    if(!callData) {
+      $('call-modal').classList.remove('open');
+      return;
+    }
+    // في حالة وجود رنين وكان المستخدم هو المستقبِل
+    if(callData.status === 'ringing' && callData.to === myName) {
+      $('call-username').textContent = callData.from;
+      $('call-status-text').textContent = 'مكالمة صوتية واردة...';
+      $('btn-call-accept').classList.remove('hidden');
+      $('call-avatar-el').classList.add('ringing');
+      $('call-modal').classList.add('open');
+    } else if(callData.status === 'accepted') {
+      $('call-status-text').textContent = 'متصل الآن 🟢';
+      $('btn-call-accept').classList.add('hidden');
+      $('call-avatar-el').classList.remove('ringing');
+    }
+  });
+}
+
+async function startAudioCall(){
+  if(!peerName) { showToast('لا يوجد طرف آخر في الغرفة للاتصال به ❌'); return; }
+  $('call-username').textContent = peerName;
+  $('call-status-text').textContent = 'جاري الرنين...';
+  $('btn-call-accept').classList.add('hidden');
+  $('call-avatar-el').classList.add('ringing');
+  $('call-modal').classList.add('open');
+  
+  await callRef.set({
+    from: myName,
+    to: peerName,
+    status: 'ringing',
+    ts: Date.now()
+  });
+}
+
+async function answerCall(){
+  await callRef.update({ status: 'accepted' });
+  showToast('تم قبول المكالمة - متصل');
+}
+
+async function endCall(){
+  await callRef.remove();
+  $('call-modal').classList.remove('open');
+  showToast('تم إنهاء المكالمة');
 }
 
 /* ══ REACTIONS ══ */
@@ -1073,10 +1182,11 @@ async function leaveRoom(){
     await typingRef.remove();
     if(currentActivePeerRef)currentActivePeerRef.off();
     if(roomPresenceRef)roomPresenceRef.off();
-    ['typing','clearSignal','reactions','readBy','pinnedMsg'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
+    if(callRef)callRef.off();
+    ['typing','clearSignal','reactions','readBy','pinnedMsg','call'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
     allMessages={};messagesRef.off();
   }catch(e){}
-  myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=null;
+  myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=null;
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
   $('name-input').value='';$('room-input').value='';

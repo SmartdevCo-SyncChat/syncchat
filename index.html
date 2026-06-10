@@ -305,58 +305,117 @@ position:relative;z-index:10;
 .btn-send-img{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer}
 .btn-cancel-img{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-family:var(--font);cursor:pointer}
 
-/* call modal */
-.call-modal{position:fixed;inset:0;background:rgba(13,13,13,0.97);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:flex-end;color:#fff;font-family:var(--font);padding-bottom:calc(40px + env(safe-area-inset-bottom))}
-.call-modal.open{display:flex}
-.call-modal.video-mode .call-info-panel{display:none}
+/* call popup */
+.call-modal{position:fixed;inset:0;z-index:10000;display:none;background:transparent;pointer-events:none}
+.call-modal.open{display:block}
+.call-modal.fullscreen{background:rgba(13,13,13,.93);pointer-events:auto;display:flex;align-items:stretch;justify-content:center}
+.call-popup-card{
+  position:fixed;bottom:76px;left:14px;
+  width:min(310px,calc(100vw - 28px));
+  background:linear-gradient(165deg,#222,#141414);
+  border-radius:18px;overflow:hidden;
+  box-shadow:0 12px 44px rgba(0,0,0,.42),0 0 0 1px rgba(255,255,255,.07);
+  pointer-events:auto;color:#fff;font-family:var(--font);
+  transition:width .28s ease,border-radius .28s ease,box-shadow .28s ease;
+}
+.call-modal.fullscreen .call-popup-card{
+  position:relative;bottom:auto;left:auto;
+  width:100%;max-width:860px;height:100dvh;
+  border-radius:0;box-shadow:none;
+  display:flex;flex-direction:column;
+  background:#0d0d0d;
+}
+.call-popup-toolbar{
+  display:flex;align-items:center;gap:8px;
+  padding:9px 10px 8px;
+  background:rgba(255,255,255,.05);
+  border-bottom:1px solid rgba(255,255,255,.06);
+  flex-shrink:0;
+}
+.call-popup-toolbar-info{flex:1;min-width:0}
+.call-toolbar-name{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call-toolbar-status{font-size:10px;color:#aaa;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.call-toolbar-timer{font-size:10px;color:var(--accent);margin-top:1px;display:none}
+.call-toolbar-timer.show{display:block}
+.btn-call-expand{
+  width:32px;height:32px;border-radius:8px;border:none;flex-shrink:0;
+  background:rgba(255,255,255,.1);color:#fff;cursor:pointer;font-size:14px;
+  display:flex;align-items:center;justify-content:center;transition:background .15s;
+}
+.btn-call-expand:hover{background:rgba(255,255,255,.2)}
+.call-popup-body{display:flex;flex-direction:column;position:relative}
+.call-modal.fullscreen .call-popup-body{flex:1;min-height:0}
+
+/* video area */
+.call-video-wrap{display:none;position:relative;background:#000;width:100%;height:185px;flex-shrink:0}
 .call-modal.video-mode .call-video-wrap{display:block}
-.call-video-wrap{display:none;position:absolute;inset:0;background:#000}
-#remote-video{width:100%;height:100%;object-fit:cover}
-#local-video{position:absolute;top:16px;left:16px;width:110px;height:150px;object-fit:cover;border-radius:12px;border:2px solid rgba(255,255,255,.3);z-index:2;background:#222}
-.call-info-panel{display:flex;flex-direction:column;align-items:center;z-index:3;margin-bottom:auto;padding-top:80px}
-.call-avatar{width:100px;height:100px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;margin-bottom:20px;box-shadow:0 0 20px rgba(16,163,127,0.4)}
+.call-modal.fullscreen.video-mode .call-video-wrap{flex:1;height:auto;min-height:0}
+#remote-video{width:100%;height:100%;object-fit:cover;display:block}
+#local-video{width:72px;height:96px;object-fit:cover;border-radius:10px;border:2px solid rgba(255,255,255,.35);background:#222;display:block}
+#local-video-wrap{position:absolute;top:8px;left:8px;z-index:2}
+.call-modal.fullscreen #local-video{width:110px;height:150px;border-radius:12px}
+.call-modal.fullscreen #local-video-wrap{top:16px;left:16px}
+.call-modal.audio-call-mode .call-video-wrap{display:none}
+
+/* info panel (audio) */
+.call-info-panel{display:flex;flex-direction:column;align-items:center;padding:18px 14px 6px;text-align:center}
+.call-modal.video-mode:not(.fullscreen) .call-info-panel{display:none}
+.call-modal.video-mode.fullscreen .call-info-panel{display:none}
+.call-avatar{width:68px;height:68px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;font-weight:700;margin-bottom:12px;box-shadow:0 0 16px rgba(16,163,127,.35)}
+.call-modal.fullscreen .call-avatar{width:100px;height:100px;font-size:36px;margin-bottom:20px}
 .call-avatar.ringing{animation:callPulse 1.5s infinite}
 @keyframes callPulse{0%{box-shadow:0 0 0 0 rgba(16,163,127,0.7)}70%{box-shadow:0 0 0 25px rgba(16,163,127,0)}100%{box-shadow:0 0 0 0 rgba(16,163,127,0)}}
-.call-name{font-size:22px;font-weight:600;margin-bottom:8px}
-.call-status{font-size:14px;color:#aaa;margin-bottom:12px}
-.call-timer{font-size:13px;color:var(--accent);margin-bottom:8px;display:none}
+.call-name{font-size:17px;font-weight:600;margin-bottom:6px}
+.call-modal.fullscreen .call-name{font-size:22px}
+.call-status{font-size:12px;color:#aaa;margin-bottom:6px}
+.call-modal.fullscreen .call-status{font-size:14px}
+.call-timer{font-size:12px;color:var(--accent);margin-bottom:4px;display:none}
 .call-timer.show{display:block}
-.call-controls-wrap{display:flex;flex-direction:column;align-items:center;gap:22px;z-index:3;width:100%;padding:0 20px}
-.call-media-controls{display:flex;gap:28px;justify-content:center}
+.call-modal:not(.fullscreen) .call-timer{display:none!important}
+
+/* controls */
+.call-controls-wrap{display:flex;flex-direction:column;align-items:center;gap:14px;padding:10px 14px 14px;flex-shrink:0}
+.call-modal.fullscreen .call-controls-wrap{gap:22px;padding:0 20px calc(36px + env(safe-area-inset-bottom));margin-top:auto}
+.call-media-controls{display:flex;gap:20px;justify-content:center}
+.call-modal.fullscreen .call-media-controls{gap:28px}
 .call-media-controls.hidden{display:none}
 .btn-media-ctrl{
-  width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.2);
+  width:48px;height:48px;border-radius:50%;border:2px solid rgba(255,255,255,.2);
   background:rgba(255,255,255,.12);color:#fff;cursor:pointer;
   display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
   transition:background .15s,border-color .15s,transform .1s;
 }
+.call-modal.fullscreen .btn-media-ctrl{width:58px;height:58px}
 .btn-media-ctrl:active{transform:scale(0.92)}
 .btn-media-ctrl.on{background:rgba(16,163,127,.35);border-color:rgba(16,163,127,.7)}
 .btn-media-ctrl.off{background:rgba(239,68,68,.3);border-color:rgba(239,68,68,.65)}
-.media-ctrl-icon{font-size:20px;line-height:1}
-.media-ctrl-label{font-size:9px;font-weight:600;opacity:.9}
-.call-media-hint{font-size:11px;color:#aaa;text-align:center;min-height:16px;margin-top:-10px}
+.media-ctrl-icon{font-size:18px;line-height:1}
+.call-modal.fullscreen .media-ctrl-icon{font-size:20px}
+.media-ctrl-label{font-size:8px;font-weight:600;opacity:.9}
+.call-media-hint{font-size:10px;color:#aaa;text-align:center;min-height:14px;line-height:1.3}
+.call-modal.fullscreen .call-media-hint{font-size:11px;min-height:16px}
 .call-media-hint:empty{display:none}
 .remote-mic-badge{
-  position:absolute;top:20px;right:20px;z-index:4;
-  background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;
-  padding:6px 12px;border-radius:20px;display:none;align-items:center;gap:5px;
+  position:absolute;top:8px;right:8px;z-index:4;
+  background:rgba(0,0,0,.6);color:#fff;font-size:10px;font-weight:600;
+  padding:4px 9px;border-radius:14px;display:none;align-items:center;gap:4px;
 }
+.call-modal.fullscreen .remote-mic-badge{top:16px;right:16px;font-size:11px;padding:6px 12px}
 .remote-mic-badge.show{display:flex}
 .local-mic-badge{
-  position:absolute;bottom:6px;right:6px;z-index:3;
-  background:rgba(239,68,68,.85);color:#fff;font-size:12px;
-  width:24px;height:24px;border-radius:50%;display:none;align-items:center;justify-content:center;
+  position:absolute;bottom:4px;right:4px;z-index:3;
+  background:rgba(239,68,68,.85);color:#fff;font-size:11px;
+  width:22px;height:22px;border-radius:50%;display:none;align-items:center;justify-content:center;
 }
 .local-mic-badge.show{display:flex}
-#local-video-wrap{position:absolute;top:16px;left:16px;z-index:2}
-.call-modal.audio-call-mode .call-video-wrap{display:block}
-.call-modal.audio-call-mode #remote-video,.call-modal.audio-call-mode #local-video-wrap{opacity:0;pointer-events:none;width:1px;height:1px;overflow:hidden;top:0;left:0}
-.call-actions{display:flex;gap:40px;align-items:flex-end;justify-content:center}
-.btn-call-act{width:68px;height:68px;border-radius:50%;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .1s;padding:0}
+.call-actions{display:flex;gap:28px;align-items:flex-end;justify-content:center}
+.call-modal.fullscreen .call-actions{gap:40px}
+.btn-call-act{width:54px;height:54px;border-radius:50%;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .1s;padding:0}
+.call-modal.fullscreen .btn-call-act{width:68px;height:68px}
 .btn-call-act:active{transform:scale(0.92)}
-.call-btn-icon{font-size:22px;line-height:1}
-.call-btn-label{font-size:10px;font-weight:600;opacity:.9}
+.call-btn-icon{font-size:20px;line-height:1}
+.call-modal.fullscreen .call-btn-icon{font-size:22px}
+.call-btn-label{font-size:9px;font-weight:600;opacity:.9}
 .btn-call-act.accept{background:var(--accent)}
 .btn-call-act.decline{background:var(--danger)}
 .btn-call-act.hangup{background:var(--danger)}
@@ -545,46 +604,60 @@ position:relative;z-index:10;
   </div>
 
   <div id="call-modal" class="call-modal">
-    <div class="call-video-wrap" id="call-video-wrap">
-      <video id="remote-video" autoplay playsinline></video>
-      <audio id="remote-audio" autoplay playsinline class="hidden"></audio>
-      <div class="remote-mic-badge" id="remote-mic-badge">🔇 كتم المايك</div>
-      <div id="local-video-wrap">
-        <video id="local-video" autoplay playsinline muted></video>
-        <div class="local-mic-badge" id="local-mic-badge">🔇</div>
-      </div>
-    </div>
-    <div class="call-info-panel" id="call-info-panel">
-      <div class="call-avatar ringing" id="call-avatar-el">📞</div>
-      <div class="call-name" id="call-username">الطرف الآخر</div>
-      <div class="call-status" id="call-status-text">جاري الاتصال...</div>
-      <div class="call-timer" id="call-timer">00:00</div>
-    </div>
-    <div class="call-controls-wrap">
-      <div class="call-media-controls hidden" id="call-media-controls">
-        <button class="btn-media-ctrl on" id="btn-mic-toggle" onclick="toggleCallMic()" type="button">
-          <span class="media-ctrl-icon" id="mic-ctrl-icon">🎤</span>
-          <span class="media-ctrl-label" id="mic-ctrl-label">مايك</span>
-        </button>
-        <button class="btn-media-ctrl on" id="btn-speaker-toggle" onclick="toggleCallSpeaker()" type="button">
-          <span class="media-ctrl-icon" id="speaker-ctrl-icon">🔊</span>
-          <span class="media-ctrl-label" id="speaker-ctrl-label">سماعة</span>
+    <div class="call-popup-card" id="call-popup-card">
+      <div class="call-popup-toolbar">
+        <div class="call-popup-toolbar-info">
+          <span class="call-toolbar-name" id="call-toolbar-name">الطرف الآخر</span>
+          <span class="call-toolbar-status" id="call-toolbar-status">جاري الاتصال...</span>
+          <span class="call-toolbar-timer" id="call-toolbar-timer">00:00</span>
+        </div>
+        <button type="button" class="btn-call-expand" id="btn-call-expand" onclick="toggleCallFullscreen()" title="توسيع">
+          <span id="expand-icon">⛶</span>
         </button>
       </div>
-      <div class="call-media-hint" id="call-media-hint"></div>
-      <div class="call-actions">
-        <button class="btn-call-act decline" id="btn-call-decline" onclick="endCall('declined')">
-          <span class="call-btn-icon">✕</span>
-          <span class="call-btn-label">رفض</span>
-        </button>
-        <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">
-          <span class="call-btn-icon">✓</span>
-          <span class="call-btn-label">قبول</span>
-        </button>
-        <button class="btn-call-act hangup hidden" id="btn-call-hangup" onclick="endCall('ended')">
-          <span class="call-btn-icon">📵</span>
-          <span class="call-btn-label">إنهاء</span>
-        </button>
+      <div class="call-popup-body">
+        <audio id="remote-audio" autoplay playsinline class="hidden"></audio>
+        <div class="call-video-wrap" id="call-video-wrap">
+          <video id="remote-video" autoplay playsinline></video>
+          <div class="remote-mic-badge" id="remote-mic-badge">🔇 كتم المايك</div>
+          <div id="local-video-wrap">
+            <video id="local-video" autoplay playsinline muted></video>
+            <div class="local-mic-badge" id="local-mic-badge">🔇</div>
+          </div>
+        </div>
+        <div class="call-info-panel" id="call-info-panel">
+          <div class="call-avatar ringing" id="call-avatar-el">📞</div>
+          <div class="call-name" id="call-username">الطرف الآخر</div>
+          <div class="call-status" id="call-status-text">جاري الاتصال...</div>
+          <div class="call-timer" id="call-timer">00:00</div>
+        </div>
+        <div class="call-controls-wrap">
+          <div class="call-media-controls hidden" id="call-media-controls">
+            <button class="btn-media-ctrl on" id="btn-mic-toggle" onclick="toggleCallMic()" type="button">
+              <span class="media-ctrl-icon" id="mic-ctrl-icon">🎤</span>
+              <span class="media-ctrl-label" id="mic-ctrl-label">مايك</span>
+            </button>
+            <button class="btn-media-ctrl on" id="btn-speaker-toggle" onclick="toggleCallSpeaker()" type="button">
+              <span class="media-ctrl-icon" id="speaker-ctrl-icon">🔊</span>
+              <span class="media-ctrl-label" id="speaker-ctrl-label">سماعة</span>
+            </button>
+          </div>
+          <div class="call-media-hint" id="call-media-hint"></div>
+          <div class="call-actions">
+            <button class="btn-call-act decline" id="btn-call-decline" onclick="endCall('declined')">
+              <span class="call-btn-icon">✕</span>
+              <span class="call-btn-label">رفض</span>
+            </button>
+            <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">
+              <span class="call-btn-icon">✓</span>
+              <span class="call-btn-label">قبول</span>
+            </button>
+            <button class="btn-call-act hangup hidden" id="btn-call-hangup" onclick="endCall('ended')">
+              <span class="call-btn-icon">📵</span>
+              <span class="call-btn-label">إنهاء</span>
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -617,7 +690,7 @@ let myName,myId,roomId,peerName=null;
 let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef,callHistoryRef;
 let peerConnection=null,localStream=null,remoteStream=null,currentCallType='audio',isCallInitiator=false;
 let callStartTime=null,callTimerInterval=null,iceUnsub=null;
-let isMicMuted=false,isSpeakerMuted=false;
+let isMicMuted=false,isSpeakerMuted=false,isCallFullscreen=false;
 let currentActivePeerRef=null, peerTypingListener=null;
 let typingTimeout, inactivityTimeout;
 let isInitialLoad=true;
@@ -1240,8 +1313,8 @@ function setupCallListener(){
 
     if(isIncoming){
       currentCallType=type;isCallInitiator=false;
-      $('call-username').textContent=callData.from;
-      $('call-status-text').textContent=type==='video'?'مكالمة فيديو واردة...':'مكالمة صوتية واردة...';
+      setCallPeerName(callData.from);
+      setCallStatusText(type==='video'?'مكالمة فيديو واردة...':'مكالمة صوتية واردة...');
       $('call-avatar-el').textContent=type==='video'?'📹':'📞';
       $('btn-call-accept').classList.remove('hidden');
       $('btn-call-decline').classList.remove('hidden');
@@ -1252,7 +1325,7 @@ function setupCallListener(){
       resetCallMediaState();
       $('call-modal').classList.add('open');
     }else if(isOutgoing&&callData.status==='ringing'){
-      $('call-status-text').textContent='جاري الرنين...';
+      setCallStatusText('جاري الرنين...');
       $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
     }else if(isAccepted){
       showCallMediaControls();
@@ -1293,6 +1366,30 @@ function setCallMode(type){
   if(lv)lv.style.display=type==='video'?'block':'none';
 }
 
+function setCallPeerName(name){
+  $('call-username').textContent=name;
+  $('call-toolbar-name').textContent=name;
+}
+
+function setCallStatusText(text){
+  $('call-status-text').textContent=text;
+  $('call-toolbar-status').textContent=text;
+}
+
+function toggleCallFullscreen(){
+  isCallFullscreen=!isCallFullscreen;
+  $('call-modal').classList.toggle('fullscreen',isCallFullscreen);
+  $('expand-icon').textContent=isCallFullscreen?'⊟':'⛶';
+  $('btn-call-expand').title=isCallFullscreen?'تصغير':'توسيع ملء الشاشة';
+}
+
+function resetCallFullscreen(){
+  isCallFullscreen=false;
+  $('call-modal').classList.remove('fullscreen');
+  $('expand-icon').textContent='⛶';
+  $('btn-call-expand').title='توسيع ملء الشاشة';
+}
+
 function resetCallMediaState(){
   isMicMuted=false;isSpeakerMuted=false;
   $('call-media-controls').classList.add('hidden');
@@ -1325,7 +1422,7 @@ function updateCallStatusText(){
   const parts=[];
   if(isMicMuted)parts.push('الميكروفون مغلق');
   if(isSpeakerMuted)parts.push('السماعة مغلقة');
-  $('call-status-text').textContent=parts.length?parts.join(' · '):'متصل الآن 🟢';
+  setCallStatusText(parts.length?parts.join(' · '):'متصل الآن 🟢');
   $('call-media-hint').textContent=parts.length?'أنت تسمع '+(isSpeakerMuted?'بدون صوت الطرف الآخر':'الطرف الآخر')+' · تتحدث '+(isMicMuted?'بدون مايك':'بالمايك'):'';
 }
 
@@ -1420,8 +1517,8 @@ async function startCall(type){
   if(!peerName){showToast('لا يوجد طرف آخر في الغرفة ❌');return}
   if((await callRef.once('value')).val()){showToast('يوجد مكالمة جارية بالفعل');return}
   currentCallType=type;isCallInitiator=true;callStartTime=null;
-  $('call-username').textContent=peerName;
-  $('call-status-text').textContent='جاري الاتصال...';
+  setCallPeerName(peerName);
+  setCallStatusText('جاري الاتصال...');
   $('call-avatar-el').textContent=type==='video'?'📹':'📞';
   $('btn-call-accept').classList.add('hidden');
   $('btn-call-decline').classList.remove('hidden');
@@ -1441,7 +1538,7 @@ async function startCall(type){
       from:myName,to:peerName,type,status:'ringing',
       offer:{sdp:offer.sdp,type:offer.type},ts:Date.now()
     });
-    $('call-status-text').textContent='جاري الرنين...';
+    setCallStatusText('جاري الرنين...');
   }catch(e){
     showToast(type==='video'?'تعذر الوصول للكاميرا/الميكروفون ❌':'تعذر الوصول للميكروفون ❌');
     await endCall('failed');
@@ -1488,13 +1585,15 @@ async function handleRemoteAnswer(callData){
 
 function startCallTimer(){
   clearInterval(callTimerInterval);
-  const el=$('call-timer');el.classList.add('show');
+  const el=$('call-timer'),tb=$('call-toolbar-timer');
+  el.classList.add('show');tb.classList.add('show');
   callTimerInterval=setInterval(()=>{
     if(!callStartTime)return;
     const s=Math.floor((Date.now()-callStartTime)/1000);
     const mm=String(Math.floor(s/60)).padStart(2,'0');
     const ss=String(s%60).padStart(2,'0');
-    el.textContent=mm+':'+ss;
+    const t=mm+':'+ss;
+    el.textContent=t;tb.textContent=t;
   },1000);
 }
 
@@ -1502,10 +1601,13 @@ function stopCallTimer(){
   clearInterval(callTimerInterval);
   $('call-timer').classList.remove('show');
   $('call-timer').textContent='00:00';
+  $('call-toolbar-timer').classList.remove('show');
+  $('call-toolbar-timer').textContent='00:00';
 }
 
 function cleanupCallUI(){
   $('call-modal').classList.remove('open','video-mode','audio-call-mode');
+  resetCallFullscreen();
   $('btn-call-accept').classList.add('hidden');
   $('btn-call-decline').classList.remove('hidden');
   $('btn-call-hangup').classList.add('hidden');

@@ -321,7 +321,38 @@ position:relative;z-index:10;
 .call-status{font-size:14px;color:#aaa;margin-bottom:12px}
 .call-timer{font-size:13px;color:var(--accent);margin-bottom:8px;display:none}
 .call-timer.show{display:block}
-.call-actions{display:flex;gap:40px;align-items:flex-end;z-index:3}
+.call-controls-wrap{display:flex;flex-direction:column;align-items:center;gap:22px;z-index:3;width:100%;padding:0 20px}
+.call-media-controls{display:flex;gap:28px;justify-content:center}
+.call-media-controls.hidden{display:none}
+.btn-media-ctrl{
+  width:58px;height:58px;border-radius:50%;border:2px solid rgba(255,255,255,.2);
+  background:rgba(255,255,255,.12);color:#fff;cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;
+  transition:background .15s,border-color .15s,transform .1s;
+}
+.btn-media-ctrl:active{transform:scale(0.92)}
+.btn-media-ctrl.on{background:rgba(16,163,127,.35);border-color:rgba(16,163,127,.7)}
+.btn-media-ctrl.off{background:rgba(239,68,68,.3);border-color:rgba(239,68,68,.65)}
+.media-ctrl-icon{font-size:20px;line-height:1}
+.media-ctrl-label{font-size:9px;font-weight:600;opacity:.9}
+.call-media-hint{font-size:11px;color:#aaa;text-align:center;min-height:16px;margin-top:-10px}
+.call-media-hint:empty{display:none}
+.remote-mic-badge{
+  position:absolute;top:20px;right:20px;z-index:4;
+  background:rgba(0,0,0,.55);color:#fff;font-size:11px;font-weight:600;
+  padding:6px 12px;border-radius:20px;display:none;align-items:center;gap:5px;
+}
+.remote-mic-badge.show{display:flex}
+.local-mic-badge{
+  position:absolute;bottom:6px;right:6px;z-index:3;
+  background:rgba(239,68,68,.85);color:#fff;font-size:12px;
+  width:24px;height:24px;border-radius:50%;display:none;align-items:center;justify-content:center;
+}
+.local-mic-badge.show{display:flex}
+#local-video-wrap{position:absolute;top:16px;left:16px;z-index:2}
+.call-modal.audio-call-mode .call-video-wrap{display:block}
+.call-modal.audio-call-mode #remote-video,.call-modal.audio-call-mode #local-video-wrap{opacity:0;pointer-events:none;width:1px;height:1px;overflow:hidden;top:0;left:0}
+.call-actions{display:flex;gap:40px;align-items:flex-end;justify-content:center}
 .btn-call-act{width:68px;height:68px;border-radius:50%;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .1s;padding:0}
 .btn-call-act:active{transform:scale(0.92)}
 .call-btn-icon{font-size:22px;line-height:1}
@@ -516,7 +547,12 @@ position:relative;z-index:10;
   <div id="call-modal" class="call-modal">
     <div class="call-video-wrap" id="call-video-wrap">
       <video id="remote-video" autoplay playsinline></video>
-      <video id="local-video" autoplay playsinline muted></video>
+      <audio id="remote-audio" autoplay playsinline class="hidden"></audio>
+      <div class="remote-mic-badge" id="remote-mic-badge">🔇 كتم المايك</div>
+      <div id="local-video-wrap">
+        <video id="local-video" autoplay playsinline muted></video>
+        <div class="local-mic-badge" id="local-mic-badge">🔇</div>
+      </div>
     </div>
     <div class="call-info-panel" id="call-info-panel">
       <div class="call-avatar ringing" id="call-avatar-el">📞</div>
@@ -524,19 +560,32 @@ position:relative;z-index:10;
       <div class="call-status" id="call-status-text">جاري الاتصال...</div>
       <div class="call-timer" id="call-timer">00:00</div>
     </div>
-    <div class="call-actions">
-      <button class="btn-call-act decline" id="btn-call-decline" onclick="endCall('declined')">
-        <span class="call-btn-icon">✕</span>
-        <span class="call-btn-label">رفض</span>
-      </button>
-      <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">
-        <span class="call-btn-icon">✓</span>
-        <span class="call-btn-label">قبول</span>
-      </button>
-      <button class="btn-call-act hangup hidden" id="btn-call-hangup" onclick="endCall('ended')">
-        <span class="call-btn-icon">📵</span>
-        <span class="call-btn-label">إنهاء</span>
-      </button>
+    <div class="call-controls-wrap">
+      <div class="call-media-controls hidden" id="call-media-controls">
+        <button class="btn-media-ctrl on" id="btn-mic-toggle" onclick="toggleCallMic()" type="button">
+          <span class="media-ctrl-icon" id="mic-ctrl-icon">🎤</span>
+          <span class="media-ctrl-label" id="mic-ctrl-label">مايك</span>
+        </button>
+        <button class="btn-media-ctrl on" id="btn-speaker-toggle" onclick="toggleCallSpeaker()" type="button">
+          <span class="media-ctrl-icon" id="speaker-ctrl-icon">🔊</span>
+          <span class="media-ctrl-label" id="speaker-ctrl-label">سماعة</span>
+        </button>
+      </div>
+      <div class="call-media-hint" id="call-media-hint"></div>
+      <div class="call-actions">
+        <button class="btn-call-act decline" id="btn-call-decline" onclick="endCall('declined')">
+          <span class="call-btn-icon">✕</span>
+          <span class="call-btn-label">رفض</span>
+        </button>
+        <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">
+          <span class="call-btn-icon">✓</span>
+          <span class="call-btn-label">قبول</span>
+        </button>
+        <button class="btn-call-act hangup hidden" id="btn-call-hangup" onclick="endCall('ended')">
+          <span class="call-btn-icon">📵</span>
+          <span class="call-btn-label">إنهاء</span>
+        </button>
+      </div>
     </div>
   </div>
 
@@ -566,8 +615,9 @@ const CLOUDINARY_CLOUD='db03wdg7v', CLOUDINARY_PRESET='ekk7u3hb';
 let db;
 let myName,myId,roomId,peerName=null;
 let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef,callHistoryRef;
-let peerConnection=null,localStream=null,currentCallType='audio',isCallInitiator=false;
+let peerConnection=null,localStream=null,remoteStream=null,currentCallType='audio',isCallInitiator=false;
 let callStartTime=null,callTimerInterval=null,iceUnsub=null;
+let isMicMuted=false,isSpeakerMuted=false;
 let currentActivePeerRef=null, peerTypingListener=null;
 let typingTimeout, inactivityTimeout;
 let isInitialLoad=true;
@@ -1184,24 +1234,32 @@ function setupCallListener(){
       $('btn-call-decline').querySelector('.call-btn-label').textContent='رفض';
       $('btn-call-hangup').classList.add('hidden');
       $('call-avatar-el').classList.add('ringing');
-      $('call-modal').classList.toggle('video-mode',type==='video');
+      setCallMode(type);
+      resetCallMediaState();
       $('call-modal').classList.add('open');
     }else if(isOutgoing&&callData.status==='ringing'){
       $('call-status-text').textContent='جاري الرنين...';
       $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
     }else if(isAccepted){
-      $('call-status-text').textContent='متصل الآن 🟢';
+      showCallMediaControls();
+      updateCallStatusText();
       $('btn-call-accept').classList.add('hidden');
       $('btn-call-decline').classList.add('hidden');
       $('btn-call-hangup').classList.remove('hidden');
       $('call-avatar-el').classList.remove('ringing');
       if(!callStartTime){callStartTime=Date.now();startCallTimer()}
-      if(type==='video')$('call-modal').classList.add('video-mode');
+      setCallMode(type);
 
       if(isOutgoing&&callData.answer&&peerConnection&&!peerConnection.remoteDescription){
         await handleRemoteAnswer(callData);
       }
+      if(callData.mediaState)updateRemoteMediaUI(callData.mediaState);
     }
+  });
+
+  callRef.child('mediaState').on('value',snap=>{
+    const states=snap.val();
+    if(states)updateRemoteMediaUI(states);
   });
 
   callRef.child('ice').on('child_added',async snap=>{
@@ -1213,10 +1271,116 @@ function setupCallListener(){
   });
 }
 
+function setCallMode(type){
+  const modal=$('call-modal');
+  modal.classList.toggle('video-mode',type==='video');
+  modal.classList.toggle('audio-call-mode',type!=='video');
+  const lv=$('local-video');
+  if(lv)lv.style.display=type==='video'?'block':'none';
+}
+
+function resetCallMediaState(){
+  isMicMuted=false;isSpeakerMuted=false;
+  $('call-media-controls').classList.add('hidden');
+  $('call-media-hint').textContent='';
+  $('remote-mic-badge').classList.remove('show');
+  $('local-mic-badge').classList.remove('show');
+  updateMediaControlUI();
+}
+
+function showCallMediaControls(){
+  $('call-media-controls').classList.remove('hidden');
+  updateMediaControlUI();
+  syncMediaState();
+}
+
+function updateMediaControlUI(){
+  const micBtn=$('btn-mic-toggle'),spkBtn=$('btn-speaker-toggle');
+  micBtn.classList.toggle('on',!isMicMuted);
+  micBtn.classList.toggle('off',isMicMuted);
+  $('mic-ctrl-icon').textContent=isMicMuted?'🔇':'🎤';
+  $('mic-ctrl-label').textContent=isMicMuted?'مكتوم':'مايك';
+  spkBtn.classList.toggle('on',!isSpeakerMuted);
+  spkBtn.classList.toggle('off',isSpeakerMuted);
+  $('speaker-ctrl-icon').textContent=isSpeakerMuted?'🔇':'🔊';
+  $('speaker-ctrl-label').textContent=isSpeakerMuted?'صامت':'سماعة';
+  $('local-mic-badge').classList.toggle('show',isMicMuted&&currentCallType==='video');
+}
+
+function updateCallStatusText(){
+  const parts=[];
+  if(isMicMuted)parts.push('الميكروفون مغلق');
+  if(isSpeakerMuted)parts.push('السماعة مغلقة');
+  $('call-status-text').textContent=parts.length?parts.join(' · '):'متصل الآن 🟢';
+  $('call-media-hint').textContent=parts.length?'أنت تسمع '+(isSpeakerMuted?'بدون صوت الطرف الآخر':'الطرف الآخر')+' · تتحدث '+(isMicMuted?'بدون مايك':'بالمايك'):'';
+}
+
+function attachRemoteStream(stream){
+  remoteStream=stream;
+  const rv=$('remote-video'),ra=$('remote-audio');
+  if(rv)rv.srcObject=stream;
+  if(ra){
+    ra.srcObject=stream;
+    ra.muted=isSpeakerMuted;
+    ra.play().catch(()=>{});
+  }
+  applySpeakerMute();
+}
+
+function applySpeakerMute(){
+  const ra=$('remote-audio'),rv=$('remote-video');
+  if(ra)ra.muted=isSpeakerMuted;
+  if(rv)rv.muted=isSpeakerMuted;
+  if(remoteStream){
+    remoteStream.getAudioTracks().forEach(t=>{t.enabled=!isSpeakerMuted});
+  }
+}
+
+function toggleCallMic(){
+  if(!localStream)return;
+  isMicMuted=!isMicMuted;
+  localStream.getAudioTracks().forEach(t=>{t.enabled=!isMicMuted});
+  updateMediaControlUI();
+  updateCallStatusText();
+  syncMediaState();
+  showToast(isMicMuted?'تم كتم الميكروفون 🔇':'تم تشغيل الميكروفون 🎤');
+}
+
+function toggleCallSpeaker(){
+  isSpeakerMuted=!isSpeakerMuted;
+  applySpeakerMute();
+  updateMediaControlUI();
+  updateCallStatusText();
+  syncMediaState();
+  showToast(isSpeakerMuted?'تم كتم السماعة 🔇':'تم تشغيل السماعة 🔊');
+}
+
+async function syncMediaState(){
+  if(!callRef)return;
+  try{
+    await callRef.child(`mediaState/${myId}`).set({mic:!isMicMuted,speaker:!isSpeakerMuted,name:myName});
+  }catch(e){}
+}
+
+function updateRemoteMediaUI(states){
+  const peerEntry=Object.entries(states||{}).find(([id])=>id!==myId);
+  if(!peerEntry)return;
+  const peer=peerEntry[1];
+  const badge=$('remote-mic-badge');
+  if(peer&&peer.mic===false){
+    badge.textContent='🔇 '+(peer.name||'الطرف الآخر')+' كتم المايك';
+    badge.classList.add('show');
+  }else{
+    badge.classList.remove('show');
+  }
+}
+
 async function getLocalMedia(type){
   const constraints=type==='video'?{audio:true,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{audio:true,video:false};
   const stream=await navigator.mediaDevices.getUserMedia(constraints);
   localStream=stream;
+  isMicMuted=false;
+  stream.getAudioTracks().forEach(t=>{t.enabled=true});
   const lv=$('local-video');
   if(lv){lv.srcObject=stream;lv.style.display=type==='video'?'block':'none'}
   return stream;
@@ -1230,8 +1394,7 @@ function createPeerConnection(){
     if(e.candidate)callRef.child('ice').push({...e.candidate.toJSON(),from:myId});
   };
   peerConnection.ontrack=e=>{
-    const rv=$('remote-video');
-    if(rv&&e.streams[0])rv.srcObject=e.streams[0];
+    if(e.streams[0])attachRemoteStream(e.streams[0]);
   };
   peerConnection.onconnectionstatechange=()=>{
     if(peerConnection&&peerConnection.connectionState==='failed')showToast('فشل الاتصال — تحقق من الشبكة');
@@ -1251,7 +1414,8 @@ async function startCall(type){
   $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
   $('btn-call-hangup').classList.add('hidden');
   $('call-avatar-el').classList.add('ringing');
-  $('call-modal').classList.toggle('video-mode',type==='video');
+  resetCallMediaState();
+  setCallMode(type);
   $('call-modal').classList.add('open');
 
   try{
@@ -1289,9 +1453,10 @@ async function answerCall(){
     $('btn-call-accept').classList.add('hidden');
     $('btn-call-decline').classList.add('hidden');
     $('btn-call-hangup').classList.remove('hidden');
-    $('call-status-text').textContent='متصل الآن 🟢';
+    showCallMediaControls();
+    updateCallStatusText();
     $('call-avatar-el').classList.remove('ringing');
-    if(type==='video')$('call-modal').classList.add('video-mode');
+    setCallMode(type);
     callStartTime=Date.now();startCallTimer();
     showToast('تم قبول المكالمة ✓');
   }catch(e){
@@ -1326,16 +1491,19 @@ function stopCallTimer(){
 }
 
 function cleanupCallUI(){
-  $('call-modal').classList.remove('open','video-mode');
+  $('call-modal').classList.remove('open','video-mode','audio-call-mode');
   $('btn-call-accept').classList.add('hidden');
   $('btn-call-decline').classList.remove('hidden');
   $('btn-call-hangup').classList.add('hidden');
   $('call-avatar-el').classList.remove('ringing');
   stopCallTimer();
+  resetCallMediaState();
   if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}
+  remoteStream=null;
   if(peerConnection){peerConnection.close();peerConnection=null}
-  const rv=$('remote-video'),lv=$('local-video');
+  const rv=$('remote-video'),ra=$('remote-audio'),lv=$('local-video');
   if(rv)rv.srcObject=null;
+  if(ra){ra.srcObject=null;ra.muted=false}
   if(lv){lv.srcObject=null;lv.style.display='none'}
   callStartTime=null;isCallInitiator=false;
 }
@@ -1473,7 +1641,7 @@ async function leaveRoom(){
     await typingRef.remove();
     if(currentActivePeerRef)currentActivePeerRef.off();
     if(roomPresenceRef)roomPresenceRef.off();
-    if(callRef){callRef.off();callRef.child('ice').off()}
+    if(callRef){callRef.off();callRef.child('ice').off();callRef.child('mediaState').off()}
     if(callHistoryRef)callHistoryRef.off();
     ['typing','clearSignal','reactions','readBy','pinnedMsg','call','callHistory'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
     allMessages={};messagesRef.off();

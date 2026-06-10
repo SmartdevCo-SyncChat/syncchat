@@ -56,7 +56,9 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .btn-hdr.clear{color:var(--muted)}
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
 .btn-hdr.search-btn{color:var(--muted)}
-.btn-hdr.call-btn{color:#fff; background: var(--accent); border-color: var(--accent);}
+.btn-hdr.call-btn{color:#fff;background:var(--accent);border-color:var(--accent)}
+.btn-hdr.video-call-btn{color:#fff;background:#2563eb;border-color:#2563eb}
+.btn-hdr.call-log-btn{color:var(--muted)}
 
 /* pin bar */
 .pin-bar{background:#fffbea;border-bottom:1.5px solid #f0d060;border-right:4px solid var(--accent);padding:8px 14px;display:none;align-items:center;gap:10px;cursor:pointer;min-height:40px;flex-shrink:0}
@@ -134,19 +136,20 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .tick-delivered{color:rgba(255,255,255,.8)}
 .tick-read{color:#53bdeb}
 
-/* تليجرام أنيميشن للإيموجي المنفرد */
-.telegram-emoji {
-  animation: telegramBounce 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) both;
-  display: inline-block;
-  font-size: 42px !important;
-  line-height: 1 !important;
-  padding: 4px 8px !important;
+/* إيموجي منفرد — حجم طبيعي + أنيميشن تليجرام */
+.msg-bubble.emoji-only{background:transparent!important;padding:2px 4px 14px!important;box-shadow:none}
+.msg-bubble.emoji-only .msg-meta{bottom:0;color:var(--muted)!important}
+.msg-wrapper.sent .msg-bubble.emoji-only .msg-meta{color:var(--muted)!important}
+.msg-wrapper.sent .msg-bubble.emoji-only .tick-sent,.msg-wrapper.sent .msg-bubble.emoji-only .tick-delivered,.msg-wrapper.sent .msg-bubble.emoji-only .tick-read{color:var(--muted)!important}
+.actual-msg-text.emoji-anim{
+  display:inline-block;font-size:inherit;line-height:1.4;
+  animation:telegramPop .55s cubic-bezier(0.175,0.885,0.32,1.275) both;
 }
-@keyframes telegramBounce {
-  0% { transform: scale(0.3); opacity: 0; }
-  50% { transform: scale(1.1); }
-  70% { transform: scale(0.9); }
-  100% { transform: scale(1); opacity: 1; }
+@keyframes telegramPop{
+  0%{transform:scale(0.2);opacity:0}
+  45%{transform:scale(1.25)}
+  65%{transform:scale(0.92)}
+  100%{transform:scale(1);opacity:1}
 }
 
 /* ميديا */
@@ -271,19 +274,50 @@ position:relative;z-index:10;
 .btn-send-img{background:var(--accent);color:#fff;border:none;border-radius:10px;padding:10px 24px;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer}
 .btn-cancel-img{background:rgba(255,255,255,.15);color:#fff;border:none;border-radius:10px;padding:10px 16px;font-size:14px;font-family:var(--font);cursor:pointer}
 
-/* voice call modal overlay */
-.call-modal{position:fixed;inset:0;background:rgba(13,13,13,0.95);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:center;color:#fff;font-family:var(--font)}
+/* call modal */
+.call-modal{position:fixed;inset:0;background:rgba(13,13,13,0.97);z-index:10000;display:none;flex-direction:column;align-items:center;justify-content:flex-end;color:#fff;font-family:var(--font);padding-bottom:calc(40px + env(safe-area-inset-bottom))}
 .call-modal.open{display:flex}
+.call-modal.video-mode .call-info-panel{display:none}
+.call-modal.video-mode .call-video-wrap{display:block}
+.call-video-wrap{display:none;position:absolute;inset:0;background:#000}
+#remote-video{width:100%;height:100%;object-fit:cover}
+#local-video{position:absolute;top:16px;left:16px;width:110px;height:150px;object-fit:cover;border-radius:12px;border:2px solid rgba(255,255,255,.3);z-index:2;background:#222}
+.call-info-panel{display:flex;flex-direction:column;align-items:center;z-index:3;margin-bottom:auto;padding-top:80px}
 .call-avatar{width:100px;height:100px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:36px;font-weight:700;margin-bottom:20px;box-shadow:0 0 20px rgba(16,163,127,0.4)}
 .call-avatar.ringing{animation:callPulse 1.5s infinite}
 @keyframes callPulse{0%{box-shadow:0 0 0 0 rgba(16,163,127,0.7)}70%{box-shadow:0 0 0 25px rgba(16,163,127,0)}100%{box-shadow:0 0 0 0 rgba(16,163,127,0)}}
 .call-name{font-size:22px;font-weight:600;margin-bottom:8px}
-.call-status{font-size:14px;color:var(--muted);margin-bottom:40px}
-.call-actions{display:flex;gap:30px}
-.btn-call-act{width:56px;height:56px;border-radius:50%;border:none;color:#fff;font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:transform 0.1s}
-.btn-call-act:active{transform:scale(0.9)}
+.call-status{font-size:14px;color:#aaa;margin-bottom:12px}
+.call-timer{font-size:13px;color:var(--accent);margin-bottom:8px;display:none}
+.call-timer.show{display:block}
+.call-actions{display:flex;gap:40px;align-items:flex-end;z-index:3}
+.btn-call-act{width:68px;height:68px;border-radius:50%;border:none;color:#fff;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;transition:transform .1s;padding:0}
+.btn-call-act:active{transform:scale(0.92)}
+.call-btn-icon{font-size:22px;line-height:1}
+.call-btn-label{font-size:10px;font-weight:600;opacity:.9}
 .btn-call-act.accept{background:var(--accent)}
 .btn-call-act.decline{background:var(--danger)}
+.btn-call-act.hangup{background:var(--danger)}
+
+/* call log overlay */
+.call-log-overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:860px;z-index:8500;background:#fff;display:none;flex-direction:column}
+.call-log-overlay.open{display:flex}
+.call-log-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);height:56px;flex-shrink:0}
+.call-log-title{flex:1;font-size:15px;font-weight:700}
+.call-log-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
+.call-log-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
+.call-log-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
+.call-log-icon.incoming{background:#d4f0e8}
+.call-log-icon.outgoing{background:#dbeafe}
+.call-log-icon.missed{background:#fee2e2}
+.call-log-info{flex:1;min-width:0}
+.call-log-peer{font-size:13px;font-weight:700;margin-bottom:2px}
+.call-log-detail{font-size:11px;color:var(--muted)}
+.call-log-time{font-size:10px;color:var(--muted);flex-shrink:0}
+.call-log-empty{text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
+
+/* call log in chat */
+.system-msg.call-log-msg{background:#f0f9ff;border-color:#bae6fd;color:#0369a1}
 
 /* toast */
 .toast{position:fixed;bottom:85px;left:50%;transform:translateX(-50%);background:#0d0d0d;color:#fff;padding:8px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:9999;white-space:nowrap}
@@ -330,8 +364,10 @@ position:relative;z-index:10;
           <span id="peer-status">في انتظار الطرف الآخر...</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:6px;margin-right:auto">
-        <button class="btn-hdr call-btn" onclick="startAudioCall()" title="مكالمة صوتية">📞 مكالمة</button>
+      <div style="display:flex;align-items:center;gap:5px;margin-right:auto">
+        <button class="btn-hdr call-btn" onclick="startCall('audio')" title="مكالمة صوتية">📞</button>
+        <button class="btn-hdr video-call-btn" onclick="startCall('video')" title="مكالمة فيديو">📹</button>
+        <button class="btn-hdr call-log-btn" onclick="openCallLog()" title="سجل المكالمات">📋</button>
         <div class="my-avatar-sm" id="my-avatar">ME</div>
       </div>
       <div class="header-actions">
@@ -440,12 +476,39 @@ position:relative;z-index:10;
   </div>
 
   <div id="call-modal" class="call-modal">
-    <div class="call-avatar ringing" id="call-avatar-el">📞</div>
-    <div class="call-name" id="call-username">الطرف الآخر</div>
-    <div class="call-status" id="call-status-text">جاري الاتصال...</div>
+    <div class="call-video-wrap" id="call-video-wrap">
+      <video id="remote-video" autoplay playsinline></video>
+      <video id="local-video" autoplay playsinline muted></video>
+    </div>
+    <div class="call-info-panel" id="call-info-panel">
+      <div class="call-avatar ringing" id="call-avatar-el">📞</div>
+      <div class="call-name" id="call-username">الطرف الآخر</div>
+      <div class="call-status" id="call-status-text">جاري الاتصال...</div>
+      <div class="call-timer" id="call-timer">00:00</div>
+    </div>
     <div class="call-actions">
-      <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">📞</button>
-      <button class="btn-call-act decline" onclick="endCall()">挂</button>
+      <button class="btn-call-act decline" id="btn-call-decline" onclick="endCall('declined')">
+        <span class="call-btn-icon">✕</span>
+        <span class="call-btn-label">رفض</span>
+      </button>
+      <button class="btn-call-act accept hidden" id="btn-call-accept" onclick="answerCall()">
+        <span class="call-btn-icon">✓</span>
+        <span class="call-btn-label">قبول</span>
+      </button>
+      <button class="btn-call-act hangup hidden" id="btn-call-hangup" onclick="endCall('ended')">
+        <span class="call-btn-icon">📵</span>
+        <span class="call-btn-label">إنهاء</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="call-log-overlay" id="call-log-overlay">
+    <div class="call-log-header">
+      <button class="btn-close-search" onclick="closeCallLog()">✕</button>
+      <div class="call-log-title">سجل المكالمات</div>
+    </div>
+    <div class="call-log-list" id="call-log-list">
+      <div class="call-log-empty">لا توجد مكالمات بعد</div>
     </div>
   </div>
 
@@ -472,7 +535,9 @@ const CLOUDINARY_CLOUD='db03wdg7v', CLOUDINARY_PRESET='ekk7u3hb';
 /* ══ STATE ══ */
 let db;
 let myName,myId,roomId,peerName=null;
-let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef;
+let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef,callHistoryRef;
+let peerConnection=null,localStream=null,currentCallType='audio',isCallInitiator=false;
+let callStartTime=null,callTimerInterval=null,iceUnsub=null;
 let currentActivePeerRef=null, peerTypingListener=null;
 let typingTimeout, inactivityTimeout;
 let isInitialLoad=true;
@@ -495,11 +560,16 @@ const initials=n=>n.trim().slice(0,2).toUpperCase();
 const genId=()=>Math.random().toString(36).slice(2,10);
 const fmt=ts=>new Date(ts).toLocaleTimeString('ar-EG',{hour:'2-digit',minute:'2-digit'});
 
-// دالة فحص الإيموجي المنفرد لتليجرام أنيميشن
-function isSingleEmoji(text) {
-  if(!text) return false;
-  const emojiRegex = /^[\u{1F300}-\u{1F9FF}\u{1F600}-\u{1F64F}\u{1F680}-\u{1F6FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F1E6}-\u{1F1FF}\u{1F900}-\u{1F9FF}\u{1F300}-\u{1F5FF}\u{1F500}-\u{1F5FF}\u{1F900}-\u{1F9FF}\u{1F004}\u{1F0CF}\u{1F170}-\u{1F251}\u{2B50}\u{2B55}\u{231A}\u{231B}\u{23F0}\u{23F3}\u{25AA}\u{25AB}\u{25B6}\u{25C0}\u{25FB}\u{25FC}\u{25FD}\u{25FE}]$/u;
-  return emojiRegex.test(text.trim());
+function isSingleEmoji(text){
+  if(!text)return false;
+  const t=text.trim();
+  if(!t)return false;
+  if(typeof Intl!=='undefined'&&Intl.Segmenter){
+    const segs=[...new Intl.Segmenter('ar',{granularity:'grapheme'}).segment(t)].map(s=>s.segment);
+    if(segs.length!==1)return false;
+    return/\p{Extended_Pictographic}/u.test(segs[0]);
+  }
+  return/^(\p{Extended_Pictographic}(\uFE0F|\uFE0E)?(\u200D\p{Extended_Pictographic}(\uFE0F|\uFE0E)?)*)$/u.test(t);
 }
 
 function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800)}
@@ -549,6 +619,7 @@ async function joinRoom(){
   typingRef=db.ref(`rooms/${roomId}/typing/${myId}`);
   roomPresenceRef=db.ref(`rooms/${roomId}/presence`);
   callRef=db.ref(`rooms/${roomId}/call`);
+  callHistoryRef=db.ref(`rooms/${roomId}/callHistory`);
 
   await presenceRef.set({name:myName,online:true,joinedAt:Date.now()});
   presenceRef.onDisconnect().set({name:myName,online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
@@ -697,8 +768,9 @@ function appendMsgToDOM(msg,key,areaEl){
   const div=document.createElement('div');
 
   if(msg.type==='system'){
-    div.className='system-msg';
-    div.innerHTML=`<span>${esc(msg.text)}</span><span class="system-msg-ts">${fmt(msg.ts||Date.now())}</span>`;
+    div.className='system-msg'+(msg.callLog?' call-log-msg':'');
+    const icon=msg.callLog?(msg.callType==='video'?'📹':'📞'):'';
+    div.innerHTML=`<span>${icon?icon+' ':''}${esc(msg.text)}</span><span class="system-msg-ts">${fmt(msg.ts||Date.now())}</span>`;
   }else{
     const sent=msg.senderName===myName;
     div.className='msg-wrapper '+(sent?'sent':'recv');
@@ -741,9 +813,9 @@ function appendMsgToDOM(msg,key,areaEl){
       ${sent?`<button class="msg-action-btn" onclick="deleteMsg('${key}',event)" title="حذف">🗑️</button>`:''}
     </div>`;
 
-    // التحقق من تفعيل أنيميشن تليجرام للإيموجي
-    const isEmojiOnly = !msg.fileUrl && isSingleEmoji(msg.text);
-    const bubbleClass = isEmojiOnly ? 'msg-bubble telegram-emoji' : 'msg-bubble';
+    const isEmojiOnly=!msg.fileUrl&&isSingleEmoji(msg.text);
+    const bubbleClass=isEmojiOnly?'msg-bubble emoji-only':'msg-bubble';
+    const textClass=isEmojiOnly?'actual-msg-text emoji-anim':'actual-msg-text';
 
     div.innerHTML=`<div class="msg-row" id="msgrow-${key}" data-key="${key}">
       <div class="msg-bubble-wrap">
@@ -751,7 +823,7 @@ function appendMsgToDOM(msg,key,areaEl){
         <div class="${bubbleClass}" onclick="toggleActions('${key}',event)" oncontextmenu="showCtxEmoji('${key}',event)">
           ${replyHtml}
           ${mediaHtml}
-          ${msg.text?`<span class="actual-msg-text">${esc(msg.text)}${edited}</span>`:''}
+          ${msg.text?`<span class="${textClass}">${esc(msg.text)}${edited}</span>`:''}
           <span class="msg-meta">${fmt(msg.ts||Date.now())}${sent?` <span class="check-icon tick-sent" id="tick-${key}">✓</span>`:''}</span>
         </div>
         <div class="reactions-bar" data-msgkey="${key}"></div>
@@ -1046,54 +1118,279 @@ function playVoice(btn,e){
   audio.play().catch(()=>{btn.textContent='▶'});
 }
 
-/* ══ VOICE CALL LOGIC (Firebase Real-time Signaling Engine) ══ */
+/* ══ CALLS (WebRTC + Firebase Signaling) ══ */
+const RTC_CONFIG={iceServers:[{urls:'stun:stun.l.google.com:19302'},{urls:'stun:stun1.l.google.com:19302'}]};
+
 function setupCallListener(){
-  callRef.on('value', snap => {
-    const callData = snap.val();
-    if(!callData) {
-      $('call-modal').classList.remove('open');
-      return;
-    }
-    // في حالة وجود رنين وكان المستخدم هو المستقبِل
-    if(callData.status === 'ringing' && callData.to === myName) {
-      $('call-username').textContent = callData.from;
-      $('call-status-text').textContent = 'مكالمة صوتية واردة...';
+  callRef.on('value',async snap=>{
+    const callData=snap.val();
+    if(!callData){cleanupCallUI();return}
+    const type=callData.type||'audio';
+    const isIncoming=callData.status==='ringing'&&callData.to===myName;
+    const isOutgoing=callData.from===myName;
+    const isAccepted=callData.status==='accepted';
+
+    if(isIncoming){
+      currentCallType=type;isCallInitiator=false;
+      $('call-username').textContent=callData.from;
+      $('call-status-text').textContent=type==='video'?'مكالمة فيديو واردة...':'مكالمة صوتية واردة...';
+      $('call-avatar-el').textContent=type==='video'?'📹':'📞';
       $('btn-call-accept').classList.remove('hidden');
+      $('btn-call-decline').classList.remove('hidden');
+      $('btn-call-decline').querySelector('.call-btn-label').textContent='رفض';
+      $('btn-call-hangup').classList.add('hidden');
       $('call-avatar-el').classList.add('ringing');
+      $('call-modal').classList.toggle('video-mode',type==='video');
       $('call-modal').classList.add('open');
-    } else if(callData.status === 'accepted') {
-      $('call-status-text').textContent = 'متصل الآن 🟢';
+    }else if(isOutgoing&&callData.status==='ringing'){
+      $('call-status-text').textContent='جاري الرنين...';
+      $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
+    }else if(isAccepted){
+      $('call-status-text').textContent='متصل الآن 🟢';
       $('btn-call-accept').classList.add('hidden');
+      $('btn-call-decline').classList.add('hidden');
+      $('btn-call-hangup').classList.remove('hidden');
       $('call-avatar-el').classList.remove('ringing');
+      if(!callStartTime){callStartTime=Date.now();startCallTimer()}
+      if(type==='video')$('call-modal').classList.add('video-mode');
+
+      if(isOutgoing&&callData.answer&&peerConnection&&!peerConnection.remoteDescription){
+        await handleRemoteAnswer(callData);
+      }
     }
+  });
+
+  callRef.child('ice').on('child_added',async snap=>{
+    const callData=(await callRef.once('value')).val();
+    if(!callData||!peerConnection)return;
+    const cand=snap.val();
+    if(!cand||cand.from===myId)return;
+    try{await peerConnection.addIceCandidate(new RTCIceCandidate(cand))}catch(e){}
   });
 }
 
-async function startAudioCall(){
-  if(!peerName) { showToast('لا يوجد طرف آخر في الغرفة للاتصال به ❌'); return; }
-  $('call-username').textContent = peerName;
-  $('call-status-text').textContent = 'جاري الرنين...';
+async function getLocalMedia(type){
+  const constraints=type==='video'?{audio:true,video:{facingMode:'user',width:{ideal:640},height:{ideal:480}}}:{audio:true,video:false};
+  const stream=await navigator.mediaDevices.getUserMedia(constraints);
+  localStream=stream;
+  const lv=$('local-video');
+  if(lv){lv.srcObject=stream;lv.style.display=type==='video'?'block':'none'}
+  return stream;
+}
+
+function createPeerConnection(){
+  if(peerConnection)return peerConnection;
+  peerConnection=new RTCPeerConnection(RTC_CONFIG);
+  if(localStream)localStream.getTracks().forEach(t=>peerConnection.addTrack(t,localStream));
+  peerConnection.onicecandidate=e=>{
+    if(e.candidate)callRef.child('ice').push({...e.candidate.toJSON(),from:myId});
+  };
+  peerConnection.ontrack=e=>{
+    const rv=$('remote-video');
+    if(rv&&e.streams[0])rv.srcObject=e.streams[0];
+  };
+  peerConnection.onconnectionstatechange=()=>{
+    if(peerConnection&&peerConnection.connectionState==='failed')showToast('فشل الاتصال — تحقق من الشبكة');
+  };
+  return peerConnection;
+}
+
+async function startCall(type){
+  if(!peerName){showToast('لا يوجد طرف آخر في الغرفة ❌');return}
+  if((await callRef.once('value')).val()){showToast('يوجد مكالمة جارية بالفعل');return}
+  currentCallType=type;isCallInitiator=true;callStartTime=null;
+  $('call-username').textContent=peerName;
+  $('call-status-text').textContent='جاري الاتصال...';
+  $('call-avatar-el').textContent=type==='video'?'📹':'📞';
   $('btn-call-accept').classList.add('hidden');
+  $('btn-call-decline').classList.remove('hidden');
+  $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
+  $('btn-call-hangup').classList.add('hidden');
   $('call-avatar-el').classList.add('ringing');
+  $('call-modal').classList.toggle('video-mode',type==='video');
   $('call-modal').classList.add('open');
-  
-  await callRef.set({
-    from: myName,
-    to: peerName,
-    status: 'ringing',
-    ts: Date.now()
-  });
+
+  try{
+    await getLocalMedia(type);
+    createPeerConnection();
+    const offer=await peerConnection.createOffer();
+    await peerConnection.setLocalDescription(offer);
+    await callRef.set({
+      from:myName,to:peerName,type,status:'ringing',
+      offer:{sdp:offer.sdp,type:offer.type},ts:Date.now()
+    });
+    $('call-status-text').textContent='جاري الرنين...';
+  }catch(e){
+    showToast(type==='video'?'تعذر الوصول للكاميرا/الميكروفون ❌':'تعذر الوصول للميكروفون ❌');
+    await endCall('failed');
+  }
 }
 
 async function answerCall(){
-  await callRef.update({ status: 'accepted' });
-  showToast('تم قبول المكالمة - متصل');
+  const callData=(await callRef.once('value')).val();
+  if(!callData||!callData.offer)return;
+  const type=callData.type||'audio';
+  currentCallType=type;isCallInitiator=false;
+  try{
+    await getLocalMedia(type);
+    createPeerConnection();
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.offer));
+    const answer=await peerConnection.createAnswer();
+    await peerConnection.setLocalDescription(answer);
+    await callRef.update({
+      status:'accepted',
+      answer:{sdp:answer.sdp,type:answer.type},
+      answeredAt:Date.now()
+    });
+    $('btn-call-accept').classList.add('hidden');
+    $('btn-call-decline').classList.add('hidden');
+    $('btn-call-hangup').classList.remove('hidden');
+    $('call-status-text').textContent='متصل الآن 🟢';
+    $('call-avatar-el').classList.remove('ringing');
+    if(type==='video')$('call-modal').classList.add('video-mode');
+    callStartTime=Date.now();startCallTimer();
+    showToast('تم قبول المكالمة ✓');
+  }catch(e){
+    showToast('فشل قبول المكالمة ❌');
+    await endCall('failed');
+  }
 }
 
-async function endCall(){
-  await callRef.remove();
-  $('call-modal').classList.remove('open');
-  showToast('تم إنهاء المكالمة');
+async function handleRemoteAnswer(callData){
+  if(!peerConnection||peerConnection.remoteDescription)return;
+  try{
+    await peerConnection.setRemoteDescription(new RTCSessionDescription(callData.answer));
+  }catch(e){}
+}
+
+function startCallTimer(){
+  clearInterval(callTimerInterval);
+  const el=$('call-timer');el.classList.add('show');
+  callTimerInterval=setInterval(()=>{
+    if(!callStartTime)return;
+    const s=Math.floor((Date.now()-callStartTime)/1000);
+    const mm=String(Math.floor(s/60)).padStart(2,'0');
+    const ss=String(s%60).padStart(2,'0');
+    el.textContent=mm+':'+ss;
+  },1000);
+}
+
+function stopCallTimer(){
+  clearInterval(callTimerInterval);
+  $('call-timer').classList.remove('show');
+  $('call-timer').textContent='00:00';
+}
+
+function cleanupCallUI(){
+  $('call-modal').classList.remove('open','video-mode');
+  $('btn-call-accept').classList.add('hidden');
+  $('btn-call-decline').classList.remove('hidden');
+  $('btn-call-hangup').classList.add('hidden');
+  $('call-avatar-el').classList.remove('ringing');
+  stopCallTimer();
+  if(localStream){localStream.getTracks().forEach(t=>t.stop());localStream=null}
+  if(peerConnection){peerConnection.close();peerConnection=null}
+  const rv=$('remote-video'),lv=$('local-video');
+  if(rv)rv.srcObject=null;
+  if(lv){lv.srcObject=null;lv.style.display='none'}
+  callStartTime=null;isCallInitiator=false;
+}
+
+async function logCall(status,callData){
+  if(!callHistoryRef||!callData)return;
+  const duration=callStartTime?Math.floor((Date.now()-callStartTime)/1000):0;
+  const type=callData.type||'audio';
+  const typeLabel=type==='video'?'فيديو':'صوت';
+  const entry={
+    from:callData.from,to:callData.to,type,status,duration,
+    ts:callData.ts||Date.now(),endedAt:Date.now()
+  };
+  await callHistoryRef.push(entry);
+
+  let sysText='';
+  const icon=type==='video'?'📹':'📞';
+  if(status==='declined'){
+    sysText=callData.to===myName
+      ?`${icon} رفضت مكالمة ${typeLabel} من ${callData.from}`
+      :`${icon} رفض ${callData.to} مكالمة ${typeLabel}`;
+  }else if(status==='missed'){
+    sysText=`${icon} مكالمة ${typeLabel} فائتة من ${callData.from}`;
+  }else if(status==='ended'){
+    const durStr=duration>0?` (${Math.floor(duration/60)}:${String(duration%60).padStart(2,'0')})`:'';
+    sysText=`${icon} انتهت مكالمة ${typeLabel}${durStr}`;
+  }else if(status==='failed'){
+    sysText=`${icon} فشلت مكالمة ${typeLabel}`;
+  }
+  if(sysText&&messagesRef){
+    await messagesRef.push({type:'system',text:sysText,callLog:true,callType:type,ts:Date.now()});
+  }
+}
+
+async function endCall(reason){
+  const callData=(await callRef.once('value')).val();
+  let status=reason||'ended';
+  if(callData){
+    if(status==='declined'&&callData.status==='ringing'&&callData.to===myName)status='declined';
+    else if(status==='declined'&&callData.status==='ringing')status='missed';
+    else if(callData.status!=='accepted')status=callData.from===myName?'missed':'declined';
+    await logCall(status,callData);
+    await callRef.remove();
+  }
+  cleanupCallUI();
+  if(status==='ended')showToast('تم إنهاء المكالمة');
+  else if(status==='declined')showToast('تم رفض المكالمة');
+}
+
+/* ══ CALL LOG PANEL ══ */
+function openCallLog(){
+  $('call-log-overlay').classList.add('open');
+  renderCallLog();
+  if(callHistoryRef)callHistoryRef.on('value',renderCallLogFromSnap);
+}
+function closeCallLog(){
+  $('call-log-overlay').classList.remove('open');
+  if(callHistoryRef)callHistoryRef.off('value',renderCallLogFromSnap);
+}
+function renderCallLogFromSnap(snap){renderCallLog(snap.val()||{})}
+function renderCallLog(data){
+  const list=$('call-log-list');
+  if(!list)return;
+  if(!data||typeof data==='object'&&!Object.keys(data).length){
+    if(callHistoryRef){
+      callHistoryRef.once('value',snap=>{
+        const d=snap.val()||{};
+        paintCallLog(list,d);
+      });
+    }else{list.innerHTML='<div class="call-log-empty">لا توجد مكالمات بعد</div>'}
+    return;
+  }
+  paintCallLog(list,data);
+}
+function paintCallLog(list,data){
+  const entries=Object.entries(data).sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
+  if(!entries.length){list.innerHTML='<div class="call-log-empty">لا توجد مكالمات بعد</div>';return}
+  list.innerHTML=entries.map(([,c])=>{
+    const isMe=c.from===myName;
+    const peer=isMe?c.to:c.from;
+    const typeIcon=c.type==='video'?'📹':'📞';
+    let statusText='',iconClass='outgoing';
+    if(c.status==='missed'){statusText='مكالمة فائتة';iconClass='missed'}
+    else if(c.status==='declined'){statusText=isMe?'تم الرفض':'رفضت المكالمة';iconClass='missed'}
+    else if(c.status==='ended'){
+      const d=c.duration||0;
+      statusText=d>0?`مدة ${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`:'مكالمة منتهية';
+      iconClass=isMe?'outgoing':'incoming';
+    }else{statusText=c.status;iconClass=isMe?'outgoing':'incoming'}
+    const dir=isMe?'صادرة':'واردة';
+    return`<div class="call-log-item">
+      <div class="call-log-icon ${iconClass}">${typeIcon}</div>
+      <div class="call-log-info">
+        <div class="call-log-peer">${esc(peer)}</div>
+        <div class="call-log-detail">${dir} · ${statusText}</div>
+      </div>
+      <div class="call-log-time">${fmt(c.ts)}</div>
+    </div>`;
+  }).join('');
 }
 
 /* ══ REACTIONS ══ */
@@ -1175,18 +1472,21 @@ async function clearChat(){
   }catch(e){showToast('فشل المسح ❌')}
 }
 async function leaveRoom(){
-  stopInactivityTimer();clearTypingNow();cancelReply();cancelEdit();
+  stopInactivityTimer();clearTypingNow();cancelReply();cancelEdit();closeCallLog();
+  cleanupCallUI();
   try{
+    if(callRef&&(await callRef.once('value')).val())await callRef.remove();
     if(messagesRef)await messagesRef.push({type:'system',text:myName+' غادر المحادثة',ts:Date.now()});
     await presenceRef.set({name:myName,online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
     await typingRef.remove();
     if(currentActivePeerRef)currentActivePeerRef.off();
     if(roomPresenceRef)roomPresenceRef.off();
-    if(callRef)callRef.off();
-    ['typing','clearSignal','reactions','readBy','pinnedMsg','call'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
+    if(callRef){callRef.off();callRef.child('ice').off()}
+    if(callHistoryRef)callHistoryRef.off();
+    ['typing','clearSignal','reactions','readBy','pinnedMsg','call','callHistory'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
     allMessages={};messagesRef.off();
   }catch(e){}
-  myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=null;
+  myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=callHistoryRef=null;
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
   $('name-input').value='';$('room-input').value='';

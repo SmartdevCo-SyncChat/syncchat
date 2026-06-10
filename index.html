@@ -351,7 +351,8 @@ position:relative;z-index:10;
 
 <div id="app">
   <div id="login-screen" class="screen">
-    <div class="login-wrap">      <div class="login-card">
+    <div class="login-wrap">      
+      <div class="login-card">
         <div class="brand">
           <div class="brand-name">Chat<span>BFT</span></div>
           <div class="brand-sub">محادثة فورية آمنة</div>
@@ -497,3 +498,147 @@ position:relative;z-index:10;
       </div>
       <div class="search-results" id="search-results"><div class="search-empty">اكتب للبحث في الرسائل</div></div>
     </div>
+  </div>
+</div>
+
+<script>
+// 1. إعدادات الـ Firebase - يرجى استبدالها ببيانات مشروعك الحقيقية
+const firebaseConfig = {
+  apiKey:"AIzaSyCqkSRiU0n0G4AFSJQCLCO-wqip6sKwCz0",
+  authDomain:"syncchat-6e22b.firebaseapp.com",
+  databaseURL:"https://syncchat-6e22b-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId:"syncchat-6e22b",
+  storageBucket:"syncchat-6e22b.firebasestorage.app",
+  messagingSenderId:"692797381468",
+  appId:"1:692797381468:web:9faaed7bf44f0f527a3f99"
+};
+
+// تهيئة Firebase
+firebase.initializeApp(firebaseConfig);
+const db = firebase.database();
+
+// متغيرات الحالة العامة للـ Chat
+let currentUsername = "";
+let currentRoom = "";
+let selectedFiles = [];
+
+// دالة تسجيل الدخول والانتقال لغرفة الشات
+function joinRoom() {
+  const nameInput = document.getElementById("name-input").value.trim();
+  const roomInput = document.getElementById("room-input").value.trim();
+  const errorEl = document.getElementById("login-error");
+
+  if (!nameInput || !roomInput) {
+    errorEl.textContent = "برجاء إدخال الاسم ورمز الغرفة أولاً!";
+    return;
+  }
+
+  errorEl.textContent = ""; // مسح الأخطاء
+  currentUsername = nameInput;
+  currentRoom = roomInput;
+
+  // تحديث بيانات الواجهة (Header)
+  document.getElementById("header-room-id").textContent = "غرفة: " + currentRoom;
+  document.getElementById("my-avatar").textContent = currentUsername.substring(0, 2).toUpperCase();
+
+  // الانتقال الشاشات (تبديل الكلاس Hidden)
+  document.getElementById("login-screen").classList.add("hidden");
+  document.getElementById("chat-screen").classList.remove("hidden");
+
+  // بدء الاستماع للرسائل في هذه الغرفة عبر Firebase
+  listenForMessages();
+}
+
+// دالة الاستماع لجلب الرسائل فورياً
+function listenForMessages() {
+  const messagesRef = db.ref("rooms/" + currentRoom + "/messages");
+  messagesRef.on("value", (snapshot) => {
+    const data = snapshot.val();
+    const messagesArea = document.getElementById("messages-area");
+    
+    // إخفاء الـ Empty State إذا وجدت رسائل
+    if (data) {
+      document.getElementById("empty-state").style.display = "none";
+    }
+
+    // هنا يتم بناء فقاعات المحادثة (تطبيق مبسط لتأكيد نجاح الاتصال والدخول)
+    messagesArea.innerHTML = ""; 
+    for (let id in data) {
+      const msg = data[id];
+      const isMe = msg.sender === currentUsername;
+      
+      const msgWrapper = document.createElement("div");
+      msgWrapper.className = `msg-wrapper ${isMe ? 'sent' : 'recv'}`;
+      
+      msgWrapper.innerHTML = `
+        <div class="msg-row">
+          <div class="msg-bubble-wrap">
+            <span class="msg-sender-name">${msg.sender}</span>
+            <div class="msg-bubble">
+              <span class="actual-msg-text">${msg.text}</span>
+            </div>
+          </div>
+        </div>
+      `;
+      messagesArea.appendChild(msgWrapper);
+    }
+    scrollToBottom();
+  });
+}
+
+// دالة إرسال رسالة نصية مبسطة
+function sendMessage() {
+  const inputEl = document.getElementById("msg-input");
+  const text = inputEl.value.trim();
+  if (!text) return;
+
+  const messagesRef = db.ref("rooms/" + currentRoom + "/messages");
+  messagesRef.push({
+    sender: currentUsername,
+    text: text,
+    timestamp: Date.now()
+  });
+
+  inputEl.value = "";
+}
+
+// دالة النزول لأسفل المحادثة تلقائياً
+function scrollToBottom() {
+  const area = document.getElementById("messages-area");
+  area.scrollTop = area.scrollHeight;
+}
+
+// دالة الخروج من الغرفة والعودة لشاشة الدخول
+function leaveRoom() {
+  document.getElementById("chat-screen").classList.add("hidden");
+  document.getElementById("login-screen").classList.remove("hidden");
+  document.getElementById("name-input").value = "";
+  document.getElementById("room-input").value = "";
+  // قطع اتصال الـ Listener
+  db.ref("rooms/" + currentRoom + "/messages").off();
+}
+
+// التعامل مع اختصارات الأزرار (Enter للإرسال)
+function handleKey(e) {
+  if (e.key === "Enter" && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage();
+  }
+}
+
+// دوال التحكم بالـ Placeholders و السكايبات لتفادي الأخطاء بالـ Console
+function closeAllMenus() {}
+function toggleEmojiPicker(e) {
+  const picker = document.getElementById("input-emoji-picker");
+  picker.classList.toggle("show");
+}
+function insertEmoji(emoji) {
+  const inputEl = document.getElementById("msg-input");
+  inputEl.value += emoji;
+}
+function openSearch() { document.getElementById("search-overlay").classList.add("open"); }
+function closeSearch() { document.getElementById("search-overlay").classList.remove("open"); }
+</script>
+
+</body>
+</html>

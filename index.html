@@ -51,14 +51,45 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 #peer-status{flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .online-dot{width:6px;height:6px;border-radius:50%;background:var(--muted);flex-shrink:0}
 .online-dot.on{background:var(--accent);box-shadow:0 0 5px rgba(16,163,127,.5)}
-.header-actions{display:flex;gap:5px}
+.header-actions{display:flex;gap:5px;align-items:center}
 .btn-hdr{border:1px solid var(--border);border-radius:7px;padding:5px 10px;cursor:pointer;font-size:11px;font-weight:600;font-family:var(--font);background:transparent}
 .btn-hdr.clear{color:var(--muted)}
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
-.btn-hdr.search-btn{color:var(--muted)}
-.btn-hdr.call-btn{color:#fff;background:var(--accent);border-color:var(--accent)}
-.btn-hdr.video-call-btn{color:#fff;background:#2563eb;border-color:#2563eb}
-.btn-hdr.call-log-btn{color:var(--muted)}
+
+/* header popup menu */
+.header-menu-wrap{position:relative}
+.btn-menu-trigger{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,box-shadow .15s}
+.btn-menu-trigger:hover{background:var(--surface);border-color:var(--border2)}
+.btn-menu-trigger.open{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.12)}
+.btn-menu-trigger svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.header-popup-menu{
+  position:absolute;top:calc(100% + 8px);left:0;min-width:220px;
+  background:#fff;border:1px solid var(--border);border-radius:14px;
+  box-shadow:0 8px 30px rgba(0,0,0,.12),0 2px 8px rgba(0,0,0,.06);
+  padding:6px;z-index:200;display:none;flex-direction:column;gap:2px;
+  animation:menuPop .2s cubic-bezier(.2,.8,.3,1) both;transform-origin:top left;
+}
+.header-popup-menu.open{display:flex}
+@keyframes menuPop{from{opacity:0;transform:translateY(-6px) scale(.96)}to{opacity:1;transform:translateY(0) scale(1)}}
+.popup-menu-item{
+  display:flex;align-items:center;gap:12px;width:100%;border:none;background:transparent;
+  border-radius:10px;padding:10px 12px;cursor:pointer;font-family:var(--font);
+  text-align:right;transition:background .12s;
+}
+.popup-menu-item:hover{background:var(--surface)}
+.popup-menu-item:active{transform:scale(.98)}
+.popup-menu-icon{
+  width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;
+  font-size:17px;flex-shrink:0;
+}
+.popup-menu-icon.audio{background:#d4f0e8}
+.popup-menu-icon.video{background:#dbeafe}
+.popup-menu-icon.search{background:#f3f4f6}
+.popup-menu-text{flex:1;min-width:0}
+.popup-menu-label{display:block;font-size:13px;font-weight:600;color:var(--text)}
+.popup-menu-desc{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
+.menu-backdrop{position:fixed;inset:0;z-index:150;display:none}
+.menu-backdrop.show{display:block}
 
 /* pin bar */
 .pin-bar{background:#fffbea;border-bottom:1.5px solid #f0d060;border-right:4px solid var(--accent);padding:8px 14px;display:none;align-items:center;gap:10px;cursor:pointer;min-height:40px;flex-shrink:0}
@@ -299,23 +330,6 @@ position:relative;z-index:10;
 .btn-call-act.decline{background:var(--danger)}
 .btn-call-act.hangup{background:var(--danger)}
 
-/* call log overlay */
-.call-log-overlay{position:fixed;top:0;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:860px;z-index:8500;background:#fff;display:none;flex-direction:column}
-.call-log-overlay.open{display:flex}
-.call-log-header{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);height:56px;flex-shrink:0}
-.call-log-title{flex:1;font-size:15px;font-weight:700}
-.call-log-list{flex:1;overflow-y:auto;padding:12px 16px;display:flex;flex-direction:column;gap:8px}
-.call-log-item{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:12px;background:var(--surface);border:1px solid var(--border)}
-.call-log-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.call-log-icon.incoming{background:#d4f0e8}
-.call-log-icon.outgoing{background:#dbeafe}
-.call-log-icon.missed{background:#fee2e2}
-.call-log-info{flex:1;min-width:0}
-.call-log-peer{font-size:13px;font-weight:700;margin-bottom:2px}
-.call-log-detail{font-size:11px;color:var(--muted)}
-.call-log-time{font-size:10px;color:var(--muted);flex-shrink:0}
-.call-log-empty{text-align:center;color:var(--muted);font-size:13px;margin-top:40px}
-
 /* call log in chat */
 .system-msg.call-log-msg{background:#f0f9ff;border-color:#bae6fd;color:#0369a1}
 
@@ -364,14 +378,38 @@ position:relative;z-index:10;
           <span id="peer-status">في انتظار الطرف الآخر...</span>
         </div>
       </div>
-      <div style="display:flex;align-items:center;gap:5px;margin-right:auto">
-        <button class="btn-hdr call-btn" onclick="startCall('audio')" title="مكالمة صوتية">📞</button>
-        <button class="btn-hdr video-call-btn" onclick="startCall('video')" title="مكالمة فيديو">📹</button>
-        <button class="btn-hdr call-log-btn" onclick="openCallLog()" title="سجل المكالمات">📋</button>
+      <div style="display:flex;align-items:center;gap:6px;margin-right:auto">
         <div class="my-avatar-sm" id="my-avatar">ME</div>
       </div>
       <div class="header-actions">
-        <button class="btn-hdr search-btn" onclick="openSearch()">🔍</button>
+        <div class="header-menu-wrap">
+          <button class="btn-menu-trigger" id="btn-menu-trigger" onclick="toggleHeaderMenu(event)" title="المزيد">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
+          </button>
+          <div class="header-popup-menu" id="header-popup-menu">
+            <button class="popup-menu-item" onclick="menuAction(()=>startCall('audio'))">
+              <span class="popup-menu-icon audio">📞</span>
+              <span class="popup-menu-text">
+                <span class="popup-menu-label">مكالمة صوتية</span>
+                <span class="popup-menu-desc">اتصال صوتي مباشر</span>
+              </span>
+            </button>
+            <button class="popup-menu-item" onclick="menuAction(()=>startCall('video'))">
+              <span class="popup-menu-icon video">📹</span>
+              <span class="popup-menu-text">
+                <span class="popup-menu-label">مكالمة فيديو</span>
+                <span class="popup-menu-desc">اتصال مرئي مباشر</span>
+              </span>
+            </button>
+            <button class="popup-menu-item" onclick="menuAction(openSearch)">
+              <span class="popup-menu-icon search">🔍</span>
+              <span class="popup-menu-text">
+                <span class="popup-menu-label">بحث في المحادثة</span>
+                <span class="popup-menu-desc">ابحث في الرسائل</span>
+              </span>
+            </button>
+          </div>
+        </div>
         <button class="btn-hdr clear" onclick="clearChat()">مسح</button>
         <button class="btn-hdr leave" onclick="leaveRoom()">خروج</button>
       </div>
@@ -502,15 +540,7 @@ position:relative;z-index:10;
     </div>
   </div>
 
-  <div class="call-log-overlay" id="call-log-overlay">
-    <div class="call-log-header">
-      <button class="btn-close-search" onclick="closeCallLog()">✕</button>
-      <div class="call-log-title">سجل المكالمات</div>
-    </div>
-    <div class="call-log-list" id="call-log-list">
-      <div class="call-log-empty">لا توجد مكالمات بعد</div>
-    </div>
-  </div>
+  <div class="menu-backdrop" id="menu-backdrop" onclick="closeHeaderMenu()"></div>
 
   <div class="toast" id="toast"></div>
   <div class="img-modal" id="img-modal" onclick="closeImgModal()">
@@ -596,7 +626,21 @@ function closeAllMenus(e){
   }
   $('input-emoji-picker').classList.remove('show');
   $('context-emoji-picker').style.display='none';
+  closeHeaderMenu();
 }
+function toggleHeaderMenu(e){
+  e.stopPropagation();
+  const menu=$('header-popup-menu'),btn=$('btn-menu-trigger'),bd=$('menu-backdrop');
+  const open=menu.classList.toggle('open');
+  btn.classList.toggle('open',open);
+  bd.classList.toggle('show',open);
+}
+function closeHeaderMenu(){
+  $('header-popup-menu').classList.remove('open');
+  $('btn-menu-trigger').classList.remove('open');
+  $('menu-backdrop').classList.remove('show');
+}
+function menuAction(fn){closeHeaderMenu();fn()}
 document.addEventListener('click',closeAllMenus);
 
 /* ══ EMOJI INPUT ══ */
@@ -1341,58 +1385,6 @@ async function endCall(reason){
   else if(status==='declined')showToast('تم رفض المكالمة');
 }
 
-/* ══ CALL LOG PANEL ══ */
-function openCallLog(){
-  $('call-log-overlay').classList.add('open');
-  renderCallLog();
-  if(callHistoryRef)callHistoryRef.on('value',renderCallLogFromSnap);
-}
-function closeCallLog(){
-  $('call-log-overlay').classList.remove('open');
-  if(callHistoryRef)callHistoryRef.off('value',renderCallLogFromSnap);
-}
-function renderCallLogFromSnap(snap){renderCallLog(snap.val()||{})}
-function renderCallLog(data){
-  const list=$('call-log-list');
-  if(!list)return;
-  if(!data||typeof data==='object'&&!Object.keys(data).length){
-    if(callHistoryRef){
-      callHistoryRef.once('value',snap=>{
-        const d=snap.val()||{};
-        paintCallLog(list,d);
-      });
-    }else{list.innerHTML='<div class="call-log-empty">لا توجد مكالمات بعد</div>'}
-    return;
-  }
-  paintCallLog(list,data);
-}
-function paintCallLog(list,data){
-  const entries=Object.entries(data).sort((a,b)=>(b[1].ts||0)-(a[1].ts||0));
-  if(!entries.length){list.innerHTML='<div class="call-log-empty">لا توجد مكالمات بعد</div>';return}
-  list.innerHTML=entries.map(([,c])=>{
-    const isMe=c.from===myName;
-    const peer=isMe?c.to:c.from;
-    const typeIcon=c.type==='video'?'📹':'📞';
-    let statusText='',iconClass='outgoing';
-    if(c.status==='missed'){statusText='مكالمة فائتة';iconClass='missed'}
-    else if(c.status==='declined'){statusText=isMe?'تم الرفض':'رفضت المكالمة';iconClass='missed'}
-    else if(c.status==='ended'){
-      const d=c.duration||0;
-      statusText=d>0?`مدة ${Math.floor(d/60)}:${String(d%60).padStart(2,'0')}`:'مكالمة منتهية';
-      iconClass=isMe?'outgoing':'incoming';
-    }else{statusText=c.status;iconClass=isMe?'outgoing':'incoming'}
-    const dir=isMe?'صادرة':'واردة';
-    return`<div class="call-log-item">
-      <div class="call-log-icon ${iconClass}">${typeIcon}</div>
-      <div class="call-log-info">
-        <div class="call-log-peer">${esc(peer)}</div>
-        <div class="call-log-detail">${dir} · ${statusText}</div>
-      </div>
-      <div class="call-log-time">${fmt(c.ts)}</div>
-    </div>`;
-  }).join('');
-}
-
 /* ══ REACTIONS ══ */
 async function quickReact(key,emoji,bubbleEl){
   try{
@@ -1472,7 +1464,7 @@ async function clearChat(){
   }catch(e){showToast('فشل المسح ❌')}
 }
 async function leaveRoom(){
-  stopInactivityTimer();clearTypingNow();cancelReply();cancelEdit();closeCallLog();
+  stopInactivityTimer();clearTypingNow();cancelReply();cancelEdit();closeHeaderMenu();
   cleanupCallUI();
   try{
     if(callRef&&(await callRef.once('value')).val())await callRef.remove();

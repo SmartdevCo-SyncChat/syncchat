@@ -42,7 +42,7 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 #chat-screen{max-width:860px;margin:0 auto;background:#fff;height:100dvh;display:flex;flex-direction:column;overflow:hidden;position:relative}
 
 /* header */
-.chat-header{background:#fff;border-bottom:1px solid var(--border);height:56px;min-height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:100;flex-shrink:0}
+.chat-header{background:#fff;border-bottom:1px solid var(--border);height:56px;min-height:56px;display:flex;align-items:center;gap:10px;padding:0 14px;z-index:250;flex-shrink:0}
 .peer-avatar{width:36px;height:36px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;color:#fff;flex-shrink:0}
 .my-avatar-sm{width:28px;height:28px;border-radius:50%;background:var(--surface);border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:var(--text2);flex-shrink:0}
 .header-info{flex:1;min-width:0}
@@ -57,7 +57,7 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .btn-hdr.leave{color:var(--danger);border-color:rgba(239,68,68,.3)}
 
 /* header popup menu */
-.header-menu-wrap{position:relative}
+.header-menu-wrap{position:relative;z-index:10}
 .btn-menu-trigger{width:34px;height:34px;border:1px solid var(--border);border-radius:9px;background:#fff;color:var(--text2);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s,border-color .15s,box-shadow .15s}
 .btn-menu-trigger:hover{background:var(--surface);border-color:var(--border2)}
 .btn-menu-trigger.open{background:var(--surface);border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.12)}
@@ -88,7 +88,7 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .popup-menu-text{flex:1;min-width:0}
 .popup-menu-label{display:block;font-size:13px;font-weight:600;color:var(--text)}
 .popup-menu-desc{display:block;font-size:10.5px;color:var(--muted);margin-top:1px}
-.menu-backdrop{position:fixed;inset:0;z-index:150;display:none}
+.menu-backdrop{position:fixed;inset:0;z-index:200;display:none;background:transparent}
 .menu-backdrop.show{display:block}
 
 /* pin bar */
@@ -418,21 +418,21 @@ position:relative;z-index:10;
             <svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="12" r="1.5" fill="currentColor" stroke="none"/><circle cx="12" cy="19" r="1.5" fill="currentColor" stroke="none"/></svg>
           </button>
           <div class="header-popup-menu" id="header-popup-menu">
-            <button class="popup-menu-item" onclick="menuAction(()=>startCall('audio'))">
+            <button type="button" class="popup-menu-item" data-action="call-audio">
               <span class="popup-menu-icon audio">📞</span>
               <span class="popup-menu-text">
                 <span class="popup-menu-label">مكالمة صوتية</span>
                 <span class="popup-menu-desc">اتصال صوتي مباشر</span>
               </span>
             </button>
-            <button class="popup-menu-item" onclick="menuAction(()=>startCall('video'))">
+            <button type="button" class="popup-menu-item" data-action="call-video">
               <span class="popup-menu-icon video">📹</span>
               <span class="popup-menu-text">
                 <span class="popup-menu-label">مكالمة فيديو</span>
                 <span class="popup-menu-desc">اتصال مرئي مباشر</span>
               </span>
             </button>
-            <button class="popup-menu-item" onclick="menuAction(openSearch)">
+            <button type="button" class="popup-menu-item" data-action="search">
               <span class="popup-menu-icon search">🔍</span>
               <span class="popup-menu-text">
                 <span class="popup-menu-label">بحث في المحادثة</span>
@@ -669,6 +669,7 @@ function resetInactivityTimer(){clearTimeout(inactivityTimeout);if(roomId)inacti
 
 /* ══ CLOSE ALL MENUS ══ */
 function closeAllMenus(e){
+  if(e&&(e.target.closest('#header-popup-menu')||e.target.closest('#btn-menu-trigger')))return;
   if(activeRowKey){
     const r=document.getElementById('msgrow-'+activeRowKey);
     if(r)r.classList.remove('active-actions');
@@ -681,7 +682,8 @@ function closeAllMenus(e){
 function toggleHeaderMenu(e){
   e.stopPropagation();
   const menu=$('header-popup-menu'),btn=$('btn-menu-trigger'),bd=$('menu-backdrop');
-  const open=menu.classList.toggle('open');
+  const open=!menu.classList.contains('open');
+  menu.classList.toggle('open',open);
   btn.classList.toggle('open',open);
   bd.classList.toggle('show',open);
 }
@@ -690,8 +692,20 @@ function closeHeaderMenu(){
   $('btn-menu-trigger').classList.remove('open');
   $('menu-backdrop').classList.remove('show');
 }
-function menuAction(fn){closeHeaderMenu();fn()}
+function handleMenuAction(action){
+  closeHeaderMenu();
+  if(action==='call-audio')startCall('audio');
+  else if(action==='call-video')startCall('video');
+  else if(action==='search')openSearch();
+}
 document.addEventListener('click',closeAllMenus);
+document.getElementById('header-popup-menu').addEventListener('click',e=>{
+  e.stopPropagation();
+  const btn=e.target.closest('[data-action]');
+  if(!btn)return;
+  handleMenuAction(btn.dataset.action);
+});
+document.getElementById('btn-menu-trigger').addEventListener('click',e=>e.stopPropagation());
 
 /* ══ EMOJI INPUT ══ */
 function toggleEmojiPicker(e){e.stopPropagation();$('input-emoji-picker').classList.toggle('show')}

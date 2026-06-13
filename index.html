@@ -122,6 +122,20 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .messages-area::-webkit-scrollbar{width:3px}
 .messages-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
 
+/* drag & drop overlay */
+.drop-overlay{
+  position:absolute;inset:0;z-index:50;display:none;align-items:center;justify-content:center;
+  background:rgba(16,163,127,.08);border:2.5px dashed var(--accent);border-radius:12px;
+  margin:8px;pointer-events:none;transition:opacity .15s;
+}
+.drop-overlay.show{display:flex;animation:dropFadeIn .2s ease}
+@keyframes dropFadeIn{from{opacity:0}to{opacity:1}}
+.drop-overlay-inner{text-align:center;padding:24px;pointer-events:none}
+.drop-overlay-icon{font-size:42px;margin-bottom:10px;opacity:.85}
+.drop-overlay-title{font-size:15px;font-weight:700;color:var(--accent)}
+.drop-overlay-desc{font-size:12px;color:var(--muted);margin-top:4px}
+.messages-wrap.drag-active .drop-overlay.show{background:rgba(16,163,127,.14)}
+
 /* system msg */
 .system-msg{align-self:center;background:var(--surface);border:1px solid var(--border);padding:4px 14px;border-radius:20px;color:var(--muted);font-size:11px;margin:6px 0;display:flex;align-items:center;gap:6px}
 .system-msg-ts{font-size:10px;opacity:.6}
@@ -513,7 +527,14 @@ position:relative;z-index:10;
 
     <div class="upload-bar" id="upload-bar"><div class="upload-spin"></div><span>جاري الرفع...</span></div>
 
-    <div class="messages-wrap">
+    <div class="messages-wrap" id="messages-wrap">
+      <div class="drop-overlay" id="drop-overlay">
+        <div class="drop-overlay-inner">
+          <div class="drop-overlay-icon">📎</div>
+          <div class="drop-overlay-title">أفلت الملفات هنا</div>
+          <div class="drop-overlay-desc">صور · فيديو · ملفات</div>
+        </div>
+      </div>
       <div class="messages-area" id="messages-area" onclick="closeAllMenus()">
         <div class="empty-state" id="empty-state">
           <div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div>
@@ -813,6 +834,7 @@ async function joinRoom(){
   setupCallListener();
   startInactivityTimer();
   initScrollButton();
+  initFileDropPaste();
 
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
@@ -1192,12 +1214,112 @@ async function sendMessage(){
 }
 
 /* ══ FILE UPLOAD ══ */
+let dragCounter=0,fileDropInited=false;
+
+function processIncomingFiles(files,opts={}){
+  if(!files||!files.length||!messagesRef)return;
+  const list=Array.from(files).filter(f=>f&&f.size>0);
+  if(!list.length)return;
+  const imgs=list.filter(f=>f.type.startsWith('image/'));
+  const rest=list.filter(f=>!f.type.startsWith('image/'));
+  rest.forEach(f=>uploadAndSend(f));
+  if(imgs.length){
+    if(opts.directImages){
+      imgs.forEach(f=>uploadAndSend(f));
+      showToast(imgs.length>1?`جاري رفع ${imgs.length} صور...`:'جاري رفع الصورة...');
+    }else{
+      pendingFiles=[...pendingFiles,...imgs];
+      renderPreview(0);
+      $('img-preview-wrap').classList.add('open');
+    }
+  }
+}
+
+function extractFilesFromDataTransfer(dt){
+  if(!dt)return[];
+  const files=[];
+  if(dt.files&&dt.files.length){
+    Array.from(dt.files).forEach(f=>files.push(f));
+  }else if(dt.items){
+    Array.from(dt.items).forEach(item=>{
+      if(item.kind==='file'){
+        const f=item.getAsFile();
+        if(f)files.push(f);
+      }
+    });
+  }
+  return files;
+}
+
+function extractFilesFromClipboard(cd){
+  if(!cd)return[];
+  const files=[];
+  if(cd.files&&cd.files.length){
+    Array.from(cd.files).forEach(f=>files.push(f));
+  }else if(cd.items){
+    Array.from(cd.items).forEach(item=>{
+      if(item.kind==='file'){
+        const f=item.getAsFile();
+        if(f)files.push(f);
+      }
+    });
+  }
+  return files;
+}
+
+function showDropOverlay(show){
+  const wrap=$('messages-wrap'),overlay=$('drop-overlay');
+  if(!wrap||!overlay)return;
+  overlay.classList.toggle('show',show);
+  wrap.classList.toggle('drag-active',show);
+}
+
+function initFileDropPaste(){
+  if(fileDropInited)return;
+  fileDropInited=true;
+  const wrap=$('messages-wrap');
+  const chat=$('chat-screen');
+  if(!wrap||!chat)return;
+
+  ['dragenter','dragover'].forEach(ev=>{
+    chat.addEventListener(ev,e=>{
+      if(!roomId)return;
+      e.preventDefault();e.stopPropagation();
+      if(e.dataTransfer)e.dataTransfer.dropEffect='copy';
+      if(ev==='dragenter')dragCounter++;
+      showDropOverlay(true);
+    });
+  });
+
+  chat.addEventListener('dragleave',e=>{
+    if(!roomId)return;
+    e.preventDefault();e.stopPropagation();
+    dragCounter=Math.max(0,dragCounter-1);
+    if(dragCounter===0)showDropOverlay(false);
+  });
+
+  chat.addEventListener('drop',e=>{
+    if(!roomId)return;
+    e.preventDefault();e.stopPropagation();
+    dragCounter=0;
+    showDropOverlay(false);
+    const files=extractFilesFromDataTransfer(e.dataTransfer);
+    if(files.length)processIncomingFiles(files);
+  });
+
+  document.addEventListener('paste',e=>{
+    if(!roomId||!$('chat-screen')||$('chat-screen').classList.contains('hidden'))return;
+    if($('search-overlay').classList.contains('open'))return;
+    const files=extractFilesFromClipboard(e.clipboardData);
+    if(!files.length)return;
+    e.preventDefault();
+    processIncomingFiles(files,{directImages:true});
+  });
+}
+
 function handleFileSelect(input){
   const files=Array.from(input.files);if(!files.length)return;input.value='';
-  const imgs=files.filter(f=>f.type.startsWith('image/'));
-  const rest=files.filter(f=>!f.type.startsWith('image/'));
-  rest.forEach(f=>uploadAndSend(f));
-  if(imgs.length){pendingFiles=[...pendingFiles,...imgs];renderPreview(0);$('img-preview-wrap').classList.add('open')}
+  processIncomingFiles(files);
 }
 
 function renderPreview(idx){

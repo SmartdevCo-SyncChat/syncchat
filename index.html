@@ -160,22 +160,21 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .msg-wrapper.sent .msg-bubble .msg-menu-btn{background:rgba(255,255,255,.25);color:#fff}
 .msg-row.active-actions .msg-menu-btn{display:flex}
 .msg-menu-popup{
-  position:absolute;top:0;left:0;min-width:148px;
+  position:fixed;min-width:160px;max-width:220px;
   background:#fff;border:1px solid var(--border);border-radius:12px;
   box-shadow:0 6px 24px rgba(0,0,0,.14);display:none;flex-direction:column;
-  padding:4px;z-index:30;overflow:hidden;color:var(--text);
+  padding:4px;z-index:6000;overflow:visible;color:#0d0d0d;
 }
-.msg-wrapper.sent .msg-menu-popup{left:0;right:auto}
-.msg-wrapper.recv .msg-menu-popup{left:auto;right:0}
 .msg-menu-popup.open{display:flex;animation:menuPop .18s ease both}
 .msg-menu-item{
   display:flex;align-items:center;gap:10px;width:100%;border:none;background:transparent;
   border-radius:8px;padding:9px 12px;cursor:pointer;font-family:var(--font);
-  font-size:13px;font-weight:500;color:var(--text)!important;text-align:right;transition:background .1s;
+  font-size:13px;font-weight:500;color:#0d0d0d!important;text-align:right;transition:background .1s;
+  white-space:nowrap;
 }
 .msg-menu-item:hover{background:var(--surface)}
 .msg-menu-item.danger{color:var(--danger)!important}
-.msg-menu-item .mi{font-size:15px;width:20px;text-align:center;flex-shrink:0;color:inherit}
+.msg-menu-item .mi{font-size:16px;min-width:26px;flex-shrink:0;display:inline-flex;align-items:center;justify-content:center}
 .msg-sender-name{font-size:11px;font-weight:600;color:var(--accent);margin-bottom:2px;padding:0 4px}
 
 /* reply quotation inside bubble */
@@ -1124,7 +1123,7 @@ function appendMsgToDOM(msg,key,areaEl){
 function closeMsgMenus(){
   document.querySelectorAll('.msg-menu-popup.open').forEach(p=>{
     p.classList.remove('open');
-    p.style.top='';
+    p.style.top='';p.style.left='';p.style.right='';
   });
   if(activeRowKey){
     const r=document.getElementById('msgrow-'+activeRowKey);
@@ -1145,9 +1144,15 @@ function openMsgMenu(key,e){
   row.classList.add('active-actions');
   activeRowKey=key;
   const bRect=bubble.getBoundingClientRect();
-  const wrap=row.querySelector('.msg-bubble-wrap');
-  const wRect=wrap.getBoundingClientRect();
-  popup.style.top=(bRect.bottom-wRect.top+4)+'px';
+  const sent=row.closest('.msg-wrapper')?.classList.contains('sent');
+  const menuW=170;
+  let top=bRect.bottom+6;
+  let left=sent?bRect.right-menuW:bRect.left;
+  left=Math.max(8,Math.min(left,window.innerWidth-menuW-8));
+  if(top+220>window.innerHeight)top=Math.max(8,bRect.top-220);
+  popup.style.top=top+'px';
+  popup.style.left=left+'px';
+  popup.style.right='auto';
   popup.classList.add('open');
 }
 

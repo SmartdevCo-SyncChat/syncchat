@@ -1095,7 +1095,7 @@ function appendMsgToDOM(msg,key,areaEl){
       },{passive:true});
     }
 
-    /* double tap / double click → قائمة الخيارات */
+    /* double tap → ❤️ | المنيو عبر زر ⋮ */
     const bubble=div.querySelector('.msg-bubble');
     if(bubble){
       let lastTap=0;
@@ -1103,11 +1103,14 @@ function appendMsgToDOM(msg,key,areaEl){
         const now=Date.now();
         if(now-lastTap<380){
           e.preventDefault();
-          openMsgMenu(key,e);lastTap=0;
+          bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
+          quickReact(key,'❤️',bubble);lastTap=0;
         }else{lastTap=now}
       },{passive:false});
       bubble.addEventListener('dblclick',e=>{
-        e.preventDefault();openMsgMenu(key,e);
+        e.preventDefault();
+        bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
+        quickReact(key,'❤️',bubble);
       });
       bubble.addEventListener('contextmenu',e=>{e.preventDefault();showCtxEmoji(key,e)});
     }

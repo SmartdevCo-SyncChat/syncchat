@@ -151,14 +151,15 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .msg-wrapper.recv .msg-row{flex-direction:row-reverse}
 .msg-bubble-wrap{position:relative;display:flex;flex-direction:column;width:auto}
 .msg-menu-btn{
-  position:absolute;top:4px;left:4px;width:26px;height:26px;border:none;
-  background:rgba(0,0,0,.1);border-radius:50%;cursor:pointer;font-size:15px;
-  color:inherit;display:none;align-items:center;justify-content:center;z-index:5;
-  transition:background .12s;
+  position:absolute;top:4px;left:4px;width:28px;height:28px;border:none;
+  background:rgba(0,0,0,.12);border-radius:50%;cursor:pointer;font-size:16px;
+  color:inherit;display:flex;align-items:center;justify-content:center;z-index:5;
+  transition:background .12s,opacity .12s;opacity:.75;
+  -webkit-tap-highlight-color:transparent;touch-action:manipulation;
 }
 .msg-wrapper.recv .msg-menu-btn{left:auto;right:4px}
-.msg-wrapper.sent .msg-bubble .msg-menu-btn{background:rgba(255,255,255,.25);color:#fff}
-.msg-row.active-actions .msg-menu-btn{display:flex}
+.msg-wrapper.sent .msg-bubble .msg-menu-btn{background:rgba(255,255,255,.28);color:#fff}
+.msg-menu-btn:hover,.msg-menu-btn:active,.msg-row.active-actions .msg-menu-btn{opacity:1}
 .msg-menu-popup{
   position:fixed;min-width:160px;max-width:220px;
   background:#fff;border:1px solid var(--border);border-radius:12px;
@@ -315,8 +316,9 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .btn-emoji-input{border:none;background:transparent;color:var(--muted);cursor:pointer;font-size:17px;display:flex;align-items:center;justify-content:center;width:28px;height:28px;flex-shrink:0;align-self:flex-end;margin-bottom:1px}
 
 /* context emoji picker */
-.context-emoji-picker{position:fixed;background:#fff;border:1px solid var(--border);border-radius:30px;padding:6px 10px;display:none;gap:4px;z-index:6000;box-shadow:0 4px 20px rgba(0,0,0,.12)}
+.context-emoji-picker{position:fixed;background:#fff;border:1px solid var(--border);border-radius:30px;padding:6px 10px;display:none;gap:4px;z-index:6500;box-shadow:0 4px 20px rgba(0,0,0,.12)}
 .context-emoji-picker span:hover{background:var(--surface)}
+@keyframes floatHeart{0%{transform:translateX(-50%) scale(.4);opacity:0}40%{opacity:1}100%{transform:translateX(-50%) translateY(-36px) scale(1.2);opacity:0}}
 
 /* image preview */
 .img-preview-wrap{position:fixed;inset:0;z-index:7000;background:#111;display:none;flex-direction:column}
@@ -790,7 +792,7 @@ function resetInactivityTimer(){clearTimeout(inactivityTimeout);if(roomId)inacti
 
 /* ══ CLOSE ALL MENUS ══ */
 function closeAllMenus(e){
-  if(e&&(e.target.closest('#header-popup-menu')||e.target.closest('#btn-menu-trigger')||e.target.closest('.msg-menu-popup')||e.target.closest('.msg-menu-btn')))return;
+  if(e&&(e.target.closest('#header-popup-menu')||e.target.closest('#btn-menu-trigger')||e.target.closest('.msg-menu-popup')||e.target.closest('.msg-menu-btn')||e.target.closest('#context-emoji-picker')))return;
   closeMsgMenus();
   $('input-emoji-picker').classList.remove('show');
   $('context-emoji-picker').style.display='none';
@@ -1035,6 +1037,7 @@ function appendMsgToDOM(msg,key,areaEl){
     const edited=msg.isEdited?'<small style="font-size:10px;opacity:.5;font-style:italic"> (معدلة)</small>':'';
     const menuItems=[
       {a:'reply',icon:'↩',label:'رد'},
+      {a:'react',icon:'😀',label:'تفاعل'},
       ...(sent&&!msg.fileUrl?[{a:'edit',icon:'✏️',label:'تعديل'}]:[]),
       ...(msg.text?[{a:'copy',icon:'📋',label:'نسخ'}]:[]),
       {a:'pin',icon:'📌',label:'تثبيت'},
@@ -1095,24 +1098,47 @@ function appendMsgToDOM(msg,key,areaEl){
       },{passive:true});
     }
 
-    /* double tap → ❤️ | المنيو عبر زر ⋮ */
+    /* تفاعلات: دوس مرتين ❤️ | ضغط مطول إيموجي | المنيو ⋮ */
     const bubble=div.querySelector('.msg-bubble');
     if(bubble){
-      let lastTap=0;
+      let lastTap=0,pressTimer=null;
+      const cancelPress=()=>{clearTimeout(pressTimer);pressTimer=null};
+      const showReactPicker=(x,y,ev)=>{
+        if(ev){ev.preventDefault();ev.stopPropagation()}
+        cancelPress();
+        showCtxEmojiAt(key,x,y);
+      };
       bubble.addEventListener('touchstart',e=>{
+        if(e.target.closest('.msg-menu-btn'))return;
         const now=Date.now();
         if(now-lastTap<380){
+          cancelPress();
           e.preventDefault();
           bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
-          quickReact(key,'❤️',bubble);lastTap=0;
-        }else{lastTap=now}
+          quickReact(key,'❤️',bubble);lastTap=0;return;
+        }
+        lastTap=now;
+        const t=e.touches[0];
+        cancelPress();
+        pressTimer=setTimeout(()=>{if(window.navigator.vibrate)window.navigator.vibrate(15);showReactPicker(t.clientX,t.clientY,e)},520);
       },{passive:false});
+      bubble.addEventListener('touchend',cancelPress,{passive:true});
+      bubble.addEventListener('touchmove',cancelPress,{passive:true});
+      bubble.addEventListener('mousedown',e=>{
+        if(e.button!==0||e.target.closest('.msg-menu-btn'))return;
+        cancelPress();
+        pressTimer=setTimeout(()=>showReactPicker(e.clientX,e.clientY,e),520);
+      });
+      bubble.addEventListener('mouseup',cancelPress);
+      bubble.addEventListener('mouseleave',cancelPress);
       bubble.addEventListener('dblclick',e=>{
+        if(e.target.closest('.msg-menu-btn'))return;
         e.preventDefault();
+        cancelPress();
         bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
         quickReact(key,'❤️',bubble);
       });
-      bubble.addEventListener('contextmenu',e=>{e.preventDefault();showCtxEmoji(key,e)});
+      bubble.addEventListener('contextmenu',e=>{e.preventDefault();cancelPress();showCtxEmojiAt(key,e.clientX,e.clientY)});
     }
   }
 
@@ -1168,20 +1194,30 @@ function handleMsgMenuAction(key,action,e){
   const sent=msg.senderId===myId;
   closeMsgMenus();
   if(action==='reply')initiateReply(sender,text,key);
+  else if(action==='react')openEmojiForMsg(key);
   else if(action==='edit'&&sent&&!msg.fileUrl)initiateEdit(key,text);
   else if(action==='copy'&&text)copyText(text);
   else if(action==='pin')togglePin(key,text);
   else if(action==='delete')deleteMsg(key);
 }
 
-function showCtxEmoji(key,e){
-  e.preventDefault();e.stopPropagation();
+function showCtxEmojiAt(key,x,y){
+  closeMsgMenus();
   ctxReactKey=key;
   const picker=$('context-emoji-picker');
   picker.style.display='flex';
-  const x=Math.min(e.clientX,window.innerWidth-220);
-  const y=Math.min(e.clientY,window.innerHeight-60);
-  picker.style.left=x+'px';picker.style.top=y+'px';
+  picker.style.left=Math.min(Math.max(8,x-80),window.innerWidth-240)+'px';
+  picker.style.top=Math.min(Math.max(8,y-20),window.innerHeight-70)+'px';
+}
+function openEmojiForMsg(key){
+  const bubble=document.querySelector(`#msgrow-${key} .msg-bubble`);
+  if(!bubble)return;
+  const r=bubble.getBoundingClientRect();
+  showCtxEmojiAt(key,r.left+r.width/2,r.top+r.height/2);
+}
+function showCtxEmoji(key,e){
+  e.preventDefault();e.stopPropagation();
+  showCtxEmojiAt(key,e.clientX,e.clientY);
 }
 function triggerCtxReact(emoji){
   if(ctxReactKey){const el=document.querySelector(`#msgrow-${ctxReactKey} .msg-bubble`);quickReact(ctxReactKey,emoji,el)}

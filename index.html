@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
 <title>ChatBFT</title>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -222,18 +223,33 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .reaction-chip.mine{background:#d4f0e8;border-color:#a8dccb}
 .r-count{font-size:10px;color:#555}
 
-/* msg actions group */
-.msg-actions-group{
-display:none;align-self:center;flex-direction:column;gap:3px;
-background:#fff;border:1px solid var(--border);border-radius:10px;
-padding:4px;box-shadow:0 2px 10px rgba(0,0,0,.1);flex-shrink:0;
-position:relative;z-index:10;
+/* msg actions menu */
+.msg-bubble{position:relative}
+.msg-menu-btn{
+  position:absolute;top:4px;left:4px;width:26px;height:26px;border:none;
+  background:rgba(0,0,0,.1);border-radius:50%;cursor:pointer;font-size:15px;
+  color:inherit;display:none;align-items:center;justify-content:center;z-index:5;
+  transition:background .12s;
 }
-.msg-wrapper.sent .msg-actions-group{margin-left:6px}
-.msg-wrapper.recv .msg-actions-group{margin-right:6px}
-.msg-row.active-actions .msg-actions-group{display:flex}
-.msg-action-btn{background:transparent;border:none;cursor:pointer;font-size:14px;padding:3px 5px;border-radius:6px;line-height:1;transition:background .1s}
-.msg-action-btn:hover{background:var(--surface)}
+.msg-wrapper.recv .msg-menu-btn{left:auto;right:4px}
+.msg-wrapper.sent .msg-bubble .msg-menu-btn{background:rgba(255,255,255,.2)}
+.msg-row.active-actions .msg-menu-btn{display:flex}
+.msg-menu-popup{
+  position:absolute;top:32px;left:0;min-width:148px;
+  background:#fff;border:1px solid var(--border);border-radius:12px;
+  box-shadow:0 6px 24px rgba(0,0,0,.14);display:none;flex-direction:column;
+  padding:4px;z-index:25;overflow:hidden;
+}
+.msg-wrapper.recv .msg-menu-popup{left:auto;right:0}
+.msg-menu-popup.open{display:flex;animation:menuPop .18s ease both}
+.msg-menu-item{
+  display:flex;align-items:center;gap:10px;width:100%;border:none;background:transparent;
+  border-radius:8px;padding:9px 12px;cursor:pointer;font-family:var(--font);
+  font-size:13px;font-weight:500;color:var(--text);text-align:right;transition:background .1s;
+}
+.msg-menu-item:hover{background:var(--surface)}
+.msg-menu-item.danger{color:var(--danger)}
+.msg-menu-item .mi{font-size:15px;width:20px;text-align:center;flex-shrink:0}
 
 /* typing */
 .typing-bar{position:fixed;bottom:64px;left:0;right:0;max-width:860px;margin:0 auto;padding:2px 16px;font-size:11px;color:var(--muted);height:20px;display:flex;align-items:center;gap:6px;z-index:998;pointer-events:none}
@@ -706,7 +722,7 @@ const FIREBASE_CONFIG = {
 const CLOUDINARY_CLOUD='db03wdg7v', CLOUDINARY_PRESET='ekk7u3hb';
 
 /* ══ STATE ══ */
-let db;
+let db,auth;
 let myName,myId,roomId,peerName=null;
 let messagesRef,presenceRef,typingRef,roomPresenceRef,callRef,callHistoryRef;
 let peerConnection=null,localStream=null,remoteStream=null,currentCallType='audio',isCallInitiator=false;
@@ -749,7 +765,18 @@ function isSingleEmoji(text){
 function showToast(msg){const t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove('show'),2800)}
 function openImgModal(src){$('modal-img').src=src;$('img-modal').classList.add('open')}
 function closeImgModal(){$('img-modal').classList.remove('open')}
-function initFirebase(){if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);db=firebase.database()}
+function initFirebase(){
+  if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
+  auth=firebase.auth();
+  db=firebase.database();
+}
+
+async function ensureAuth(){
+  initFirebase();
+  if(auth.currentUser)return auth.currentUser;
+  const cred=await auth.signInAnonymously();
+  return cred.user;
+}
 
 function startInactivityTimer(){
   resetInactivityTimer();
@@ -763,12 +790,8 @@ function resetInactivityTimer(){clearTimeout(inactivityTimeout);if(roomId)inacti
 
 /* ══ CLOSE ALL MENUS ══ */
 function closeAllMenus(e){
-  if(e&&(e.target.closest('#header-popup-menu')||e.target.closest('#btn-menu-trigger')))return;
-  if(activeRowKey){
-    const r=document.getElementById('msgrow-'+activeRowKey);
-    if(r)r.classList.remove('active-actions');
-    activeRowKey=null;
-  }
+  if(e&&(e.target.closest('#header-popup-menu')||e.target.closest('#btn-menu-trigger')||e.target.closest('.msg-menu-popup')||e.target.closest('.msg-menu-btn')))return;
+  closeMsgMenus();
   $('input-emoji-picker').classList.remove('show');
   $('context-emoji-picker').style.display='none';
   closeHeaderMenu();
@@ -813,7 +836,12 @@ async function joinRoom(){
   if(!name){err.textContent='من فضلك أدخل اسمك';return}
   if(!room){err.textContent='من فضلك أدخل رمز الغرفة';return}
   const btn=$('join-btn');btn.disabled=true;btn.textContent='جاري الدخول...';
-  try{initFirebase()}catch(e){err.textContent='خطأ في Firebase';btn.disabled=false;return}
+  try{
+    await ensureAuth();
+  }catch(e){
+    err.textContent='خطأ في المصادقة — فعّل Anonymous Auth في Firebase Console';
+    btn.disabled=false;btn.textContent='دخول الغرفة';return;
+  }
 
   myName=name;myId=genId();roomId=room;isInitialLoad=true;allMessages={};
   messagesRef=db.ref(`rooms/${roomId}/messages`);
@@ -1005,16 +1033,14 @@ function appendMsgToDOM(msg,key,areaEl){
 
     const senderHtml=!sent?`<div class="msg-sender-name">${esc(msg.senderName||'')}</div>`:'';
     const edited=msg.isEdited?'<small style="font-size:10px;opacity:.5;font-style:italic"> (معدلة)</small>':'';
-    const safeText=(msg.text||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'").replace(/"/g,'&quot;').replace(/\n/g,'\\n');
-
-    /* actions */
-    const actHtml=`<div class="msg-actions-group">
-      <button class="msg-action-btn" onclick="initiateReply('${esc(msg.senderName)}','${safeText}','${key}',event)" title="رد">↩</button>
-      ${(sent&&!msg.fileUrl)?`<button class="msg-action-btn" onclick="initiateEdit('${key}','${safeText}',event)" title="تعديل">✏️</button>`:''}
-      ${msg.text?`<button class="msg-action-btn" onclick="copyText('${safeText}',event)" title="نسخ">📋</button>`:''}
-      <button class="msg-action-btn" onclick="togglePin('${key}','${safeText}',event)" title="تثبيت">📌</button>
-      ${sent?`<button class="msg-action-btn" onclick="deleteMsg('${key}',event)" title="حذف">🗑️</button>`:''}
-    </div>`;
+    const menuItems=[
+      {a:'reply',icon:'↩',label:'رد'},
+      ...(sent&&!msg.fileUrl?[{a:'edit',icon:'✏️',label:'تعديل'}]:[]),
+      ...(msg.text?[{a:'copy',icon:'📋',label:'نسخ'}]:[]),
+      {a:'pin',icon:'📌',label:'تثبيت'},
+      {a:'delete',icon:'🗑️',label:'حذف',danger:true}
+    ];
+    const menuHtml=menuItems.map(it=>`<button type="button" class="msg-menu-item${it.danger?' danger':''}" onclick="handleMsgMenuAction('${key}','${it.a}',event)"><span class="mi">${it.icon}</span>${it.label}</button>`).join('');
 
     const isEmojiOnly=!msg.fileUrl&&isSingleEmoji(msg.text);
     const bubbleClass=isEmojiOnly?'msg-bubble emoji-only':'msg-bubble';
@@ -1023,7 +1049,9 @@ function appendMsgToDOM(msg,key,areaEl){
     div.innerHTML=`<div class="msg-row" id="msgrow-${key}" data-key="${key}">
       <div class="msg-bubble-wrap">
         ${senderHtml}
-        <div class="${bubbleClass}" onclick="toggleActions('${key}',event)" oncontextmenu="showCtxEmoji('${key}',event)">
+        <div class="${bubbleClass}" oncontextmenu="showCtxEmoji('${key}',event)">
+          <button type="button" class="msg-menu-btn" onclick="openMsgMenu('${key}',event)" title="خيارات">⋮</button>
+          <div class="msg-menu-popup" id="msgmenu-${key}">${menuHtml}</div>
           ${replyHtml}
           ${mediaHtml}
           ${msg.text?`<span class="${textClass}">${esc(msg.text)}${edited}</span>`:''}
@@ -1031,7 +1059,6 @@ function appendMsgToDOM(msg,key,areaEl){
         </div>
         <div class="reactions-bar" data-msgkey="${key}"></div>
       </div>
-      ${actHtml}
     </div>`;
 
     /* image click */
@@ -1068,7 +1095,7 @@ function appendMsgToDOM(msg,key,areaEl){
       },{passive:true});
     }
 
-    /* double tap → ❤️ */
+    /* double tap / double click → قائمة الخيارات */
     const bubble=div.querySelector('.msg-bubble');
     if(bubble){
       let lastTap=0;
@@ -1076,13 +1103,11 @@ function appendMsgToDOM(msg,key,areaEl){
         const now=Date.now();
         if(now-lastTap<380){
           e.preventDefault();
-          bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
-          quickReact(key,'❤️',bubble);lastTap=0;
+          openMsgMenu(key,e);lastTap=0;
         }else{lastTap=now}
       },{passive:false});
       bubble.addEventListener('dblclick',e=>{
-        e.preventDefault();bubble.classList.add('tapped');setTimeout(()=>bubble.classList.remove('tapped'),250);
-        quickReact(key,'❤️',bubble);
+        e.preventDefault();openMsgMenu(key,e);
       });
       bubble.addEventListener('contextmenu',e=>{e.preventDefault();showCtxEmoji(key,e)});
     }
@@ -1095,15 +1120,41 @@ function appendMsgToDOM(msg,key,areaEl){
 }
 
 /* ══ ACTIONS ══ */
-function toggleActions(key,e){
+function closeMsgMenus(){
+  document.querySelectorAll('.msg-menu-popup.open').forEach(p=>p.classList.remove('open'));
+  if(activeRowKey){
+    const r=document.getElementById('msgrow-'+activeRowKey);
+    if(r)r.classList.remove('active-actions');
+    activeRowKey=null;
+  }
+}
+
+function openMsgMenu(key,e){
   if(e)e.stopPropagation();
   const row=document.getElementById('msgrow-'+key);
-  if(activeRowKey&&activeRowKey!==key){
-    const prev=document.getElementById('msgrow-'+activeRowKey);
-    if(prev)prev.classList.remove('active-actions');
-  }
-  if(activeRowKey===key){row&&row.classList.remove('active-actions');activeRowKey=null}
-  else{row&&row.classList.add('active-actions');activeRowKey=key}
+  const popup=document.getElementById('msgmenu-'+key);
+  if(!row||!popup)return;
+  const wasOpen=popup.classList.contains('open')&&activeRowKey===key;
+  closeMsgMenus();
+  if(wasOpen)return;
+  row.classList.add('active-actions');
+  activeRowKey=key;
+  popup.classList.add('open');
+}
+
+function handleMsgMenuAction(key,action,e){
+  if(e)e.stopPropagation();
+  const msg=allMessages[key];
+  if(!msg)return;
+  const text=msg.text||'';
+  const sender=msg.senderName||'';
+  const sent=msg.senderId===myId;
+  closeMsgMenus();
+  if(action==='reply')initiateReply(sender,text,key);
+  else if(action==='edit'&&sent&&!msg.fileUrl)initiateEdit(key,text);
+  else if(action==='copy'&&text)copyText(text);
+  else if(action==='pin')togglePin(key,text);
+  else if(action==='delete')deleteMsg(key);
 }
 
 function showCtxEmoji(key,e){
@@ -1120,28 +1171,24 @@ function triggerCtxReact(emoji){
   $('context-emoji-picker').style.display='none';
 }
 
-function initiateReply(senderName,text,targetKey,e){
-  if(e)e.stopPropagation();
+function initiateReply(senderName,text,targetKey){
   cancelEdit();
   currentReplyTarget={senderName,text,key:targetKey};
   $('reply-preview-sender').textContent='الرد على '+senderName;
   $('reply-preview-text').textContent=(text||'[ملف / ميديا]').slice(0,60);
   $('chat-screen').classList.add('has-reply');
   $('msg-input').focus();
-  if(activeRowKey)toggleActions(activeRowKey);
 }
 function cancelReply(){currentReplyTarget=null;$('chat-screen').classList.remove('has-reply')}
 
-function initiateEdit(key,rawText,e){
-  if(e)e.stopPropagation();
+function initiateEdit(key,rawText){
   cancelReply();
   currentEditKey=key;
-  const clean=rawText.replace(/\\n/g,'\n').replace(/\\'/g,"'");
+  const clean=typeof rawText==='string'?rawText.replace(/\\n/g,'\n').replace(/\\'/g,"'"):'';
   $('msg-input').value=clean;
   $('edit-preview-text').textContent=clean.slice(0,60);
   $('edit-bar').classList.add('show');
   $('msg-input').focus();
-  if(activeRowKey)toggleActions(activeRowKey);
 }
 function cancelEdit(){
   currentEditKey=null;
@@ -1150,21 +1197,18 @@ function cancelEdit(){
   $('msg-input').style.height='auto';
 }
 
-function copyText(rawText,e){
-  if(e)e.stopPropagation();
-  const clean=rawText.replace(/\\n/g,'\n').replace(/\\'/g,"'");
+function copyText(rawText){
+  const clean=typeof rawText==='string'?rawText.replace(/\\n/g,'\n').replace(/\\'/g,"'"):'';
   if(navigator.clipboard&&window.isSecureContext){
     navigator.clipboard.writeText(clean).then(()=>showToast('تم النسخ 📋')).catch(()=>fallbackCopy(clean));
   }else{fallbackCopy(clean)}
-  if(activeRowKey)toggleActions(activeRowKey);
 }
 function fallbackCopy(text){
   const ta=document.createElement('textarea');ta.value=text;ta.style.cssText='position:fixed;top:0;left:0;opacity:0';
   document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('تم النسخ 📋');
 }
 
-async function deleteMsg(key,e){
-  if(e)e.stopPropagation();
+async function deleteMsg(key){
   if(!confirm('حذف الرسالة للجميع؟'))return;
   try{
     await db.ref(`rooms/${roomId}/messages/${key}`).remove();
@@ -1174,11 +1218,9 @@ async function deleteMsg(key,e){
   }catch(e){showToast('فشل الحذف ❌')}
 }
 
-async function togglePin(key,text,e){
-  if(e)e.stopPropagation();
-  if(pinnedMsgKey===key){await unpinMessage()}
-  else{await pinMsg(key,text)}
-  if(activeRowKey)toggleActions(activeRowKey);
+async function togglePin(key,text){
+  if(pinnedMsgKey===key)await unpinMessage();
+  else await pinMsg(key,text);
 }
 async function pinMsg(key,text){
   try{await db.ref(`rooms/${roomId}/pinnedMsg`).set({key,text:(text||'').replace(/\\n/g,' ').slice(0,80),by:myName});showToast('تم التثبيت 📌')}catch(e){showToast('فشل التثبيت')}

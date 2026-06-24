@@ -843,7 +843,7 @@ let pinnedMsgKey=null, pinnedMsgText='';
 let activeRowKey=null;
 let ctxReactKey=null;
 let unreadCount=0, isAtBottom=true;
-let readByData={}, peerIsOnline=false;
+let readByData={}, peerIsOnline=false, presenceData={};
 let chatEngaged=false, skipReadOnScroll=false;
 let prevReactions={}, reactionJumpItems=new Map(), reactionsReady=false;
 let pendingFiles=[], activePreviewIdx=0;
@@ -985,6 +985,7 @@ function setupListeners(){
   /* Presence */
   roomPresenceRef.on('value',snap=>{
     const data=snap.val()||{};
+    presenceData=data;
     const dot=$('online-dot'),txt=$('peer-status'),pav=$('peer-avatar');
     const peers=Object.entries(data).filter(([k,u])=>u&&u.name&&u.name!==myName);
     if(currentActivePeerRef){currentActivePeerRef.off();currentActivePeerRef=null}
@@ -1012,6 +1013,7 @@ function setupListeners(){
       }
       updateReadTicks();
     });
+    updateReadTicks();
   });
 
   /* Typing */
@@ -1093,7 +1095,16 @@ function setupListeners(){
   });
 }
 
-function markAsRead(){if(roomId&&myId)db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now())}
+function markAsRead(){if(roomId&&myName)db.ref(`rooms/${roomId}/readBy/${myName}`).set(Date.now())}
+
+function getOtherPeerNames(){
+  return Object.values(presenceData).filter(u=>u&&u.name&&u.name!==myName).map(u=>u.name);
+}
+
+function hasPeerRead(){
+  const peers=getOtherPeerNames();
+  return peers.some(name=>readByData[name]!=null);
+}
 
 function engageAndMarkRead(){
   if(!roomId)return;
@@ -1119,7 +1130,7 @@ function initReadOnInteraction(){
 }
 
 function updateReadTicks(){
-  const peerRead=Object.keys(readByData).some(id=>id!==myId);
+  const peerRead=hasPeerRead();
   document.querySelectorAll('.check-icon').forEach(el=>{
     el.classList.remove('tick-sent','tick-delivered','tick-read');
     if(peerRead){el.classList.add('tick-read');el.textContent='✓✓'}
@@ -2224,6 +2235,7 @@ async function leaveRoom(){
     if(messagesRef)await messagesRef.push({type:'system',systemKind:'leave',text:myName+' غادر المحادثة',ts:Date.now()});
     await presenceRef.set({name:myName,online:false,lastSeen:firebase.database.ServerValue.TIMESTAMP});
     await typingRef.remove();
+    if(myName)await db.ref(`rooms/${roomId}/readBy/${myName}`).remove();
     if(currentActivePeerRef)currentActivePeerRef.off();
     if(roomPresenceRef)roomPresenceRef.off();
     if(callRef){callRef.off();callRef.child('ice').off();callRef.child('mediaState').off()}
@@ -2235,7 +2247,7 @@ async function leaveRoom(){
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
   clearReactionJumpBar();
-  readByData={};peerIsOnline=false;chatEngaged=false;
+  readByData={};peerIsOnline=false;presenceData={};chatEngaged=false;
   $('name-input').value='';$('room-input').value='';
   $('join-btn').disabled=false;$('join-btn').textContent='ابدأ المحادثة الذكية';
   $('msg-input').value='';$('msg-input').style.height='auto';

@@ -243,15 +243,16 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .actual-msg-text{display:block; padding-bottom:2px;}
 .msg-meta{position:absolute;bottom:3px;right:8px;font-size:10px;color:rgba(255,255,255,.7);display:flex;align-items:center;gap:3px;white-space:nowrap;pointer-events:none}
 .msg-wrapper.recv .msg-meta{color:var(--muted);right:auto;left:8px}
-.tick-sent{color:rgba(255,255,255,.6)}
-.tick-delivered{color:rgba(255,255,255,.8)}
-.tick-read{color:#1a1a1a;font-weight:600}
+.tick-sent{color:rgba(255,255,255,.48);letter-spacing:-1px}
+.tick-delivered{color:rgba(255,255,255,.9);letter-spacing:-2px}
+.tick-read{color:#7AE4FF;letter-spacing:-2px;text-shadow:0 0 6px rgba(122,228,255,.35)}
 
 /* إيموجي منفرد — حجم طبيعي + أنيميشن تليجرام */
 .msg-bubble.emoji-only{background:transparent!important;padding:2px 4px 14px!important;box-shadow:none}
 .msg-bubble.emoji-only .msg-meta{bottom:0;color:var(--muted)!important}
 .msg-wrapper.sent .msg-bubble.emoji-only .msg-meta{color:var(--muted)!important}
-.msg-wrapper.sent .msg-bubble.emoji-only .tick-sent,.msg-wrapper.sent .msg-bubble.emoji-only .tick-delivered,.msg-wrapper.sent .msg-bubble.emoji-only .tick-read{color:var(--muted)!important}
+.msg-wrapper.sent .msg-bubble.emoji-only .tick-sent,.msg-wrapper.sent .msg-bubble.emoji-only .tick-delivered{color:var(--muted)!important}
+.msg-wrapper.sent .msg-bubble.emoji-only .tick-read{color:#0ea5e9!important;text-shadow:none}
 .actual-msg-text.emoji-anim{
   display:inline-block;font-size:inherit;line-height:1.4;
   animation:telegramPop .55s cubic-bezier(0.175,0.885,0.32,1.275) both;
@@ -842,6 +843,7 @@ let pinnedMsgKey=null, pinnedMsgText='';
 let activeRowKey=null;
 let ctxReactKey=null;
 let unreadCount=0, isAtBottom=true;
+let readByData={}, peerIsOnline=false;
 let prevReactions={}, reactionJumpItems=new Map(), reactionsReady=false;
 let pendingFiles=[], activePreviewIdx=0;
 let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
@@ -983,7 +985,7 @@ function setupListeners(){
     const dot=$('online-dot'),txt=$('peer-status'),pav=$('peer-avatar');
     const peers=Object.entries(data).filter(([k,u])=>u&&u.name&&u.name!==myName);
     if(currentActivePeerRef){currentActivePeerRef.off();currentActivePeerRef=null}
-    if(!peers.length){peerName=null;dot.classList.remove('on');txt.textContent='في انتظار الطرف الآخر...';pav.textContent='؟';return}
+    if(!peers.length){peerName=null;peerIsOnline=false;dot.classList.remove('on');txt.textContent='في انتظار الطرف الآخر...';pav.textContent='؟';updateReadTicks();return}
     const online=peers.filter(([,u])=>u.online===true);
     const offline=peers.filter(([,u])=>u.online!==true);
     const [ck,cu]=(online.length?online.sort((a,b)=>(b[1].joinedAt||0)-(a[1].joinedAt||0)):offline.sort((a,b)=>(b[1].lastSeen||0)-(a[1].lastSeen||0)))[0];
@@ -993,6 +995,7 @@ function setupListeners(){
     currentActivePeerRef.on('value',ps=>{
       const u=ps.val();if(!u)return;
       pav.textContent=initials(u.name||'؟');
+      peerIsOnline=!!u.online;
       if(u.online){dot.classList.add('on');txt.textContent=u.name+' متصل الآن'}
       else{
         dot.classList.remove('on');
@@ -1004,6 +1007,7 @@ function setupListeners(){
           txt.textContent='آخر ظهور '+dt;
         }else{txt.textContent=u.name+' غير متصل'}
       }
+      updateReadTicks();
     });
   });
 
@@ -1073,10 +1077,8 @@ function setupListeners(){
 
   /* Read receipts */
   db.ref(`rooms/${roomId}/readBy`).on('value',snap=>{
-    const data=snap.val()||{};
-    if(Object.entries(data).find(([id])=>id!==myId)){
-      document.querySelectorAll('.check-icon').forEach(el=>{el.classList.remove('tick-sent','tick-delivered');el.classList.add('tick-read');el.textContent='✓✓'});
-    }
+    readByData=snap.val()||{};
+    updateReadTicks();
   });
   markAsRead();
   document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&roomId)markAsRead()});
@@ -1090,6 +1092,16 @@ function setupListeners(){
 }
 
 function markAsRead(){if(roomId&&myId)db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now())}
+
+function updateReadTicks(){
+  const peerRead=Object.keys(readByData).some(id=>id!==myId);
+  document.querySelectorAll('.check-icon').forEach(el=>{
+    el.classList.remove('tick-sent','tick-delivered','tick-read');
+    if(peerRead){el.classList.add('tick-read');el.textContent='✓✓'}
+    else if(peerIsOnline){el.classList.add('tick-delivered');el.textContent='✓✓'}
+    else{el.classList.add('tick-sent');el.textContent='✓'}
+  });
+}
 
 /* ══ RENDER ══ */
 function renderAllMessages(){
@@ -2190,6 +2202,7 @@ async function leaveRoom(){
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
   clearReactionJumpBar();
+  readByData={};peerIsOnline=false;
   $('name-input').value='';$('room-input').value='';
   $('join-btn').disabled=false;$('join-btn').textContent='ابدأ المحادثة الذكية';
   $('msg-input').value='';$('msg-input').style.height='auto';

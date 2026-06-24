@@ -21,22 +21,42 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .screen{width:100%;height:100%;overflow:hidden}
 .hidden{display:none!important}
 
-/* ── LOGIN ── */
-#login-screen{display:flex;align-items:center;justify-content:center;background:#fff;padding:20px;overflow-y:auto;height:100%}
-.login-wrap{width:100%;max-width:380px;animation:fadeUp .4s ease}
+/* ── LOGIN (AI style) ── */
+#login-screen{display:flex;align-items:center;justify-content:center;padding:20px;overflow-y:auto;height:100%;position:relative;background:#fafafa}
+.login-bg{position:absolute;inset:0;overflow:hidden;pointer-events:none}
+.login-orb{position:absolute;border-radius:50%;filter:blur(60px);opacity:.45;animation:orbFloat 8s ease-in-out infinite}
+.login-orb-1{width:280px;height:280px;background:rgba(16,163,127,.25);top:-80px;right:-60px}
+.login-orb-2{width:220px;height:220px;background:rgba(99,102,241,.18);bottom:-40px;left:-50px;animation-delay:-3s}
+.login-orb-3{width:160px;height:160px;background:rgba(16,163,127,.15);top:40%;left:50%;transform:translateX(-50%);animation-delay:-5s}
+@keyframes orbFloat{0%,100%{transform:translate(0,0) scale(1)}50%{transform:translate(12px,-18px) scale(1.06)}}
+.login-wrap{width:100%;max-width:400px;animation:fadeUp .5s ease;position:relative;z-index:1}
 @keyframes fadeUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
-.login-card{background:#fff;border:1px solid var(--border);border-radius:16px;padding:32px 28px 28px}
-.brand{text-align:center;margin-bottom:28px}
-.brand-name{font-size:26px;font-weight:700}
-.brand-name span{color:var(--accent)}
-.brand-sub{font-size:12px;color:var(--muted);margin-top:4px}
+.login-hero{text-align:center;margin-bottom:22px}
+.ai-logo{width:64px;height:64px;margin:0 auto 14px;position:relative;display:flex;align-items:center;justify-content:center}
+.ai-logo-ring{position:absolute;inset:0;border-radius:50%;background:linear-gradient(135deg,var(--accent),#6366f1);opacity:.15;animation:aiPulse 2.4s ease-in-out infinite}
+.ai-logo-ring::after{content:'';position:absolute;inset:3px;border-radius:50%;background:#fafafa}
+.ai-logo-icon{position:relative;font-size:26px;color:var(--accent);animation:aiSpark 3s ease-in-out infinite}
+@keyframes aiPulse{0%,100%{transform:scale(1);opacity:.15}50%{transform:scale(1.12);opacity:.28}}
+@keyframes aiSpark{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.7;transform:scale(1.08)}}
+.brand{text-align:center}
+.brand-name{font-size:28px;font-weight:700;letter-spacing:-.5px}
+.brand-name span{background:linear-gradient(135deg,var(--accent),#059669);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.brand-tagline{font-size:13px;color:var(--muted);margin-top:6px;line-height:1.5}
+.ai-demo-line{margin-top:12px;font-size:13px;color:var(--text2);min-height:20px;display:flex;align-items:center;justify-content:center;gap:2px}
+.ai-demo-text{opacity:.85}
+.ai-cursor{color:var(--accent);animation:blink 1s step-end infinite;font-weight:300}
+@keyframes blink{0%,100%{opacity:1}50%{opacity:0}}
+.login-card{background:#fff;border:1px solid var(--border);border-radius:20px;padding:26px 24px 22px;box-shadow:0 8px 32px rgba(0,0,0,.06)}
+.login-chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:16px}
+.login-chip{font-size:11px;color:var(--text2);background:var(--surface);border:1px solid var(--border);border-radius:20px;padding:5px 11px;white-space:nowrap}
 .field{margin-bottom:14px}
-.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
-.field input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:11px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none}
-.field input:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(16,163,127,.15)}
+.field label{display:block;font-size:11px;font-weight:600;color:var(--muted);margin-bottom:6px;letter-spacing:.3px}
+.field input{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px 14px;color:var(--text);font-size:14px;font-family:var(--font);outline:none;transition:border-color .2s,box-shadow .2s}
+.field input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(16,163,127,.12);background:#fff}
 .field-hint{font-size:11px;color:var(--muted);margin-top:4px}
-.btn-login{width:100%;border:none;border-radius:10px;padding:12px;margin-top:6px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer}
-.btn-login:hover{background:var(--accent-h)}
+.btn-login{width:100%;border:none;border-radius:12px;padding:13px;margin-top:4px;background:var(--accent);color:#fff;font-size:14px;font-weight:700;font-family:var(--font);cursor:pointer;transition:background .15s,transform .1s,box-shadow .15s;box-shadow:0 4px 14px rgba(16,163,127,.25)}
+.btn-login:hover{background:var(--accent-h);box-shadow:0 6px 18px rgba(16,163,127,.3)}
+.btn-login:active{transform:scale(.98)}
 .error-msg{min-height:18px;color:var(--danger);font-size:12px;margin-bottom:8px;text-align:center;font-weight:500}
 
 /* ── CHAT SCREEN ── */
@@ -225,7 +245,7 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .msg-wrapper.recv .msg-meta{color:var(--muted);right:auto;left:8px}
 .tick-sent{color:rgba(255,255,255,.6)}
 .tick-delivered{color:rgba(255,255,255,.8)}
-.tick-read{color:#53bdeb}
+.tick-read{color:#1a1a1a;font-weight:600}
 
 /* إيموجي منفرد — حجم طبيعي + أنيميشن تليجرام */
 .msg-bubble.emoji-only{background:transparent!important;padding:2px 4px 14px!important;box-shadow:none}
@@ -278,6 +298,30 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .typing-dots span:nth-child(2){animation-delay:.18s}
 .typing-dots span:nth-child(3){animation-delay:.36s}
 @keyframes tdot{0%,60%,100%{transform:translateY(0);opacity:.4}30%{transform:translateY(-4px);opacity:1}}
+
+/* reaction jump pills (telegram-style) */
+.reaction-jump-bar{
+  position:fixed;bottom:86px;left:0;right:0;max-width:860px;margin:0 auto;
+  padding:0 14px;display:none;align-items:center;justify-content:flex-start;gap:8px;
+  flex-wrap:wrap;z-index:997;pointer-events:none;min-height:0;
+}
+.reaction-jump-bar.show{display:flex}
+.reaction-jump-pill{
+  pointer-events:auto;display:inline-flex;align-items:center;gap:4px;
+  background:#fff;border:1px solid var(--border2);border-radius:20px;
+  padding:5px 10px 5px 8px;cursor:pointer;font-family:var(--font);
+  box-shadow:0 2px 12px rgba(0,0,0,.1);transition:transform .15s,box-shadow .15s;
+  animation:reactionPillIn .35s cubic-bezier(.2,.8,.3,1) both;
+}
+.reaction-jump-pill:hover{transform:translateY(-2px);box-shadow:0 4px 16px rgba(0,0,0,.14)}
+.reaction-jump-pill:active{transform:scale(.96)}
+.rjp-emoji{font-size:18px;line-height:1}
+.rjp-count{font-size:12px;font-weight:700;color:var(--text2);min-width:14px;text-align:center}
+.rjp-arrow{font-size:10px;color:var(--muted);margin-right:2px}
+@keyframes reactionPillIn{from{opacity:0;transform:translateY(8px) scale(.9)}to{opacity:1;transform:translateY(0) scale(1)}}
+#chat-screen.has-reaction-jump .btn-scroll-down{bottom:118px}
+#chat-screen.has-reaction-jump .typing-bar{bottom:86px}
+#chat-screen.has-reply.has-reaction-jump .typing-bar{bottom:130px}
 
 /* scroll btn */
 .btn-scroll-down{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#fff;border:1px solid var(--border);border-radius:50%;width:36px;height:36px;display:none;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 2px 10px rgba(0,0,0,.14);z-index:995;padding:0}
@@ -489,22 +533,42 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 
 <div id="app">
   <div id="login-screen" class="screen">
-    <div class="login-wrap">      <div class="login-card">
+    <div class="login-bg">
+      <div class="login-orb login-orb-1"></div>
+      <div class="login-orb login-orb-2"></div>
+      <div class="login-orb login-orb-3"></div>
+    </div>
+    <div class="login-wrap">
+      <div class="login-hero">
+        <div class="ai-logo">
+          <div class="ai-logo-ring"></div>
+          <span class="ai-logo-icon">✦</span>
+        </div>
         <div class="brand">
           <div class="brand-name">Chat<span>BFT</span></div>
-          <div class="brand-sub">محادثة فورية آمنة</div>
+          <p class="brand-tagline">مساعدك الذكي — محادثة تفهمك وتردّ عليك</p>
+        </div>
+        <div class="ai-demo-line">
+          <span class="ai-demo-text" id="ai-demo-text"></span><span class="ai-cursor">▍</span>
+        </div>
+      </div>
+      <div class="login-card">
+        <div class="login-chips">
+          <span class="login-chip">💡 اسأل أي شيء</span>
+          <span class="login-chip">🔒 خصوصية تامة</span>
+          <span class="login-chip">⚡ رد فوري</span>
         </div>
         <div class="field">
-          <label>الاسم</label>
-          <input type="text" id="name-input" placeholder="أدخل اسمك" maxlength="20" autocomplete="off">
+          <label>اسمك</label>
+          <input type="text" id="name-input" placeholder="مثال: أحمد" maxlength="20" autocomplete="off">
         </div>
         <div class="field">
-          <label>رمز الغرفة</label>
-          <input type="text" id="room-input" placeholder="مثال: room2024" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter')joinRoom()">
-          <div class="field-hint">شارك نفس الرمز مع الشخص الآخر</div>
+          <label>رمز المحادثة</label>
+          <input type="text" id="room-input" placeholder="مثال: chat-ai-2024" maxlength="30" autocomplete="off" onkeydown="if(event.key==='Enter')joinRoom()">
+          <div class="field-hint">شارك الرمز مع من تريد التحدث معه</div>
         </div>
         <div class="error-msg" id="login-error"></div>
-        <button class="btn-login" id="join-btn" onclick="joinRoom()">دخول الغرفة</button>
+        <button class="btn-login" id="join-btn" onclick="joinRoom()">ابدأ المحادثة الذكية</button>
       </div>
     </div>
   </div>
@@ -581,12 +645,14 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
       </div>
       <div class="messages-area" id="messages-area" onclick="closeAllMenus()">
         <div class="empty-state" id="empty-state">
-          <div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div>
-          <p>ابدأ المحادثة الآن</p>
+          <div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div>
+          <p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p>
+          <p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p>
         </div>
       </div>
     </div>
 
+    <div class="reaction-jump-bar" id="reaction-jump-bar"></div>
     <div class="typing-bar" id="typing-bar"></div>
 
     <button class="btn-scroll-down" id="btn-scroll-down" onclick="scrollToBottom()">
@@ -651,7 +717,7 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
       <input type="file" id="file-chooser" accept="image/*,video/*,.pdf,.doc,.docx,.zip" class="hidden" multiple onchange="handleFileSelect(this)">
       <div class="input-wrap">
         <button class="btn-attach" onclick="document.getElementById('file-chooser').click()" title="ملف">📎</button>
-        <textarea id="msg-input" class="msg-input" rows="1" placeholder="اكتب رسالة..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
+        <textarea id="msg-input" class="msg-input" rows="1" placeholder="اسأل أو اكتب رسالتك..." onkeydown="handleKey(event)" oninput="handleTyping(this)"></textarea>
         <button class="btn-emoji-input" onclick="toggleEmojiPicker(event)">😀</button>
         <div class="rec-timer" id="rec-timer"><div class="rec-dot"></div><span id="rec-time">0:00</span></div>
       </div>
@@ -776,6 +842,7 @@ let pinnedMsgKey=null, pinnedMsgText='';
 let activeRowKey=null;
 let ctxReactKey=null;
 let unreadCount=0, isAtBottom=true;
+let prevReactions={}, reactionJumpItems=new Map(), reactionsReady=false;
 let pendingFiles=[], activePreviewIdx=0;
 let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
 let currentAudio=null, currentPlayBtn=null;
@@ -879,7 +946,7 @@ async function joinRoom(){
     await ensureAuth();
   }catch(e){
     err.textContent='خطأ في المصادقة — فعّل Anonymous Auth في Firebase Console';
-    btn.disabled=false;btn.textContent='دخول الغرفة';return;
+    btn.disabled=false;btn.textContent='ابدأ المحادثة الذكية';return;
   }
 
   myName=name;myId=genId();roomId=room;isInitialLoad=true;allMessages={};
@@ -968,6 +1035,7 @@ function setupListeners(){
     Object.entries(data).forEach(([k,m])=>{allMessages[k]=m});
     renderAllMessages();
     setTimeout(scrollToBottom,100);
+    setTimeout(()=>{reactionsReady=true},600);
   });
 
   /* New messages */
@@ -1029,7 +1097,7 @@ function renderAllMessages(){
   area.innerHTML='';
   const sorted=Object.entries(allMessages).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
   if(!sorted.length){
-    area.innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>';
+    area.innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
     return;
   }
   sorted.forEach(([k,m])=>appendMsgToDOM(m,k,area));
@@ -1953,7 +2021,61 @@ async function quickReact(key,emoji,bubbleEl){
 async function toggleReaction(key,emoji){
   try{const ref=db.ref(`rooms/${roomId}/reactions/${key}/${emoji}/${myId}`);if((await ref.once('value')).exists())await ref.remove();else await ref.set(myName)}catch(e){}
 }
+function isMessageAboveViewport(key){
+  const el=document.querySelector(`.msg-wrapper[data-key="${key}"]`);
+  if(!el)return false;
+  const area=$('messages-area');if(!area)return false;
+  const areaRect=area.getBoundingClientRect(),elRect=el.getBoundingClientRect();
+  return elRect.bottom<areaRect.top+24;
+}
+function detectNewPeerReactions(key,data){
+  if(!reactionsReady||!data)return;
+  const prev=prevReactions[key]||{};
+  Object.entries(data).forEach(([emoji,users])=>{
+    if(!users||typeof users!=='object')return;
+    const prevUsers=prev[emoji]||{};
+    Object.entries(users).forEach(([uid,name])=>{
+      if(uid!==myId&&!prevUsers[uid]&&isMessageAboveViewport(key)){
+        addReactionJumpItem(key,emoji,Object.keys(users).length,name);
+      }
+    });
+  });
+}
+function addReactionJumpItem(key,emoji,count){
+  reactionJumpItems.set(key,{emoji,count,ts:Date.now()});
+  renderReactionJumpBar();
+}
+function renderReactionJumpBar(){
+  const bar=$('reaction-jump-bar'),screen=$('chat-screen');
+  if(!bar)return;
+  if(!reactionJumpItems.size){
+    bar.innerHTML='';bar.classList.remove('show');
+    if(screen)screen.classList.remove('has-reaction-jump');
+    return;
+  }
+  bar.classList.add('show');
+  if(screen)screen.classList.add('has-reaction-jump');
+  const items=[...reactionJumpItems.entries()].sort((a,b)=>b[1].ts-a[1].ts).slice(0,5);
+  bar.innerHTML=items.map(([key,item])=>
+    `<button type="button" class="reaction-jump-pill" onclick="jumpToReactionMsg('${key}')" title="انتقل للرسالة">
+      <span class="rjp-emoji">${item.emoji}</span>${item.count>1?`<span class="rjp-count">${item.count}</span>`:''}
+      <span class="rjp-arrow">↑</span>
+    </button>`
+  ).join('');
+}
+function jumpToReactionMsg(key){
+  reactionJumpItems.delete(key);
+  renderReactionJumpBar();
+  jumpToMsg(key);
+}
+function clearReactionJumpBar(){
+  reactionJumpItems.clear();prevReactions={};reactionsReady=false;
+  const bar=$('reaction-jump-bar');if(bar){bar.innerHTML='';bar.classList.remove('show')}
+  $('chat-screen')?.classList.remove('has-reaction-jump');
+}
 function renderReactions(key,data){
+  detectNewPeerReactions(key,data||{});
+  prevReactions[key]=JSON.parse(JSON.stringify(data||{}));
   const bar=document.querySelector(`[data-msgkey="${key}"]`);if(!bar)return;
   bar.innerHTML='';if(!data||!Object.keys(data).length)return;
   Object.entries(data).forEach(([emoji,users])=>{
@@ -1981,6 +2103,10 @@ function initScrollButton(){
     isAtBottom=diff<100;
     if(isAtBottom){$('btn-scroll-down').classList.remove('show');unreadCount=0;updateBadge()}
     else $('btn-scroll-down').classList.add('show');
+    [...reactionJumpItems.keys()].forEach(key=>{
+      if(!isMessageAboveViewport(key))reactionJumpItems.delete(key);
+    });
+    renderReactionJumpBar();
   },{passive:true});
 }
 function scrollToBottom(){const area=$('messages-area');if(area)area.scrollTop=area.scrollHeight;unreadCount=0;updateBadge();$('btn-scroll-down').classList.remove('show')}
@@ -2061,10 +2187,11 @@ async function leaveRoom(){
     allMessages={};messagesRef.off();
   }catch(e){}
   myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=callHistoryRef=null;
-  $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">💬</div><p>ابدأ المحادثة الآن</p></div>';
+  $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
+  clearReactionJumpBar();
   $('name-input').value='';$('room-input').value='';
-  $('join-btn').disabled=false;$('join-btn').textContent='دخول الغرفة';
+  $('join-btn').disabled=false;$('join-btn').textContent='ابدأ المحادثة الذكية';
   $('msg-input').value='';$('msg-input').style.height='auto';
   $('chat-screen').classList.add('hidden');$('login-screen').classList.remove('hidden');
 }
@@ -2073,6 +2200,20 @@ function playNotifSound(){
   if(document.visibilityState==='visible')return;
   try{const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;const ctx=new AC();const osc=ctx.createOscillator();const g=ctx.createGain();osc.type='sine';osc.frequency.setValueAtTime(587.33,ctx.currentTime);g.gain.setValueAtTime(0.1,ctx.currentTime);g.gain.exponentialRampToValueAtTime(0.01,ctx.currentTime+0.15);osc.connect(g);g.connect(ctx.destination);osc.start();osc.stop(ctx.currentTime+0.15)}catch(e){}
 }
+
+/* ══ AI LOGIN TYPEWRITER ══ */
+(function initAiDemoLine(){
+  const el=$('ai-demo-text');if(!el)return;
+  const phrases=['كيف يمكنني مساعدتك؟','اسألني أي سؤال...','محادثة ذكية وآمنة','أنا هنا لأجيبك ✦'];
+  let pi=0,ci=0,del=false;
+  function tick(){
+    const p=phrases[pi];
+    if(!del){el.textContent=p.slice(0,++ci);if(ci>=p.length){del=true;setTimeout(tick,2200);return}}
+    else{el.textContent=p.slice(0,--ci);if(ci<=0){del=false;pi=(pi+1)%phrases.length}}
+    setTimeout(tick,del?40:70);
+  }
+  tick();
+})();
 </script>
 
 </body>

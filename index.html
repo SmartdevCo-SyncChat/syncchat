@@ -844,6 +844,7 @@ let activeRowKey=null;
 let ctxReactKey=null;
 let unreadCount=0, isAtBottom=true;
 let readByData={}, peerIsOnline=false;
+let chatEngaged=false, skipReadOnScroll=false;
 let prevReactions={}, reactionJumpItems=new Map(), reactionsReady=false;
 let pendingFiles=[], activePreviewIdx=0;
 let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
@@ -971,6 +972,8 @@ async function joinRoom(){
   startInactivityTimer();
   initScrollButton();
   initFileDropPaste();
+  initReadOnInteraction();
+  chatEngaged=false;
 
   $('login-screen').classList.add('hidden');
   $('chat-screen').classList.remove('hidden');
@@ -1055,6 +1058,7 @@ function setupListeners(){
     if(snap.val().type!=='system'&&snap.val().senderName!==myName){
       playNotifSound();
       if(!isAtBottom){unreadCount++;updateBadge();$('btn-scroll-down').classList.add('show')}
+      else if(chatEngaged)setTimeout(markAsRead,80);
     }
     if(isAtBottom||snap.val().senderName===myName)setTimeout(scrollToBottom,50);
   });
@@ -1080,8 +1084,6 @@ function setupListeners(){
     readByData=snap.val()||{};
     updateReadTicks();
   });
-  markAsRead();
-  document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible'&&roomId)markAsRead()});
 
   /* Pin */
   db.ref(`rooms/${roomId}/pinnedMsg`).on('value',snap=>{
@@ -1092,6 +1094,29 @@ function setupListeners(){
 }
 
 function markAsRead(){if(roomId&&myId)db.ref(`rooms/${roomId}/readBy/${myId}`).set(Date.now())}
+
+function engageAndMarkRead(){
+  if(!roomId)return;
+  chatEngaged=true;
+  markAsRead();
+}
+
+function initReadOnInteraction(){
+  if(window._readInteractionInit)return;
+  window._readInteractionInit=true;
+  const wrap=$('messages-wrap');
+  const engage=()=>engageAndMarkRead();
+  wrap?.addEventListener('touchstart',engage,{passive:true});
+  wrap?.addEventListener('wheel',engage,{passive:true});
+  wrap?.addEventListener('click',e=>{
+    if(e.target.closest('.msg-menu-btn')||e.target.closest('.msg-menu-popup'))return;
+    engage();
+  });
+  $('btn-scroll-down')?.addEventListener('click',engage);
+  document.addEventListener('visibilitychange',()=>{
+    if(document.visibilityState==='hidden')chatEngaged=false;
+  });
+}
 
 function updateReadTicks(){
   const peerRead=Object.keys(readByData).some(id=>id!==myId);
@@ -1430,6 +1455,7 @@ async function sendMessage(){
     return;
   }
 
+  engageAndMarkRead();
   input.value='';input.style.height='auto';clearTypingNow();
   setTimeout(()=>input.focus(),50);
 
@@ -2078,6 +2104,7 @@ function renderReactionJumpBar(){
 function jumpToReactionMsg(key){
   reactionJumpItems.delete(key);
   renderReactionJumpBar();
+  engageAndMarkRead();
   jumpToMsg(key);
 }
 function clearReactionJumpBar(){
@@ -2111,6 +2138,7 @@ function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMe
 function initScrollButton(){
   const area=$('messages-area');if(!area)return;
   area.addEventListener('scroll',()=>{
+    if(!skipReadOnScroll)engageAndMarkRead();
     const diff=area.scrollHeight-area.scrollTop-area.clientHeight;
     isAtBottom=diff<100;
     if(isAtBottom){$('btn-scroll-down').classList.remove('show');unreadCount=0;updateBadge()}
@@ -2121,7 +2149,12 @@ function initScrollButton(){
     renderReactionJumpBar();
   },{passive:true});
 }
-function scrollToBottom(){const area=$('messages-area');if(area)area.scrollTop=area.scrollHeight;unreadCount=0;updateBadge();$('btn-scroll-down').classList.remove('show')}
+function scrollToBottom(){
+  const area=$('messages-area');
+  if(area){skipReadOnScroll=true;area.scrollTop=area.scrollHeight;requestAnimationFrame(()=>{skipReadOnScroll=false})}
+  unreadCount=0;updateBadge();$('btn-scroll-down').classList.remove('show');
+  if(chatEngaged)markAsRead();
+}
 function updateBadge(){const b=$('unread-badge');if(unreadCount>0){b.textContent=unreadCount>99?'99+':unreadCount;$('btn-scroll-down').classList.add('has-unread')}else $('btn-scroll-down').classList.remove('has-unread')}
 
 /* ══ SEARCH ══ */
@@ -2202,7 +2235,7 @@ async function leaveRoom(){
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
   $('typing-bar').innerHTML='';$('pin-bar').classList.remove('show');
   clearReactionJumpBar();
-  readByData={};peerIsOnline=false;
+  readByData={};peerIsOnline=false;chatEngaged=false;
   $('name-input').value='';$('room-input').value='';
   $('join-btn').disabled=false;$('join-btn').textContent='ابدأ المحادثة الذكية';
   $('msg-input').value='';$('msg-input').style.height='auto';

@@ -1168,14 +1168,35 @@ function getNewestLoadedTs(){
   return Math.max(...vals.map(m=>m.ts||0));
 }
 
+function compareMsgKeys(ka,kb,ma,mb){
+  const ta=(ma&&ma.ts)||0,tb=(mb&&mb.ts)||0;
+  if(ta!==tb)return ta-tb;
+  return ka.localeCompare(kb);
+}
+
+function getSortedMessageEntries(){
+  return Object.entries(allMessages)
+    .filter(([,m])=>!isActivitySystemMsg(m))
+    .sort((a,b)=>compareMsgKeys(a[0],b[0],a[1],b[1]));
+}
+
+function findInsertBeforeForMsg(area,key,msg){
+  if(!area)return null;
+  const nodes=area.querySelectorAll(':scope > .msg-wrapper, :scope > .system-msg');
+  for(const node of nodes){
+    const k=node.getAttribute('data-key');
+    if(!k)continue;
+    const m=allMessages[k];
+    if(!m)continue;
+    if(compareMsgKeys(k,key,m,msg)>0)return node;
+  }
+  return null;
+}
+
 function ingestMessageEntries(entries){
   if(!entries.length)return;
   entries.forEach(([k,m])=>{allMessages[k]=m});
-  const sorted=entries.sort((a,b)=>{
-    const ta=a[1].ts||0,tb=b[1].ts||0;
-    if(ta!==tb)return ta-tb;
-    return a[0].localeCompare(b[0]);
-  });
+  const sorted=entries.sort((a,b)=>compareMsgKeys(a[0],b[0],a[1],b[1]));
   oldestLoadedTs=sorted[0][1].ts||0;
   oldestLoadedKey=sorted[0][0];
 }
@@ -1227,16 +1248,12 @@ async function loadOlderMessages(){
       entries=entries.filter(([k])=>k!==oldestLoadedKey);
     }
     if(!entries.length){hasMoreOlder=false;updatePagingBars();return}
-    const sorted=entries.sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
-    sorted.forEach(([k,m])=>{
-      if(allMessages[k])return;
-      allMessages[k]=m;
-      appendMsgToDOM(m,k,area,true);
-    });
+    const sorted=entries.sort((a,b)=>compareMsgKeys(a[0],b[0],a[1],b[1]));
+    sorted.forEach(([k,m])=>{if(!allMessages[k])allMessages[k]=m});
     oldestLoadedTs=sorted[0][1].ts||oldestLoadedTs;
     oldestLoadedKey=sorted[0][0];
     if(entries.length<PAGE_SIZE)hasMoreOlder=false;
-    updatePagingBars();
+    renderAllMessages();
     requestAnimationFrame(()=>{
       if(area)area.scrollTop=prevT+(area.scrollHeight-prevH);
     });
@@ -1256,9 +1273,17 @@ function attachMessageListeners(){
     if(allMessages[snap.key])return;
     const msg=snap.val();
     const ts=msg.ts||0;
-    if(listenerWarmingUp&&ts<=getNewestLoadedTs())return;
+    if(listenerWarmingUp){
+      const sorted=getSortedMessageEntries();
+      if(sorted.length){
+        const [newestKey,newestMsg]=sorted[sorted.length-1];
+        if(compareMsgKeys(snap.key,newestKey,msg,newestMsg)<=0)return;
+      }
+    }
     allMessages[snap.key]=msg;
-    appendMsgToDOM(snap.val(),snap.key);
+    const area=$('messages-area');
+    const before=findInsertBeforeForMsg(area,snap.key,msg);
+    appendMsgToDOM(msg,snap.key,area,before);
     if(isActivitySystemMsg(snap.val())){
       if($('activity-overlay').classList.contains('open'))renderActivityHistory();
       return;
@@ -1357,7 +1382,7 @@ function updateReadTicks(){
 function renderAllMessages(){
   const area=$('messages-area');if(!area)return;
   area.innerHTML='';
-  const sorted=Object.entries(allMessages).sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
+  const sorted=getSortedMessageEntries();
   if(!sorted.length){
     area.innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
     return;
@@ -1373,12 +1398,13 @@ function isActivitySystemMsg(msg){
   return t.includes('انضم إلى المحادثة')||t.includes('غادر المحادثة');
 }
 
-function appendMsgToDOM(msg,key,areaEl,prepend){
+function appendMsgToDOM(msg,key,areaEl,insertBeforeEl){
   const area=areaEl||$('messages-area');
   if(!area)return;
   if(isActivitySystemMsg(msg))return;
   const empty=$('empty-state');if(empty)empty.remove();
   const div=document.createElement('div');
+  div.setAttribute('data-key',key);
 
   if(msg.type==='system'){
     div.className='system-msg'+(msg.callLog?' call-log-msg':'');
@@ -1536,15 +1562,8 @@ function appendMsgToDOM(msg,key,areaEl,prepend){
     }
   }
 
-  if(prepend){
-    const anchor=area.querySelector('.msg-wrapper, .system-msg');
-    if(anchor)area.insertBefore(div,anchor);
-    else{
-      const bar=$('messages-load-older');
-      if(bar&&bar.parentNode===area)area.insertBefore(div,bar.nextSibling);
-      else area.insertBefore(div,area.firstChild);
-    }
-  }else area.appendChild(div);
+  if(insertBeforeEl&&insertBeforeEl.parentNode===area)area.insertBefore(div,insertBeforeEl);
+  else area.appendChild(div);
 
   if(key)db.ref(`rooms/${roomId}/reactions/${key}`).on('value',snap=>renderReactions(key,snap.val()||{}));
   if(key&&msg.type!=='system'&&msg.senderName===myName)updateReadTicks();

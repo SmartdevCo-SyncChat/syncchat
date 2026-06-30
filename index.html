@@ -158,6 +158,11 @@ html,body{width:100%;height:100dvh;overflow:hidden;font-family:var(--font);backg
 .messages-area{width:100%;height:100%;overflow-y:auto;padding:12px 12px 8px;display:flex;flex-direction:column;gap:3px;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
 .messages-area::-webkit-scrollbar{width:3px}
 .messages-area::-webkit-scrollbar-thumb{background:var(--border2);border-radius:2px}
+.messages-loading{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:48px 20px;color:var(--muted);font-size:13px;font-weight:500;margin:auto}
+.messages-load-older{display:none;align-items:center;justify-content:center;gap:8px;padding:12px;font-size:12px;color:var(--muted);flex-shrink:0}
+.messages-load-older.show{display:flex}
+.messages-load-end{display:none;text-align:center;padding:10px;font-size:11px;color:var(--muted);flex-shrink:0}
+.messages-load-end.show{display:block}
 
 /* drag & drop overlay */
 .drop-overlay{
@@ -863,6 +868,9 @@ let currentActivePeerRef=null, peerTypingListener=null;
 let typingTimeout, inactivityTimeout;
 let isInitialLoad=true;
 let allMessages={};
+const PAGE_SIZE=25;
+let oldestLoadedTs=null,oldestLoadedKey=null;
+let hasMoreOlder=true,isLoadingOlder=false,messageListenersOn=false,listenerWarmingUp=false;
 let currentReplyTarget=null;
 let currentEditKey=null;
 let pinnedMsgKey=null, pinnedMsgText='';
@@ -1015,6 +1023,7 @@ async function joinRoom(){
   }
 
   myName=name;myId=genId();roomId=room;isInitialLoad=true;allMessages={};
+  oldestLoadedTs=null;oldestLoadedKey=null;hasMoreOlder=true;isLoadingOlder=false;messageListenersOn=false;listenerWarmingUp=false;
   messagesRef=db.ref(`rooms/${roomId}/messages`);
   presenceRef=db.ref(`rooms/${roomId}/presence/${myName}`);
   typingRef=db.ref(`rooms/${roomId}/typing/${myId}`);
@@ -1096,25 +1105,159 @@ function setupListeners(){
   /* Clear signal */
   db.ref(`rooms/${roomId}/clearSignal`).on('child_added',()=>{
     allMessages={};
+    oldestLoadedTs=null;oldestLoadedKey=null;hasMoreOlder=false;isLoadingOlder=false;
     const area=$('messages-area');
     if(area)area.innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.3">🗑️</div><p>تم مسح المحادثة</p></div>';
   });
 
-  /* Messages — load all sorted first */
-  messagesRef.once('value',snap=>{
-    isInitialLoad=false;
-    const data=snap.val()||{};
-    Object.entries(data).forEach(([k,m])=>{allMessages[k]=m});
-    renderAllMessages();
-    setTimeout(scrollToBottom,100);
-    setTimeout(()=>{reactionsReady=true},600);
+  loadInitialMessages();
+
+  db.ref(`rooms/${roomId}/readBy`).on('value',snap=>{
+    readByData=snap.val()||{};
+    updateReadTicks();
   });
+
+  db.ref(`rooms/${roomId}/pinnedMsg`).on('value',snap=>{
+    const d=snap.val();
+    if(d&&d.key){pinnedMsgKey=d.key;pinnedMsgText=d.text||'رسالة مثبتة';$('pin-text').textContent=pinnedMsgText;$('pin-bar').classList.add('show')}
+    else{pinnedMsgKey=null;$('pin-bar').classList.remove('show')}
+  });
+}
+
+function showInitialLoading(show){
+  const area=$('messages-area');if(!area)return;
+  if(show)area.innerHTML='<div class="messages-loading" id="messages-loading"><div class="upload-spin"></div><span>جاري تحميل المحادثة...</span></div>';
+}
+
+function showOlderLoading(show){
+  const bar=$('messages-load-older');
+  if(bar)bar.classList.toggle('show',show);
+}
+
+function updatePagingBars(){
+  const area=$('messages-area');if(!area)return;
+  let older=$('messages-load-older');
+  let end=$('messages-load-end');
+  if(hasMoreOlder){
+    if(!older){
+      older=document.createElement('div');
+      older.id='messages-load-older';
+      older.className='messages-load-older';
+      older.innerHTML='<div class="upload-spin"></div><span>جاري تحميل رسائل أقدم...</span>';
+    }
+    if(area.firstChild!==older)area.insertBefore(older,area.firstChild);
+    if(end)end.classList.remove('show');
+  }else{
+    if(older)older.remove();
+    if(Object.keys(allMessages).length>0){
+      if(!end){
+        end=document.createElement('div');
+        end.id='messages-load-end';
+        end.className='messages-load-end';
+        end.textContent='بداية المحادثة';
+      }
+      if(area.firstChild!==end)area.insertBefore(end,area.firstChild);
+      end.classList.add('show');
+    }else if(end)end.remove();
+  }
+}
+
+function getNewestLoadedTs(){
+  const vals=Object.values(allMessages);
+  if(!vals.length)return 0;
+  return Math.max(...vals.map(m=>m.ts||0));
+}
+
+function ingestMessageEntries(entries){
+  if(!entries.length)return;
+  entries.forEach(([k,m])=>{allMessages[k]=m});
+  const sorted=entries.sort((a,b)=>{
+    const ta=a[1].ts||0,tb=b[1].ts||0;
+    if(ta!==tb)return ta-tb;
+    return a[0].localeCompare(b[0]);
+  });
+  oldestLoadedTs=sorted[0][1].ts||0;
+  oldestLoadedKey=sorted[0][0];
+}
+
+async function loadInitialMessages(){
+  showInitialLoading(true);
+  allMessages={};
+  oldestLoadedTs=null;oldestLoadedKey=null;hasMoreOlder=true;isLoadingOlder=false;
+  isInitialLoad=true;reactionsReady=false;
+  try{
+    let snap;
+    try{snap=await messagesRef.orderByChild('ts').limitToLast(PAGE_SIZE).once('value')}
+    catch(e){snap=await messagesRef.limitToLast(PAGE_SIZE).once('value')}
+    const data=snap.val()||{};
+    const entries=Object.entries(data);
+    ingestMessageEntries(entries);
+    hasMoreOlder=entries.length>=PAGE_SIZE;
+    renderAllMessages();
+    attachMessageListeners();
+    isInitialLoad=false;
+    setTimeout(scrollToBottom,80);
+    setTimeout(()=>{reactionsReady=true},400);
+  }catch(e){
+    showInitialLoading(false);
+    const area=$('messages-area');
+    if(area)area.innerHTML='<div class="empty-state"><p>تعذر تحميل الرسائل</p></div>';
+    attachMessageListeners();
+    isInitialLoad=false;
+  }
+}
+
+async function loadOlderMessages(){
+  if(isLoadingOlder||!hasMoreOlder||!messagesRef||oldestLoadedKey==null)return;
+  isLoadingOlder=true;
+  showOlderLoading(true);
+  const area=$('messages-area');
+  const prevH=area?area.scrollHeight:0;
+  const prevT=area?area.scrollTop:0;
+  try{
+    let snap;
+    try{
+      snap=await messagesRef.orderByChild('ts').endAt(oldestLoadedTs-1).limitToLast(PAGE_SIZE).once('value');
+    }catch(e){
+      if(!oldestLoadedKey)throw e;
+      snap=await messagesRef.orderByKey().endAt(oldestLoadedKey).limitToLast(PAGE_SIZE+1).once('value');
+    }
+    let entries=Object.entries(snap.val()||{});
+    if(entries.length&&entries.some(([k])=>k===oldestLoadedKey)){
+      entries=entries.filter(([k])=>k!==oldestLoadedKey);
+    }
+    if(!entries.length){hasMoreOlder=false;updatePagingBars();return}
+    const sorted=entries.sort((a,b)=>(a[1].ts||0)-(b[1].ts||0));
+    sorted.forEach(([k,m])=>{
+      if(allMessages[k])return;
+      allMessages[k]=m;
+      appendMsgToDOM(m,k,area,true);
+    });
+    oldestLoadedTs=sorted[0][1].ts||oldestLoadedTs;
+    oldestLoadedKey=sorted[0][0];
+    if(entries.length<PAGE_SIZE)hasMoreOlder=false;
+    updatePagingBars();
+    requestAnimationFrame(()=>{
+      if(area)area.scrollTop=prevT+(area.scrollHeight-prevH);
+    });
+  }catch(e){showToast('تعذر تحميل رسائل أقدم')}
+  finally{isLoadingOlder=false;showOlderLoading(false)}
+}
+
+function attachMessageListeners(){
+  if(messageListenersOn||!messagesRef)return;
+  messageListenersOn=true;
+  listenerWarmingUp=true;
+  setTimeout(()=>{listenerWarmingUp=false},800);
 
   /* New messages */
   messagesRef.on('child_added',snap=>{
     if(isInitialLoad)return;
     if(allMessages[snap.key])return;
-    allMessages[snap.key]=snap.val();
+    const msg=snap.val();
+    const ts=msg.ts||0;
+    if(listenerWarmingUp&&ts<=getNewestLoadedTs())return;
+    allMessages[snap.key]=msg;
     appendMsgToDOM(snap.val(),snap.key);
     if(isActivitySystemMsg(snap.val())){
       if($('activity-overlay').classList.contains('open'))renderActivityHistory();
@@ -1142,19 +1285,6 @@ function setupListeners(){
     delete allMessages[snap.key];
     const wrap=document.querySelector(`[data-key="${snap.key}"]`);
     if(wrap)wrap.remove();
-  });
-
-  /* Read receipts */
-  db.ref(`rooms/${roomId}/readBy`).on('value',snap=>{
-    readByData=snap.val()||{};
-    updateReadTicks();
-  });
-
-  /* Pin */
-  db.ref(`rooms/${roomId}/pinnedMsg`).on('value',snap=>{
-    const d=snap.val();
-    if(d&&d.key){pinnedMsgKey=d.key;pinnedMsgText=d.text||'رسالة مثبتة';$('pin-text').textContent=pinnedMsgText;$('pin-bar').classList.add('show')}
-    else{pinnedMsgKey=null;$('pin-bar').classList.remove('show')}
   });
 }
 
@@ -1233,6 +1363,7 @@ function renderAllMessages(){
     return;
   }
   sorted.forEach(([k,m])=>appendMsgToDOM(m,k,area));
+  updatePagingBars();
 }
 
 function isActivitySystemMsg(msg){
@@ -1242,7 +1373,7 @@ function isActivitySystemMsg(msg){
   return t.includes('انضم إلى المحادثة')||t.includes('غادر المحادثة');
 }
 
-function appendMsgToDOM(msg,key,areaEl){
+function appendMsgToDOM(msg,key,areaEl,prepend){
   const area=areaEl||$('messages-area');
   if(!area)return;
   if(isActivitySystemMsg(msg))return;
@@ -1405,7 +1536,15 @@ function appendMsgToDOM(msg,key,areaEl){
     }
   }
 
-  area.appendChild(div);
+  if(prepend){
+    const anchor=area.querySelector('.msg-wrapper, .system-msg');
+    if(anchor)area.insertBefore(div,anchor);
+    else{
+      const bar=$('messages-load-older');
+      if(bar&&bar.parentNode===area)area.insertBefore(div,bar.nextSibling);
+      else area.insertBefore(div,area.firstChild);
+    }
+  }else area.appendChild(div);
 
   if(key)db.ref(`rooms/${roomId}/reactions/${key}`).on('value',snap=>renderReactions(key,snap.val()||{}));
   if(key&&msg.type!=='system'&&msg.senderName===myName)updateReadTicks();
@@ -2301,6 +2440,7 @@ function initScrollButton(){
   const area=$('messages-area');if(!area)return;
   area.addEventListener('scroll',()=>{
     if(!skipReadOnScroll)engageAndMarkRead();
+    if(area.scrollTop<90&&hasMoreOlder&&!isLoadingOlder&&!isInitialLoad)loadOlderMessages();
     const diff=area.scrollHeight-area.scrollTop-area.clientHeight;
     isAtBottom=diff<100;
     if(isAtBottom){$('btn-scroll-down').classList.remove('show');unreadCount=0;updateBadge()}
@@ -2391,7 +2531,7 @@ async function leaveRoom(){
     if(callRef){callRef.off();callRef.child('ice').off();callRef.child('mediaState').off()}
     if(callHistoryRef)callHistoryRef.off();
     ['typing','clearSignal','reactions','readBy','pinnedMsg','call','callHistory'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
-    allMessages={};messagesRef.off();
+    allMessages={};messagesRef.off();messageListenersOn=false;listenerWarmingUp=false;
   }catch(e){}
   myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=callHistoryRef=null;
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';

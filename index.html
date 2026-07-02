@@ -306,7 +306,7 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .btn-play-voice{width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0}
 .msg-wrapper.recv .btn-play-voice{background:rgba(0,0,0,.1);color:#333}
 .voice-progress-wrap{flex:1;min-width:0}
-.voice-waveform{height:24px;display:flex;align-items:center;gap:2px;cursor:pointer;touch-action:none}
+.voice-waveform{height:24px;display:flex;align-items:center;gap:2px;cursor:pointer;touch-action:none;user-select:none}
 .voice-waveform span{display:inline-block;background:rgba(255,255,255,.5);border-radius:2px;width:3px;transition:background .1s;pointer-events:none}
 .msg-wrapper.recv .voice-waveform span{background:rgba(0,0,0,.2)}
 .voice-waveform span.played{background:rgba(255,255,255,.95)}
@@ -1051,7 +1051,7 @@ function buildMediaHtml(msg,key){
   if(msg.fileType==='audio'||(msg.fileType&&msg.fileType.startsWith('audio/'))){
     const dur=msg.voiceDuration||0,mm=Math.floor(dur/60),ss=dur%60;
     const bars=Array.from({length:26},(_,i)=>`<span style="height:${6+Math.floor(Math.abs(Math.sin(i*.7))*16)}px"></span>`).join('');
-    return`<div class="voice-msg" data-url="${esc(msg.fileUrl)}" data-duration="${dur}"><button type="button" class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform" onclick="seekVoice(event)">${bars}</div></div><button type="button" class="btn-voice-speed" onclick="cycleVoiceSpeed(event)">${currentVoiceSpeed}×</button><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
+    return`<div class="voice-msg" data-url="${esc(msg.fileUrl)}" data-duration="${dur}"><button type="button" class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform">${bars}</div></div><button type="button" class="btn-voice-speed" onclick="cycleVoiceSpeed(event)">${currentVoiceSpeed}×</button><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
   }
   if(msg.fileType&&msg.fileType.startsWith('image/')){
     if(msg.viewOnce&&isViewOnceExpired(msg))return`<div class="view-once-expired"><span>👁</span><span>تم العرض</span></div>`;
@@ -1085,6 +1085,8 @@ function bindMediaEvents(div,msg,key){
       if(img)img.addEventListener('click',e=>{e.stopPropagation();openImageMessage(key,msg.fileUrl)});
     }
   }
+  const voiceWave=div.querySelector('.voice-waveform');
+  if(voiceWave)bindVoiceWaveform(voiceWave);
 }
 function initFirebase(){
   if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
@@ -2104,6 +2106,19 @@ async function uploadVoice(blob,mt){
 }
 
 /* ══ VOICE PLAYER ══ */
+function getVoiceTotal(audio,vm){
+  const stored=parseInt(vm?.dataset?.duration,10)||0;
+  const d=audio?.duration;
+  if(d&&isFinite(d)&&d>0)return d;
+  return stored;
+}
+function waveformPctFromX(wrap,clientX){
+  const rect=wrap.getBoundingClientRect();
+  if(!rect.width)return 0;
+  const rtl=getComputedStyle(wrap).direction==='rtl';
+  const raw=rtl?(rect.right-clientX)/rect.width:(clientX-rect.left)/rect.width;
+  return Math.max(0,Math.min(1,raw));
+}
 function fmtVoiceTime(sec){
   if(!sec||isNaN(sec))return'0:00';
   return Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
@@ -2114,64 +2129,91 @@ function stopCurrentVoice(){
   currentVoiceEl=null;
 }
 function updateVoiceUI(vm,audio,bars,durEl,total){
-  const pct=audio.duration?audio.currentTime/audio.duration:0;
+  const t=getVoiceTotal(audio,vm)||total||0;
+  const pct=t?audio.currentTime/t:0;
   const idx=Math.floor(pct*bars.length);
   bars.forEach((b,i)=>b.classList.toggle('played',i<idx));
-  const t=audio.duration||total||0;
-  durEl.textContent=fmtVoiceTime(audio.currentTime)+' / '+fmtVoiceTime(t);
+  if(!audio.paused&&t)durEl.textContent=fmtVoiceTime(audio.currentTime)+' / '+fmtVoiceTime(t);
+  else durEl.textContent=fmtVoiceTime(audio.currentTime||t);
 }
 function resetVoiceUI(vm,bars,durEl,total){
   bars.forEach(b=>b.classList.remove('played'));
   durEl.textContent=fmtVoiceTime(total);
 }
+function attachVoiceAudioHandlers(vm,audio,btn,bars,durEl,total){
+  audio.playbackRate=currentVoiceSpeed;
+  audio.ontimeupdate=()=>updateVoiceUI(vm,audio,bars,durEl,total);
+  audio.onended=()=>{resetVoiceUI(vm,bars,durEl,total);btn.textContent='▶';stopCurrentVoice()};
+  audio.onloadedmetadata=()=>updateVoiceUI(vm,audio,bars,durEl,total);
+}
+function ensureVoiceAudio(vm){
+  const btn=vm.querySelector('.btn-play-voice');
+  const bars=vm.querySelectorAll('.voice-waveform span');
+  const durEl=vm.querySelector('.voice-duration');
+  const total=parseInt(vm.dataset.duration,10)||0;
+  if(currentVoiceEl===vm&&currentAudio)return{vm,audio:currentAudio,btn,bars,durEl,total};
+  stopCurrentVoice();
+  const audio=new Audio(vm.dataset.url);
+  currentAudio=audio;currentPlayBtn=btn;currentVoiceEl=vm;
+  attachVoiceAudioHandlers(vm,audio,btn,bars,durEl,total);
+  return{vm,audio,btn,bars,durEl,total};
+}
+function seekVoiceTo(vm,pct,shouldPlay){
+  const{audio,btn,bars,durEl,total}=ensureVoiceAudio(vm);
+  const apply=()=>{
+    const t=getVoiceTotal(audio,vm)||total;
+    if(!t)return;
+    audio.currentTime=Math.max(0,Math.min(t,pct*t));
+    updateVoiceUI(vm,audio,bars,durEl,total);
+    if(shouldPlay){
+      btn.textContent='⏸';
+      audio.play().catch(()=>{btn.textContent='▶';stopCurrentVoice()});
+    }
+  };
+  if(audio.readyState>=1)apply();
+  else{audio.addEventListener('loadedmetadata',apply,{once:true});audio.load()}
+}
+function bindVoiceWaveform(wave){
+  if(wave.dataset.seekBound)return;
+  wave.dataset.seekBound='1';
+  let dragging=false;
+  const vm=()=>wave.closest('.voice-msg');
+  const scrub=(e,play)=>{e.preventDefault();e.stopPropagation();seekVoiceTo(vm(),waveformPctFromX(wave,e.clientX),play)};
+  wave.addEventListener('pointerdown',e=>{
+    dragging=true;
+    wave.setPointerCapture(e.pointerId);
+    scrub(e,true);
+  });
+  wave.addEventListener('pointermove',e=>{
+    if(!dragging)return;
+    scrub(e,!currentAudio||currentAudio.paused);
+  });
+  wave.addEventListener('pointerup',e=>{
+    dragging=false;
+    try{wave.releasePointerCapture(e.pointerId)}catch(_){}
+  });
+  wave.addEventListener('pointercancel',()=>{dragging=false});
+}
 function playVoice(btn,e){
   if(e)e.stopPropagation();
   const vm=btn.closest('.voice-msg');
-  const url=vm.dataset.url;
   const bars=vm.querySelectorAll('.voice-waveform span');
   const durEl=vm.querySelector('.voice-duration');
   const total=parseInt(vm.dataset.duration,10)||0;
   if(currentPlayBtn===btn&&currentAudio){
     if(currentAudio.paused){currentAudio.play();btn.textContent='⏸'}
-    else{currentAudio.pause();btn.textContent='▶'}
+    else{currentAudio.pause();btn.textContent='▶';updateVoiceUI(vm,currentAudio,bars,durEl,total)}
     return;
   }
-  stopCurrentVoice();
-  const audio=new Audio(url);
-  audio.playbackRate=currentVoiceSpeed;
-  currentAudio=audio;currentPlayBtn=btn;currentVoiceEl=vm;
+  const{audio}=ensureVoiceAudio(vm);
   btn.textContent='⏸';
-  audio.ontimeupdate=()=>updateVoiceUI(vm,audio,bars,durEl,total);
-  audio.onended=()=>{resetVoiceUI(vm,bars,durEl,total);btn.textContent='▶';stopCurrentVoice()};
-  audio.onloadedmetadata=()=>updateVoiceUI(vm,audio,bars,durEl,total);
   audio.play().catch(()=>{btn.textContent='▶';stopCurrentVoice()});
 }
 function seekVoice(e){
   e.stopPropagation();
   const wrap=e.currentTarget;
   const vm=wrap.closest('.voice-msg');
-  const rect=wrap.getBoundingClientRect();
-  const pct=Math.max(0,Math.min(1,(e.clientX-rect.left)/rect.width));
-  const total=parseInt(vm.dataset.duration,10)||0;
-  const bars=vm.querySelectorAll('.voice-waveform span');
-  const durEl=vm.querySelector('.voice-duration');
-  const btn=vm.querySelector('.btn-play-voice');
-  if(currentVoiceEl===vm&&currentAudio&&currentAudio.duration){
-    currentAudio.currentTime=pct*currentAudio.duration;
-    updateVoiceUI(vm,currentAudio,bars,durEl,total);
-    return;
-  }
-  stopCurrentVoice();
-  const audio=new Audio(vm.dataset.url);
-  audio.playbackRate=currentVoiceSpeed;
-  currentAudio=audio;currentPlayBtn=btn;currentVoiceEl=vm;
-  btn.textContent='⏸';
-  audio.ontimeupdate=()=>updateVoiceUI(vm,audio,bars,durEl,total);
-  audio.onended=()=>{resetVoiceUI(vm,bars,durEl,total);btn.textContent='▶';stopCurrentVoice()};
-  audio.onloadedmetadata=()=>{
-    audio.currentTime=pct*(audio.duration||total);
-    audio.play().catch(()=>{btn.textContent='▶';stopCurrentVoice()});
-  };
+  seekVoiceTo(vm,waveformPctFromX(wrap,e.clientX),true);
 }
 function cycleVoiceSpeed(e){
   e.stopPropagation();

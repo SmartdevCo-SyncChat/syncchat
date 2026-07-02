@@ -290,11 +290,13 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .btn-file-download,.btn-file-open{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:#fff;color:var(--accent);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
 .msg-wrapper.sent .btn-file-download,.msg-wrapper.sent .btn-file-open{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#fff}
 .view-once-wrap{position:relative;display:inline-block;cursor:pointer;max-width:100%}
-.view-once-wrap .chat-image{filter:blur(14px) brightness(.85);transform:scale(1.05)}
+.view-once-wrap:not(.view-once-sent) .chat-image{filter:blur(14px) brightness(.85);transform:scale(1.05)}
+.view-once-sent .chat-image{filter:none;transform:none}
 .view-once-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.25);border-radius:10px;color:#fff;font-size:12px;font-weight:600;gap:4px;pointer-events:none}
 .view-once-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px}
-.view-once-expired{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:14px 16px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:3px}
+.view-once-expired{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:14px 16px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:3px;min-width:140px}
 .msg-wrapper.sent .view-once-expired{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
+.view-once-wrap.view-once-opened .chat-image{filter:blur(16px)!important}
 .img-preview-actions{flex-wrap:wrap;gap:8px}
 .btn-view-once{border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;background:rgba(255,255,255,.15);color:#fff;transition:background .15s}
 .btn-view-once.on{background:var(--accent);color:#fff}
@@ -1003,22 +1005,25 @@ function toggleViewOnce(){
   $('btn-view-once')?.classList.toggle('on',pendingViewOnce);
 }
 function isViewOnceExpired(msg){
-  if(!msg||!msg.viewOnce||msg.senderName===myName)return false;
-  return!!(msg.viewedBy&&msg.viewedBy[myName]);
+  if(!msg||!msg.viewOnce)return false;
+  const viewedBy=msg.viewedBy||{};
+  return Object.keys(viewedBy).some(name=>name!==msg.senderName);
 }
 async function openImageMessage(key,url,urls,idx){
   const msg=allMessages[key];
   if(!msg){openImgModal(url,urls,idx);return}
-  if(msg.viewOnce&&msg.senderName!==myName){
+  if(msg.viewOnce){
     if(isViewOnceExpired(msg)){showToast('انتهت صلاحية هذه الصورة 👁');return}
-    openImgModal(url,urls,idx);
-    try{
-      await messagesRef.child(key).update({[`viewedBy/${myName}`]:Date.now()});
-      if(!msg.viewedBy)msg.viewedBy={};
-      msg.viewedBy[myName]=Date.now();
-      refreshMsgMedia(key,msg);
-    }catch(e){}
-    return;
+    if(msg.senderName!==myName){
+      openImgModal(url,urls,idx);
+      try{
+        await messagesRef.child(key).update({[`viewedBy/${myName}`]:Date.now()});
+        if(!msg.viewedBy)msg.viewedBy={};
+        msg.viewedBy[myName]=Date.now();
+        refreshMsgMedia(key,msg);
+      }catch(e){}
+      return;
+    }
   }
   openImgModal(url,urls,idx);
 }
@@ -1049,11 +1054,15 @@ function buildMediaHtml(msg,key){
     return`<div class="voice-msg" data-url="${esc(msg.fileUrl)}" data-duration="${dur}"><button type="button" class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform" onclick="seekVoice(event)">${bars}</div></div><button type="button" class="btn-voice-speed" onclick="cycleVoiceSpeed(event)">${currentVoiceSpeed}×</button><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
   }
   if(msg.fileType&&msg.fileType.startsWith('image/')){
-    if(msg.viewOnce&&msg.senderName!==myName&&isViewOnceExpired(msg))return`<div class="view-once-expired"><span>👁</span><span>تم العرض</span></div>`;
+    if(msg.viewOnce&&isViewOnceExpired(msg))return`<div class="view-once-expired"><span>👁</span><span>تم العرض</span></div>`;
     if(msg.viewOnce){
-      const overlay=msg.senderName!==myName?`<div class="view-once-overlay"><span>👁</span><span>صورة لمرة واحدة</span></div>`:'';
-      const blur=msg.senderName!==myName?' filter:blur(14px) brightness(.85);transform:scale(1.05)':'';
-      return`<div class="view-once-wrap" data-key="${key}"><img src="${esc(msg.fileUrl)}" class="chat-image" style="${blur}" loading="lazy">${overlay}<span class="view-once-badge">👁</span></div>`;
+      const isSender=msg.senderName===myName;
+      const overlay=isSender
+        ?`<div class="view-once-overlay"><span>👁</span><span>صورة لمرة واحدة</span></div>`
+        :`<div class="view-once-overlay"><span>👁</span><span>اضغط للمشاهدة</span></div>`;
+      const blur=isSender?'':' filter:blur(14px) brightness(.85);transform:scale(1.05)';
+      const wrapCls=isSender?'view-once-wrap view-once-sent':'view-once-wrap';
+      return`<div class="${wrapCls}" data-key="${key}"><img src="${esc(msg.fileUrl)}" class="chat-image" style="${blur}" loading="lazy">${overlay}<span class="view-once-badge">👁</span></div>`;
     }
     return`<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
   }

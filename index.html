@@ -885,6 +885,7 @@ let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
 let currentAudio=null, currentPlayBtn=null;
 let wakeLock=null;
 const INACTIVITY_LIMIT=2*60*1000;
+const MAX_VOICE_SECONDS=10*60;
 
 /* ══ HELPERS ══ */
 const $=id=>document.getElementById(id);
@@ -1987,7 +1988,7 @@ async function startRec(){
       const mm=Math.floor(recSeconds/60),ss=recSeconds%60;
       $('rec-time').textContent=mm+':'+String(ss).padStart(2,'0');
       resetInactivityTimer();
-      if(recSeconds>=120)stopRec();
+      if(recSeconds>=MAX_VOICE_SECONDS)stopRec();
     },1000);
   }catch(e){showToast('تعذر الوصول للميكروفون ❌')}
 }

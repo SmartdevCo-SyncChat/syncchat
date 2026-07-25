@@ -284,36 +284,19 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
 .msg-link{color:inherit;text-decoration:underline;text-underline-offset:2px;word-break:break-all;pointer-events:auto}
 .msg-wrapper.sent .msg-link{color:#e0fff5}
 .msg-wrapper.recv .msg-link{color:var(--accent)}
-.file-attachment-row{display:flex;align-items:center;gap:6px;margin-bottom:3px}
-.file-attachment{flex:1;display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;border:1px solid rgba(0,0,0,.08);margin-bottom:0;cursor:pointer;font-family:var(--font);text-align:right;color:var(--accent);font-weight:600;font-size:12px}
+.file-attachment{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:8px 10px;border-radius:10px;text-decoration:none;color:var(--accent);font-weight:600;font-size:12px;border:1px solid rgba(0,0,0,.08);margin-bottom:3px}
 .msg-wrapper.sent .file-attachment{background:rgba(255,255,255,.15);color:#fff;border-color:rgba(255,255,255,.2)}
-.btn-file-download,.btn-file-open{flex-shrink:0;width:34px;height:34px;border-radius:50%;border:1px solid var(--border2);background:#fff;color:var(--accent);cursor:pointer;font-size:15px;display:flex;align-items:center;justify-content:center}
-.msg-wrapper.sent .btn-file-download,.msg-wrapper.sent .btn-file-open{background:rgba(255,255,255,.2);border-color:rgba(255,255,255,.3);color:#fff}
-.view-once-wrap{position:relative;display:inline-block;cursor:pointer;max-width:100%}
-.view-once-wrap:not(.view-once-sent) .chat-image{filter:blur(14px) brightness(.85);transform:scale(1.05)}
-.view-once-sent .chat-image{filter:none;transform:none}
-.view-once-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,.25);border-radius:10px;color:#fff;font-size:12px;font-weight:600;gap:4px;pointer-events:none}
-.view-once-badge{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.6);color:#fff;font-size:10px;padding:2px 7px;border-radius:10px}
-.view-once-expired{display:flex;align-items:center;gap:8px;background:rgba(0,0,0,.06);padding:14px 16px;border-radius:10px;color:var(--muted);font-size:12px;font-weight:600;margin-bottom:3px;min-width:140px}
-.msg-wrapper.sent .view-once-expired{background:rgba(255,255,255,.12);color:rgba(255,255,255,.75)}
-.view-once-wrap.view-once-opened .chat-image{filter:blur(16px)!important}
-.img-preview-actions{flex-wrap:wrap;gap:8px}
-.btn-view-once{border:none;border-radius:10px;padding:8px 12px;font-size:12px;font-weight:600;font-family:var(--font);cursor:pointer;background:rgba(255,255,255,.15);color:#fff;transition:background .15s}
-.btn-view-once.on{background:var(--accent);color:#fff}
 
 /* voice */
-.voice-msg{display:flex;align-items:center;gap:6px;min-width:200px;padding:2px 0}
+.voice-msg{display:flex;align-items:center;gap:8px;min-width:180px;padding:2px 0}
 .btn-play-voice{width:32px;height:32px;border-radius:50%;border:none;background:rgba(255,255,255,.25);color:#fff;display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:13px;flex-shrink:0}
 .msg-wrapper.recv .btn-play-voice{background:rgba(0,0,0,.1);color:#333}
-.voice-progress-wrap{flex:1;min-width:0}
-.voice-waveform{height:24px;display:flex;align-items:center;gap:2px;cursor:pointer;touch-action:none;user-select:none}
-.voice-waveform span{display:inline-block;background:rgba(255,255,255,.5);border-radius:2px;width:3px;transition:background .1s;pointer-events:none}
+.voice-waveform{flex:1;height:24px;display:flex;align-items:center;gap:2px;cursor:pointer}
+.voice-waveform span{display:inline-block;background:rgba(255,255,255,.5);border-radius:2px;width:3px;transition:background .1s}
 .msg-wrapper.recv .voice-waveform span{background:rgba(0,0,0,.2)}
 .voice-waveform span.played{background:rgba(255,255,255,.95)}
 .msg-wrapper.recv .voice-waveform span.played{background:var(--accent)}
-.btn-voice-speed{flex-shrink:0;border:none;background:rgba(255,255,255,.2);color:#fff;border-radius:10px;padding:2px 6px;font-size:10px;font-weight:700;cursor:pointer;font-family:var(--font);min-width:30px}
-.msg-wrapper.recv .btn-voice-speed{background:rgba(0,0,0,.08);color:var(--text2)}
-.voice-duration{font-size:11px;color:rgba(255,255,255,.7);min-width:36px;text-align:left;flex-shrink:0;font-variant-numeric:tabular-nums}
+.voice-duration{font-size:11px;color:rgba(255,255,255,.7);min-width:30px}
 .msg-wrapper.recv .voice-duration{color:var(--muted)}
 
 /* reactions */
@@ -748,7 +731,6 @@ display:flex; flex-direction:column; max-width:100%; min-width:85px; height:auto
       <div class="img-preview-actions">
         <div class="img-preview-count" id="img-preview-count"></div>
         <div class="img-preview-btns">
-          <button type="button" class="btn-view-once" id="btn-view-once" onclick="toggleViewOnce()">👁 مرة واحدة</button>
           <button class="btn-cancel-img" onclick="cancelImgPreview()">إلغاء</button>
           <button class="btn-send-img" onclick="confirmSendImage()">إرسال ✓</button>
         </div>
@@ -898,11 +880,10 @@ let unreadCount=0, isAtBottom=true;
 let readByData={}, peerIsOnline=false, presenceData={};
 let chatEngaged=false, skipReadOnScroll=false;
 let prevReactions={}, reactionJumpItems=new Map(), reactionsReady=false;
-let pendingViewOnce=false,currentVoiceSpeed=1,currentVoiceEl=null,reactionsListenerOn=false;
-let readScrollTimer=null;
 let pendingFiles=[], activePreviewIdx=0;
 let mediaRecorder=null, audioChunks=[], recInterval=null, recSeconds=0;
 let currentAudio=null, currentPlayBtn=null;
+let wakeLock=null;
 const INACTIVITY_LIMIT=2*60*1000;
 
 /* ══ HELPERS ══ */
@@ -963,131 +944,6 @@ function modalNav(dir){
   $('modal-img').src=modalGallery[modalGalleryIdx];
   $('modal-img-counter').textContent=`${modalGalleryIdx+1} / ${modalGallery.length}`;
 }
-function onModalKeydown(e){
-  if(!$('img-modal').classList.contains('open'))return;
-  if(e.key==='ArrowLeft'){e.preventDefault();modalNav(1)}
-  else if(e.key==='ArrowRight'){e.preventDefault();modalNav(-1)}
-  else if(e.key==='Escape')closeImgModal();
-}
-if(!window._modalKeysInit){window._modalKeysInit=true;document.addEventListener('keydown',onModalKeydown)}
-
-function isViewableFile(name){
-  const ext=(name||'').split('.').pop().toLowerCase();
-  return['pdf','jpg','jpeg','png','gif','webp','txt','mp4','webm','mp3','wav'].includes(ext);
-}
-function openFileAttachment(url,name,e){
-  if(e){e.preventDefault();e.stopPropagation()}
-  if(!url)return;
-  if(isViewableFile(name))window.open(url,'_blank','noopener');
-  else downloadFileAttachment(url,name,e);
-}
-async function downloadFileAttachment(url,name,e){
-  if(e){e.preventDefault();e.stopPropagation()}
-  if(!url)return;
-  showToast('جاري التحميل...');
-  try{
-    const r=await fetch(url);
-    const blob=await r.blob();
-    const a=document.createElement('a');
-    a.href=URL.createObjectURL(blob);
-    a.download=name||'file';
-    document.body.appendChild(a);a.click();a.remove();
-    setTimeout(()=>URL.revokeObjectURL(a.href),1000);
-    showToast('تم التحميل ✅');
-  }catch(err){
-    const a=document.createElement('a');
-    a.href=url;a.target='_blank';a.download=name||'file';
-    document.body.appendChild(a);a.click();a.remove();
-  }
-}
-function toggleViewOnce(){
-  pendingViewOnce=!pendingViewOnce;
-  $('btn-view-once')?.classList.toggle('on',pendingViewOnce);
-}
-function isViewOnceExpired(msg){
-  if(!msg||!msg.viewOnce)return false;
-  const viewedBy=msg.viewedBy||{};
-  return Object.keys(viewedBy).some(name=>name!==msg.senderName);
-}
-async function openImageMessage(key,url,urls,idx){
-  const msg=allMessages[key];
-  if(!msg){openImgModal(url,urls,idx);return}
-  if(msg.viewOnce){
-    if(isViewOnceExpired(msg)){showToast('انتهت صلاحية هذه الصورة 👁');return}
-    if(msg.senderName!==myName){
-      openImgModal(url,urls,idx);
-      try{
-        await messagesRef.child(key).update({[`viewedBy/${myName}`]:Date.now()});
-        if(!msg.viewedBy)msg.viewedBy={};
-        msg.viewedBy[myName]=Date.now();
-        refreshMsgMedia(key,msg);
-      }catch(e){}
-      return;
-    }
-  }
-  openImgModal(url,urls,idx);
-}
-function refreshMsgMedia(key,msg){
-  const wrap=document.querySelector(`.msg-wrapper[data-key="${key}"]`);
-  if(!wrap)return;
-  const bubble=wrap.querySelector('.msg-bubble');
-  if(!bubble)return;
-  const oldMedia=bubble.querySelector('.chat-image,.img-album,.view-once-wrap,.view-once-expired,.voice-msg,.chat-video,.file-attachment-row');
-  if(oldMedia)oldMedia.remove();
-  const meta=bubble.querySelector('.msg-meta');
-  const temp=document.createElement('div');
-  temp.innerHTML=buildMediaHtml(msg,key);
-  const nh=temp.firstElementChild;
-  if(nh&&meta)bubble.insertBefore(nh,meta);
-  bindMediaEvents(wrap,msg,key);
-}
-function buildMediaHtml(msg,key){
-  const albumUrls=getImageUrls(msg);
-  if(isImageAlbum(msg)&&albumUrls.length>1){
-    const imgs=albumUrls.map((u,i)=>`<img src="${esc(u)}" class="chat-image album-img" data-idx="${i}" loading="lazy">`).join('');
-    return`<div class="img-album" data-albumkey="${key}"><div class="img-album-track">${imgs}</div><span class="img-album-badge">${albumUrls.length} صور</span></div>`;
-  }
-  if(!msg.fileUrl)return'';
-  if(msg.fileType==='audio'||(msg.fileType&&msg.fileType.startsWith('audio/'))){
-    const dur=msg.voiceDuration||0,mm=Math.floor(dur/60),ss=dur%60;
-    const bars=Array.from({length:26},(_,i)=>`<span style="height:${6+Math.floor(Math.abs(Math.sin(i*.7))*16)}px"></span>`).join('');
-    return`<div class="voice-msg" data-url="${esc(msg.fileUrl)}" data-duration="${dur}"><button type="button" class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform">${bars}</div></div><button type="button" class="btn-voice-speed" onclick="cycleVoiceSpeed(event)">${currentVoiceSpeed}×</button><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
-  }
-  if(msg.fileType&&msg.fileType.startsWith('image/')){
-    if(msg.viewOnce&&isViewOnceExpired(msg))return`<div class="view-once-expired"><span>👁</span><span>تم العرض</span></div>`;
-    if(msg.viewOnce){
-      const isSender=msg.senderName===myName;
-      const overlay=isSender
-        ?`<div class="view-once-overlay"><span>👁</span><span>صورة لمرة واحدة</span></div>`
-        :`<div class="view-once-overlay"><span>👁</span><span>اضغط للمشاهدة</span></div>`;
-      const blur=isSender?'':' filter:blur(14px) brightness(.85);transform:scale(1.05)';
-      const wrapCls=isSender?'view-once-wrap view-once-sent':'view-once-wrap';
-      return`<div class="${wrapCls}" data-key="${key}"><img src="${esc(msg.fileUrl)}" class="chat-image" style="${blur}" loading="lazy">${overlay}<span class="view-once-badge">👁</span></div>`;
-    }
-    return`<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
-  }
-  if(msg.fileType&&msg.fileType.startsWith('video/'))return`<video src="${esc(msg.fileUrl)}" class="chat-video" controls playsinline></video>`;
-  const fn=esc(msg.fileName||'ملف');
-  return`<div class="file-attachment-row"><button type="button" class="file-attachment" onclick="openFileAttachment('${esc(msg.fileUrl)}','${fn}',event)"><span style="font-size:18px">📄</span><div><div style="font-size:12px;font-weight:700">${fn}</div><div style="font-size:10px;opacity:.7">${(msg.fileName||'').split('.').pop().toUpperCase()}</div></div></button><button type="button" class="btn-file-open" onclick="openFileAttachment('${esc(msg.fileUrl)}','${fn}',event)" title="فتح">↗</button><button type="button" class="btn-file-download" onclick="downloadFileAttachment('${esc(msg.fileUrl)}','${fn}',event)" title="تحميل">⬇</button></div>`;
-}
-function bindMediaEvents(div,msg,key){
-  const albumUrls=getImageUrls(msg);
-  const albumEl=div.querySelector('.img-album');
-  if(albumEl){
-    albumEl.querySelectorAll('.album-img').forEach(img=>{
-      img.addEventListener('click',e=>{e.stopPropagation();openImageMessage(key,img.src,albumUrls,parseInt(img.dataset.idx||'0',10))});
-    });
-  }else{
-    const vOnce=div.querySelector('.view-once-wrap');
-    if(vOnce)vOnce.addEventListener('click',e=>{e.stopPropagation();openImageMessage(key,msg.fileUrl,null,0)});
-    else{
-      const img=div.querySelector('.chat-image');
-      if(img)img.addEventListener('click',e=>{e.stopPropagation();openImageMessage(key,msg.fileUrl)});
-    }
-  }
-  const voiceWave=div.querySelector('.voice-waveform');
-  if(voiceWave)bindVoiceWaveform(voiceWave);
-}
 function initFirebase(){
   if(!firebase.apps.length)firebase.initializeApp(FIREBASE_CONFIG);
   auth=firebase.auth();
@@ -1101,15 +957,45 @@ async function ensureAuth(){
   return cred.user;
 }
 
+function isMediaBusy(){
+  return (mediaRecorder&&mediaRecorder.state==='recording')||!!$('call-modal')?.classList.contains('open');
+}
+function pauseInactivityForMedia(){
+  clearTimeout(inactivityTimeout);
+  acquireWakeLock();
+}
+async function acquireWakeLock(){
+  try{
+    if(!('wakeLock' in navigator))return;
+    if(wakeLock)return;
+    wakeLock=await navigator.wakeLock.request('screen');
+    wakeLock.addEventListener('release',()=>{wakeLock=null});
+  }catch(e){wakeLock=null}
+}
+async function releaseWakeLock(){
+  try{await wakeLock?.release()}catch(e){}
+  wakeLock=null;
+}
 function startInactivityTimer(){
   resetInactivityTimer();
   ['mousemove','click','keydown','scroll','touchstart'].forEach(e=>window.addEventListener(e,resetInactivityTimer,true));
+  document.addEventListener('visibilitychange',onVisibilityForWakeLock);
 }
 function stopInactivityTimer(){
   clearTimeout(inactivityTimeout);
   ['mousemove','click','keydown','scroll','touchstart'].forEach(e=>window.removeEventListener(e,resetInactivityTimer,true));
+  document.removeEventListener('visibilitychange',onVisibilityForWakeLock);
+  releaseWakeLock();
 }
-function resetInactivityTimer(){clearTimeout(inactivityTimeout);if(roomId)inactivityTimeout=setTimeout(leaveRoom,INACTIVITY_LIMIT)}
+function onVisibilityForWakeLock(){
+  if(document.visibilityState==='visible'&&isMediaBusy())acquireWakeLock();
+}
+function resetInactivityTimer(){
+  clearTimeout(inactivityTimeout);
+  if(!roomId)return;
+  if(isMediaBusy())return;
+  inactivityTimeout=setTimeout(leaveRoom,INACTIVITY_LIMIT);
+}
 
 /* ══ CLOSE ALL MENUS ══ */
 function closeAllMenus(e){
@@ -1237,14 +1123,12 @@ function setupListeners(){
   if(peerTypingListener)db.ref(`rooms/${roomId}/typing`).off('value',peerTypingListener);
   peerTypingListener=db.ref(`rooms/${roomId}/typing`).on('value',snap=>{
     const data=snap.val()||{};
-    const active=Object.entries(data).find(([id,v])=>id!==myId&&isActivePeerActivity(v));
+    const active=Object.entries(data).find(([id,v])=>id!==myId&&v===true);
     const bar=$('typing-bar');
     if(active){
-      const actType=getActivityType(active[1]);
       db.ref(`rooms/${roomId}/presence`).once('value',ps=>{
         const pd=ps.val()||{};const found=Object.values(pd).find(u=>u.online&&u.name!==myName);
-        const label=getActivityLabel(actType,found?found.name:'الطرف الآخر');
-        bar.innerHTML=`<div class="typing-dots"><span></span><span></span><span></span></div><span>${label}</span>`;
+        bar.innerHTML=`<div class="typing-dots"><span></span><span></span><span></span></div><span>${esc(found?found.name:'الطرف الآخر')} يكتب...</span>`;
       });
     }else{bar.innerHTML=''}
   });
@@ -1269,8 +1153,6 @@ function setupListeners(){
     if(d&&d.key){pinnedMsgKey=d.key;pinnedMsgText=d.text||'رسالة مثبتة';$('pin-text').textContent=pinnedMsgText;$('pin-bar').classList.add('show')}
     else{pinnedMsgKey=null;$('pin-bar').classList.remove('show')}
   });
-
-  setupReactionsListener();
 }
 
 function showInitialLoading(show){
@@ -1398,15 +1280,11 @@ async function loadOlderMessages(){
     }
     if(!entries.length){hasMoreOlder=false;updatePagingBars();return}
     const sorted=entries.sort((a,b)=>compareMsgKeys(a[0],b[0],a[1],b[1]));
-    sorted.forEach(([k,m])=>{
-      if(allMessages[k])return;
-      allMessages[k]=m;
-      appendMsgToDOM(m,k,area,findInsertBeforeForMsg(area,k,m));
-    });
+    sorted.forEach(([k,m])=>{if(!allMessages[k])allMessages[k]=m});
     oldestLoadedTs=sorted[0][1].ts||oldestLoadedTs;
     oldestLoadedKey=sorted[0][0];
     if(entries.length<PAGE_SIZE)hasMoreOlder=false;
-    updatePagingBars();
+    renderAllMessages();
     requestAnimationFrame(()=>{
       if(area)area.scrollTop=prevT+(area.scrollHeight-prevH);
     });
@@ -1453,9 +1331,9 @@ function attachMessageListeners(){
   messagesRef.on('child_changed',snap=>{
     allMessages[snap.key]=snap.val();
     const el=document.getElementById('msgrow-'+snap.key);
-    const t=el&&el.querySelector('.actual-msg-text');
+    if(!el)return;
+    const t=el.querySelector('.actual-msg-text');
     if(t&&snap.val().text)t.innerHTML=linkifyText(snap.val().text)+(snap.val().isEdited?'<small style="font-size:10px;opacity:.5;font-style:italic"> (معدلة)</small>':'');
-    if(snap.val().viewedBy||snap.val().viewOnce)refreshMsgMedia(snap.key,snap.val());
   });
 
   /* Delete */
@@ -1568,8 +1446,25 @@ function appendMsgToDOM(msg,key,areaEl,insertBeforeEl){
     div.className='msg-wrapper '+(sent?'sent':'recv');
     div.setAttribute('data-key',key);
 
-    /* ميديا */
-    let mediaHtml=buildMediaHtml(msg,key);
+    /* ميديا (دعم الفيديو + الصور + الصوت + الملفات) */
+    let mediaHtml='';
+    const albumUrls=getImageUrls(msg);
+    if(isImageAlbum(msg)&&albumUrls.length>1){
+      const imgs=albumUrls.map((u,i)=>`<img src="${esc(u)}" class="chat-image album-img" data-idx="${i}" loading="lazy">`).join('');
+      mediaHtml=`<div class="img-album" data-albumkey="${key}"><div class="img-album-track">${imgs}</div><span class="img-album-badge">${albumUrls.length} صور</span></div>`;
+    }else if(msg.fileUrl){
+      if(msg.fileType==='audio'||(msg.fileType&&msg.fileType.startsWith('audio/'))){
+        const dur=msg.voiceDuration||0,mm=Math.floor(dur/60),ss=dur%60;
+        const bars=Array.from({length:26},(_,i)=>`<span style="height:${6+Math.floor(Math.abs(Math.sin(i*.7))*16)}px"></span>`).join('');
+        mediaHtml=`<div class="voice-msg" data-url="${esc(msg.fileUrl)}"><button class="btn-play-voice" onclick="playVoice(this,event)">▶</button><div class="voice-progress-wrap"><div class="voice-waveform">${bars}</div></div><span class="voice-duration">${mm}:${String(ss).padStart(2,'0')}</span></div>`;
+      }else if(msg.fileType&&msg.fileType.startsWith('image/')){
+        mediaHtml=`<img src="${esc(msg.fileUrl)}" class="chat-image" loading="lazy">`;
+      }else if(msg.fileType&&msg.fileType.startsWith('video/')){
+        mediaHtml=`<video src="${esc(msg.fileUrl)}" class="chat-video" controls playsinline></video>`;
+      }else{
+        mediaHtml=`<a href="${esc(msg.fileUrl)}" target="_blank" class="file-attachment"><span style="font-size:18px">📄</span><div><div style="font-size:12px;font-weight:700">${esc(msg.fileName||'ملف')}</div><div style="font-size:10px;opacity:.7">${(msg.fileName||'').split('.').pop().toUpperCase()}</div></div></a>`;
+      }
+    }
 
     /* reply quotation */
     let replyHtml='';
@@ -1591,7 +1486,7 @@ function appendMsgToDOM(msg,key,areaEl,insertBeforeEl){
     ];
     const menuHtml=menuItems.map(it=>`<button type="button" class="msg-menu-item${it.danger?' danger':''}" onclick="handleMsgMenuAction('${key}','${it.a}',event)"><span class="mi">${it.icon}</span>${it.label}</button>`).join('');
 
-    const isEmojiOnly=!msg.fileUrl&&!getImageUrls(msg).length&&isSingleEmoji(msg.text);
+    const isEmojiOnly=!msg.fileUrl&&!albumUrls.length&&isSingleEmoji(msg.text);
     const bubbleClass=isEmojiOnly?'msg-bubble emoji-only':'msg-bubble';
     const textClass=isEmojiOnly?'actual-msg-text emoji-anim':'actual-msg-text';
 
@@ -1612,7 +1507,17 @@ function appendMsgToDOM(msg,key,areaEl,insertBeforeEl){
       </div>
     </div>`;
 
-    bindMediaEvents(div,msg,key);
+    /* image click */
+    const albumEl=div.querySelector('.img-album');
+    if(albumEl){
+      const urls=albumUrls;
+      albumEl.querySelectorAll('.album-img').forEach(img=>{
+        img.addEventListener('click',e=>{e.stopPropagation();openImgModal(img.src,urls,parseInt(img.dataset.idx||'0',10))});
+      });
+    }else{
+      const img=div.querySelector('.chat-image');
+      if(img)img.addEventListener('click',e=>{e.stopPropagation();openImgModal(msg.fileUrl)});
+    }
 
     /* reply quotation click → jump */
     const qt=div.querySelector('.reply-quotation');
@@ -1691,6 +1596,7 @@ function appendMsgToDOM(msg,key,areaEl,insertBeforeEl){
   if(insertBeforeEl&&insertBeforeEl.parentNode===area)area.insertBefore(div,insertBeforeEl);
   else area.appendChild(div);
 
+  if(key)db.ref(`rooms/${roomId}/reactions/${key}`).on('value',snap=>renderReactions(key,snap.val()||{}));
   if(key&&msg.type!=='system'&&msg.senderName===myName)updateReadTicks();
 }
 
@@ -1984,9 +1890,6 @@ function renderPreview(idx){
   const multi=pendingFiles.length>1;
   prevBtn?.classList.toggle('show',multi);
   nextBtn?.classList.toggle('show',multi);
-  if($('img-preview-wrap').classList.contains('open')&&pendingFiles.length){
-    setPeerActivity(multi?'images':'image');
-  }
 }
 function previewNav(dir){if(!pendingFiles.length)return;renderPreview(activePreviewIdx+dir)}
 function initPreviewSwipe(){
@@ -2013,32 +1916,28 @@ function initPreviewSwipe(){
     },{passive:true});
   }
 }
-function cancelImgPreview(){pendingFiles=[];activePreviewIdx=0;pendingViewOnce=false;$('btn-view-once')?.classList.remove('on');$('img-preview-wrap').classList.remove('open');$('img-preview-main-el').src='';clearTypingNow()}
+function cancelImgPreview(){pendingFiles=[];activePreviewIdx=0;$('img-preview-wrap').classList.remove('open');$('img-preview-main-el').src=''}
 async function confirmSendImage(){
   if(!pendingFiles.length)return;
   $('img-preview-wrap').classList.remove('open');
-  const toSend=[...pendingFiles];const vo=pendingViewOnce;
-  pendingFiles=[];pendingViewOnce=false;$('btn-view-once')?.classList.remove('on');
-  if(toSend.length===1)await uploadAndSend(toSend[0],{viewOnce:vo});
+  const toSend=[...pendingFiles];pendingFiles=[];
+  if(toSend.length===1)await uploadAndSend(toSend[0]);
   else await uploadAndSendAlbum(toSend);
 }
 
-async function uploadAndSend(file,opts={}){
-  setPeerActivity(mediaTypeFromFile(file));
+async function uploadAndSend(file){
   const bar=$('upload-bar'),prog=$('upload-progress'),pb=$('upload-progress-bar');
   bar.classList.add('show');prog.classList.add('show');pb.style.width='0%';
   try{
     const url=await uploadCloudinary(file,p=>pb.style.width=p+'%');
     const payload={type:'message',text:'',fileUrl:url,fileName:file.name,fileType:file.type,senderId:myId,senderName:myName,ts:Date.now()};
-    if(opts.viewOnce&&file.type.startsWith('image/')){payload.viewOnce=true;payload.viewedBy={}}
     if(currentReplyTarget){payload.replyTo=currentReplyTarget;cancelReply()}
-    await messagesRef.push(payload);showToast(opts.viewOnce?'تم إرسال صورة لمرة واحدة 👁':'تم الإرسال ✅');setTimeout(scrollToBottom,50);
+    await messagesRef.push(payload);showToast('تم الإرسال ✅');setTimeout(scrollToBottom,50);
   }catch(e){showToast('فشل الرفع ❌')}
-  finally{bar.classList.remove('show');prog.classList.remove('show');clearTypingNow()}
+  finally{bar.classList.remove('show');prog.classList.remove('show')}
 }
 
 async function uploadAndSendAlbum(files){
-  setPeerActivity('images');
   const bar=$('upload-bar'),prog=$('upload-progress'),pb=$('upload-progress-bar');
   bar.classList.add('show');prog.classList.add('show');pb.style.width='0%';
   try{
@@ -2056,7 +1955,7 @@ async function uploadAndSendAlbum(files){
     showToast(`تم إرسال ${urls.length} صور ✅`);
     setTimeout(scrollToBottom,50);
   }catch(e){showToast('فشل رفع الألبوم ❌')}
-  finally{bar.classList.remove('show');prog.classList.remove('show');clearTypingNow()}
+  finally{bar.classList.remove('show');prog.classList.remove('show')}
 }
 
 function uploadCloudinary(file,onProg){
@@ -2080,19 +1979,26 @@ async function startRec(){
     mediaRecorder.ondataavailable=e=>{if(e.data.size>0)audioChunks.push(e.data)};
     mediaRecorder.onstop=async()=>{stream.getTracks().forEach(t=>t.stop());const blob=new Blob(audioChunks,{type:mt});await uploadVoice(blob,mt)};
     mediaRecorder.start(200);
-    setPeerActivity('voice');
     $('btn-voice').classList.add('recording');$('btn-voice').textContent='⏹';
     $('rec-timer').classList.add('show');$('msg-input').style.display='none';
-    recInterval=setInterval(()=>{recSeconds++;const mm=Math.floor(recSeconds/60),ss=recSeconds%60;$('rec-time').textContent=mm+':'+String(ss).padStart(2,'0');if(recSeconds>=120)stopRec()},1000);
+    pauseInactivityForMedia();
+    recInterval=setInterval(()=>{
+      recSeconds++;
+      const mm=Math.floor(recSeconds/60),ss=recSeconds%60;
+      $('rec-time').textContent=mm+':'+String(ss).padStart(2,'0');
+      resetInactivityTimer();
+      if(recSeconds>=120)stopRec();
+    },1000);
   }catch(e){showToast('تعذر الوصول للميكروفون ❌')}
 }
 function stopRec(){
   if(mediaRecorder&&mediaRecorder.state!=='inactive')mediaRecorder.stop();
   clearInterval(recInterval);$('btn-voice').classList.remove('recording');$('btn-voice').textContent='🎤';
   $('rec-timer').classList.remove('show');$('msg-input').style.display='';
+  if(!$('call-modal')?.classList.contains('open'))releaseWakeLock();
+  resetInactivityTimer();
 }
 async function uploadVoice(blob,mt){
-  setPeerActivity('audio');
   const name=`voice_${genId()}.${mt.includes('mp4')?'mp4':'webm'}`;
   const bar=$('upload-bar');bar.classList.add('show');
   try{
@@ -2102,127 +2008,26 @@ async function uploadVoice(blob,mt){
     if(currentReplyTarget){payload.replyTo=currentReplyTarget;cancelReply()}
     await messagesRef.push(payload);showToast('تم إرسال الرسالة الصوتية ✅');setTimeout(scrollToBottom,50);
   }catch(e){showToast('فشل رفع الصوت ❌')}
-  finally{bar.classList.remove('show');clearTypingNow()}
+  finally{bar.classList.remove('show')}
 }
 
 /* ══ VOICE PLAYER ══ */
-function getVoiceTotal(audio,vm){
-  const stored=parseInt(vm?.dataset?.duration,10)||0;
-  const d=audio?.duration;
-  if(d&&isFinite(d)&&d>0)return d;
-  return stored;
-}
-function waveformPctFromX(wrap,clientX){
-  const rect=wrap.getBoundingClientRect();
-  if(!rect.width)return 0;
-  const rtl=getComputedStyle(wrap).direction==='rtl';
-  const raw=rtl?(rect.right-clientX)/rect.width:(clientX-rect.left)/rect.width;
-  return Math.max(0,Math.min(1,raw));
-}
-function fmtVoiceTime(sec){
-  if(!sec||isNaN(sec))return'0:00';
-  return Math.floor(sec/60)+':'+String(Math.floor(sec%60)).padStart(2,'0');
-}
-function stopCurrentVoice(){
-  if(currentAudio){currentAudio.pause();currentAudio=null}
-  if(currentPlayBtn){currentPlayBtn.textContent='▶';currentPlayBtn=null}
-  currentVoiceEl=null;
-}
-function updateVoiceUI(vm,audio,bars,durEl,total){
-  const t=getVoiceTotal(audio,vm)||total||0;
-  const pct=t?audio.currentTime/t:0;
-  const idx=Math.floor(pct*bars.length);
-  bars.forEach((b,i)=>b.classList.toggle('played',i<idx));
-  if(!audio.paused&&t)durEl.textContent=fmtVoiceTime(audio.currentTime)+' / '+fmtVoiceTime(t);
-  else durEl.textContent=fmtVoiceTime(audio.currentTime||t);
-}
-function resetVoiceUI(vm,bars,durEl,total){
-  bars.forEach(b=>b.classList.remove('played'));
-  durEl.textContent=fmtVoiceTime(total);
-}
-function attachVoiceAudioHandlers(vm,audio,btn,bars,durEl,total){
-  audio.playbackRate=currentVoiceSpeed;
-  audio.ontimeupdate=()=>updateVoiceUI(vm,audio,bars,durEl,total);
-  audio.onended=()=>{resetVoiceUI(vm,bars,durEl,total);btn.textContent='▶';stopCurrentVoice()};
-  audio.onloadedmetadata=()=>updateVoiceUI(vm,audio,bars,durEl,total);
-}
-function ensureVoiceAudio(vm){
-  const btn=vm.querySelector('.btn-play-voice');
-  const bars=vm.querySelectorAll('.voice-waveform span');
-  const durEl=vm.querySelector('.voice-duration');
-  const total=parseInt(vm.dataset.duration,10)||0;
-  if(currentVoiceEl===vm&&currentAudio)return{vm,audio:currentAudio,btn,bars,durEl,total};
-  stopCurrentVoice();
-  const audio=new Audio(vm.dataset.url);
-  currentAudio=audio;currentPlayBtn=btn;currentVoiceEl=vm;
-  attachVoiceAudioHandlers(vm,audio,btn,bars,durEl,total);
-  return{vm,audio,btn,bars,durEl,total};
-}
-function seekVoiceTo(vm,pct,shouldPlay){
-  const{audio,btn,bars,durEl,total}=ensureVoiceAudio(vm);
-  const apply=()=>{
-    const t=getVoiceTotal(audio,vm)||total;
-    if(!t)return;
-    audio.currentTime=Math.max(0,Math.min(t,pct*t));
-    updateVoiceUI(vm,audio,bars,durEl,total);
-    if(shouldPlay){
-      btn.textContent='⏸';
-      audio.play().catch(()=>{btn.textContent='▶';stopCurrentVoice()});
-    }
-  };
-  if(audio.readyState>=1)apply();
-  else{audio.addEventListener('loadedmetadata',apply,{once:true});audio.load()}
-}
-function bindVoiceWaveform(wave){
-  if(wave.dataset.seekBound)return;
-  wave.dataset.seekBound='1';
-  let dragging=false;
-  const vm=()=>wave.closest('.voice-msg');
-  const scrub=(e,play)=>{e.preventDefault();e.stopPropagation();seekVoiceTo(vm(),waveformPctFromX(wave,e.clientX),play)};
-  wave.addEventListener('pointerdown',e=>{
-    dragging=true;
-    wave.setPointerCapture(e.pointerId);
-    scrub(e,true);
-  });
-  wave.addEventListener('pointermove',e=>{
-    if(!dragging)return;
-    scrub(e,!currentAudio||currentAudio.paused);
-  });
-  wave.addEventListener('pointerup',e=>{
-    dragging=false;
-    try{wave.releasePointerCapture(e.pointerId)}catch(_){}
-  });
-  wave.addEventListener('pointercancel',()=>{dragging=false});
-}
 function playVoice(btn,e){
   if(e)e.stopPropagation();
-  const vm=btn.closest('.voice-msg');
-  const bars=vm.querySelectorAll('.voice-waveform span');
-  const durEl=vm.querySelector('.voice-duration');
-  const total=parseInt(vm.dataset.duration,10)||0;
-  if(currentPlayBtn===btn&&currentAudio){
-    if(currentAudio.paused){currentAudio.play();btn.textContent='⏸'}
-    else{currentAudio.pause();btn.textContent='▶';updateVoiceUI(vm,currentAudio,bars,durEl,total)}
-    return;
+  const vm=btn.closest('.voice-msg');const url=vm.dataset.url;
+  const bars=vm.querySelectorAll('.voice-waveform span');const durEl=vm.querySelector('.voice-duration');
+  if(currentAudio&&!currentAudio.paused){
+    if(currentPlayBtn===btn){currentAudio.pause();btn.textContent='▶';return}
+    else{currentAudio.pause();if(currentPlayBtn)currentPlayBtn.textContent='▶';currentAudio=null}
   }
-  const{audio}=ensureVoiceAudio(vm);
-  btn.textContent='⏸';
-  audio.play().catch(()=>{btn.textContent='▶';stopCurrentVoice()});
-}
-function seekVoice(e){
-  e.stopPropagation();
-  const wrap=e.currentTarget;
-  const vm=wrap.closest('.voice-msg');
-  seekVoiceTo(vm,waveformPctFromX(wrap,e.clientX),true);
-}
-function cycleVoiceSpeed(e){
-  e.stopPropagation();
-  const speeds=[1,1.5,2];
-  const i=speeds.indexOf(currentVoiceSpeed);
-  currentVoiceSpeed=speeds[(i+1)%speeds.length];
-  e.currentTarget.textContent=currentVoiceSpeed+'×';
-  document.querySelectorAll('.btn-voice-speed').forEach(b=>{b.textContent=currentVoiceSpeed+'×'});
-  if(currentAudio)currentAudio.playbackRate=currentVoiceSpeed;
+  const audio=new Audio(url);currentAudio=audio;currentPlayBtn=btn;btn.textContent='⏸';
+  audio.ontimeupdate=()=>{
+    const pct=audio.duration?audio.currentTime/audio.duration:0;
+    const idx=Math.floor(pct*bars.length);bars.forEach((b,i)=>b.classList.toggle('played',i<idx));
+    const rem=audio.duration-audio.currentTime;if(!isNaN(rem))durEl.textContent=Math.floor(rem/60)+':'+String(Math.floor(rem%60)).padStart(2,'0');
+  };
+  audio.onended=()=>{btn.textContent='▶';bars.forEach(b=>b.classList.remove('played'));currentAudio=null;currentPlayBtn=null;const t=audio.duration||0;durEl.textContent=Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0')};
+  audio.play().catch(()=>{btn.textContent='▶'});
 }
 
 /* ══ CALLS (WebRTC + Firebase Signaling) ══ */
@@ -2250,6 +2055,7 @@ function setupCallListener(){
       setCallMode(type);
       resetCallMediaState();
       $('call-modal').classList.add('open');
+      pauseInactivityForMedia();
     }else if(isOutgoing&&callData.status==='ringing'){
       setCallStatusText('جاري الرنين...');
       $('btn-call-decline').querySelector('.call-btn-label').textContent='إلغاء';
@@ -2454,6 +2260,7 @@ async function startCall(type){
   resetCallMediaState();
   setCallMode(type);
   $('call-modal').classList.add('open');
+  pauseInactivityForMedia();
 
   try{
     await getLocalMedia(type);
@@ -2513,6 +2320,7 @@ function startCallTimer(){
   clearInterval(callTimerInterval);
   const el=$('call-timer'),tb=$('call-toolbar-timer');
   el.classList.add('show');tb.classList.add('show');
+  pauseInactivityForMedia();
   callTimerInterval=setInterval(()=>{
     if(!callStartTime)return;
     const s=Math.floor((Date.now()-callStartTime)/1000);
@@ -2520,6 +2328,7 @@ function startCallTimer(){
     const ss=String(s%60).padStart(2,'0');
     const t=mm+':'+ss;
     el.textContent=t;tb.textContent=t;
+    resetInactivityTimer();
   },1000);
 }
 
@@ -2548,6 +2357,8 @@ function cleanupCallUI(){
   if(ra){ra.srcObject=null;ra.muted=false}
   if(lv){lv.srcObject=null;lv.style.display='none'}
   callStartTime=null;isCallInitiator=false;
+  if(!(mediaRecorder&&mediaRecorder.state==='recording'))releaseWakeLock();
+  resetInactivityTimer();
 }
 
 async function logCall(status,callData){
@@ -2660,23 +2471,13 @@ function jumpToReactionMsg(key){
   engageAndMarkRead();
   jumpToMsg(key);
 }
-function setupReactionsListener(){
-  if(reactionsListenerOn||!roomId)return;
-  reactionsListenerOn=true;
-  db.ref(`rooms/${roomId}/reactions`).on('value',snap=>{
-    const all=snap.val()||{};
-    document.querySelectorAll('[data-msgkey]').forEach(bar=>{
-      renderReactions(bar.dataset.msgkey,all[bar.dataset.msgkey]||{},true);
-    });
-  });
-}
 function clearReactionJumpBar(){
   reactionJumpItems.clear();prevReactions={};reactionsReady=false;
   const bar=$('reaction-jump-bar');if(bar){bar.innerHTML='';bar.classList.remove('show')}
   $('chat-screen')?.classList.remove('has-reaction-jump');
 }
-function renderReactions(key,data,skipDetect){
-  if(!skipDetect)detectNewPeerReactions(key,data||{});
+function renderReactions(key,data){
+  detectNewPeerReactions(key,data||{});
   prevReactions[key]=JSON.parse(JSON.stringify(data||{}));
   const bar=document.querySelector(`[data-msgkey="${key}"]`);if(!bar)return;
   bar.innerHTML='';if(!data||!Object.keys(data).length)return;
@@ -2692,44 +2493,9 @@ function renderReactions(key,data,skipDetect){
   });
 }
 
-/* ══ TYPING & MEDIA ACTIVITY ══ */
-function isActivePeerActivity(v){
-  if(!v||v===false)return false;
-  if(v===true)return true;
-  return typeof v==='object'&&!!v.type;
-}
-function getActivityType(v){
-  if(v===true)return'text';
-  if(typeof v==='object'&&v.type)return v.type;
-  return'text';
-}
-function getActivityLabel(type,peerName){
-  const n=esc(peerName);
-  const labels={
-    text:`✍️ ${n} يكتب...`,
-    image:`📷 ${n} يرسل صورة...`,
-    images:`🖼️ ${n} يرسل صور...`,
-    video:`🎬 ${n} يرسل فيديو...`,
-    voice:`🎤 ${n} يسجل رسالة صوتية...`,
-    audio:`🔊 ${n} يرسل رسالة صوتية...`,
-    file:`📎 ${n} يرسل ملف...`
-  };
-  return labels[type]||labels.file;
-}
-function mediaTypeFromFile(file){
-  if(!file||!file.type)return'file';
-  if(file.type.startsWith('image/'))return'image';
-  if(file.type.startsWith('video/'))return'video';
-  if(file.type.startsWith('audio/'))return'audio';
-  return'file';
-}
-function setPeerActivity(type){
-  if(!typingRef||!type)return;
-  clearTimeout(typingTimeout);
-  typingRef.set({type,ts:Date.now()});
-}
-function handleTyping(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';resetInactivityTimer();if(!typingRef)return;setPeerActivity('text');clearTimeout(typingTimeout);typingTimeout=setTimeout(clearTypingNow,2000)}
-function clearTypingNow(){clearTimeout(typingTimeout);if(typingRef)typingRef.remove()}
+/* ══ TYPING ══ */
+function handleTyping(el){el.style.height='auto';el.style.height=Math.min(el.scrollHeight,130)+'px';resetInactivityTimer();if(!typingRef)return;typingRef.set(true);clearTimeout(typingTimeout);typingTimeout=setTimeout(clearTypingNow,2000)}
+function clearTypingNow(){clearTimeout(typingTimeout);if(typingRef)typingRef.set(false)}
 function handleKey(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMessage()}}
 
 /* ══ SCROLL ══ */
@@ -2738,7 +2504,7 @@ function initScrollButton(){
   window._scrollBtnInit=true;
   const area=$('messages-area');if(!area)return;
   area.addEventListener('scroll',()=>{
-    if(!skipReadOnScroll){clearTimeout(readScrollTimer);readScrollTimer=setTimeout(engageAndMarkRead,250)}
+    if(!skipReadOnScroll)engageAndMarkRead();
     if(area.scrollTop<90&&hasMoreOlder&&!isLoadingOlder&&!isInitialLoad)loadOlderMessages();
     const diff=area.scrollHeight-area.scrollTop-area.clientHeight;
     isAtBottom=diff<100;
@@ -2830,7 +2596,7 @@ async function leaveRoom(){
     if(callRef){callRef.off();callRef.child('ice').off();callRef.child('mediaState').off()}
     if(callHistoryRef)callHistoryRef.off();
     ['typing','clearSignal','reactions','readBy','pinnedMsg','call','callHistory'].forEach(n=>db.ref(`rooms/${roomId}/${n}`).off());
-    allMessages={};messagesRef.off();messageListenersOn=false;listenerWarmingUp=false;reactionsListenerOn=false;
+    allMessages={};messagesRef.off();messageListenersOn=false;listenerWarmingUp=false;
   }catch(e){}
   myName=myId=roomId=null;messagesRef=presenceRef=typingRef=roomPresenceRef=callRef=callHistoryRef=null;
   $('messages-area').innerHTML='<div class="empty-state" id="empty-state"><div style="font-size:40px;margin-bottom:8px;opacity:.35">✦</div><p style="font-weight:600;color:var(--text2)">مرحباً! كيف يمكنني مساعدتك؟</p><p style="font-size:12px;margin-top:4px">اكتب رسالتك الأولى...</p></div>';
